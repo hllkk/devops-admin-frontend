@@ -3,11 +3,13 @@ import type { ElegantConstRoute, RouteKey, RoutePath } from '@elegant-router/typ
 import type { RouteModule } from '@/typings/router.d.ts';
 import { useAuthStore } from '@/store/modules/auth';
 import { useRouteStore } from '@/store/modules/route';
+import { useTabStore } from '@/store/modules/tab';
 import { getToken } from '@/store/modules/auth/shared';
 import { localStg } from '@/utils/storage';
 import { getRouteName } from '@/router/elegant/transform';
 import { fetchCheckDB } from '@/service/api/init';
 import { initProactiveRefresh } from '@/hooks/business/auth';
+import { createStaticRoutes } from '@/router/routes';
 
 // 初始化状态缓存配置
 export const CHECK_DB_CACHE_KEY = 'check_db_result';
@@ -225,6 +227,7 @@ export function createRouteGuard(router: Router) {
  */
 async function initRoute(to: RouteLocationNormalized): Promise<RouteLocationRaw | null> {
   const routeStore = useRouteStore();
+  const tabStore = useTabStore();
 
   const notFoundRoute: RouteKey = 'not-found';
   const initRouteName: RouteKey = 'init';
@@ -232,33 +235,29 @@ async function initRoute(to: RouteLocationNormalized): Promise<RouteLocationRaw 
   const isNotFoundRoute = to.name === notFoundRoute;
   const isInitRoute = to.name === initRouteName;
 
-  // if the constant route is not initialized, then initialize the constant route
+  // 【关键修改】先检查系统初始化状态
+  // 注意：检查前需要先确保常量路由已注册（至少注册静态常量路由）
+  // 否则跳转 { name: 'init' } 会失败，因为 Vue Router 不知道这个路由
   if (!routeStore.isInitConstantRoute) {
-    await routeStore.initConstantRoute();
-
-    // the route is captured by the "not-found" route because the constant route is not initialized
-    // after the constant route is initialized, redirect to the original route
-    const path = to.fullPath;
-    const location: RouteLocationRaw = {
-      path,
-      replace: true,
-      query: to.query,
-      hash: to.hash
-    };
-
-    return location;
+    // 先注册静态常量路由（确保 init、login 等基础页面可用）
+    // 使用静态路由注册，不调用后端 API
+    const staticRoute = createStaticRoutes();
+    routeStore.addConstantRoutes(staticRoute.constantRoutes);
+    routeStore.handleConstantAndAuthRoutes();
+    routeStore.setIsInitConstantRoute(true);
+    tabStore.initHomeTab();
   }
 
-  // 检查系统初始化状态（在常量路由初始化完成后）
+  // 然后检查系统初始化状态
   if (!isNotFoundRoute) {
     const needInit = await checkInitStatus();
 
-    // 系统未初始化，访问非初始化页面时跳转到初始化页
+    // 系统未初始化，访问非初始化页面时跳转到初始化页面
     if (needInit && !isInitRoute) {
       return { name: initRouteName };
     }
 
-    // 系统已初始化，访问初始化页面时跳转到登录页
+    // 系统已初始化，访问初始化页面时跳转到登录页面
     if (!needInit && isInitRoute) {
       return { name: loginRouteName };
     }

@@ -442,8 +442,8 @@ const isTextFile = (file: BackendFileItem | Api.Disk.FileItem) => {
     'dockerfile',
     'nginx'
   ];
-  // 兼容两种属性名
-  const suffix = (file.extendName ?? file.fileExtension)?.toLowerCase() || '';
+  // 兼容两种属性名，处理扩展名前导点号
+  const suffix = (file.extendName ?? file.fileExtension)?.toLowerCase().replace(/^\./, '') || '';
   return textExtensions.includes(suffix) || file.contentType?.includes('text');
 };
 
@@ -587,11 +587,11 @@ async function loadFileContent(file: BackendFileItem | Api.Disk.FileItem, tab: T
 }
 
 async function initFile(file: BackendFileItem | Api.Disk.FileItem, fullPath?: string) {
-  // 兼容两种属性名
+  // 兼容两种属性名，处理扩展名前导点号
   const fileName = (file.name ?? file.fileName) as string;
   const fileSize = (file.size ?? file.fileSize) as number;
   const fileId = (file.id ?? file.fileId) as string | number;
-  const fileExt = (file.extendName ?? file.fileExtension) ?? '';
+  const fileExt = (file.extendName ?? file.fileExtension)?.replace(/^\./, '') ?? '';
 
   // filePath 是目录路径，不含文件名，需要组合构建完整路径
   let path = fullPath;
@@ -772,7 +772,8 @@ function handleCreate() {
 const renderTreeIcon = ({ option }: { option: TabNode }) => {
   if (option.file) {
     const isDir = (option.file.isDir ?? option.file.isFolder) ?? false;
-    const extension = (option.file.extendName ?? option.file.fileExtension) ?? '';
+    // 处理扩展名前导点号
+    const extension = (option.file.extendName ?? option.file.fileExtension)?.replace(/^\./, '') ?? '';
     const fileId = (option.file.id ?? option.file.fileId) as string | number;
 
     return h(FileIcon, {

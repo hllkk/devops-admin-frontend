@@ -101,24 +101,30 @@ export function fetchGetSharedFolderContents(params: {
   }).then(res => {
     // 将后端的字段名映射为前端期望的字段名
     if (res.data) {
-      const mappedList = (res.data.list || []).map(item => ({
-        createBy: '',
-        createTime: item.createTime || '',
-        updateBy: '',
-        updateTime: item.updateTime || '',
-        fileId: item.id,
-        fileName: item.name,
-        fileType: item.isDir ? 'folder' : 'other',
-        fileExtension: item.extendName,
-        fileSize: item.size,
-        filePath: item.filePath,
-        parentId: null,
-        isFolder: item.isDir,
-        isDir: item.isDir,
-        modifyTime: item.updateTime,
-        contentType: item.contentType,
-        mediaCover: item.mediaCover || false
-      }));
+      const mappedList = (res.data.list || []).map(item => {
+        // 处理扩展名：去掉前导的点号（如 '.md' -> 'md'）
+        const cleanExtension = item.extendName ? item.extendName.replace(/^\./, '') : undefined;
+
+        return {
+          createBy: '',
+          createTime: item.createTime || '',
+          updateBy: '',
+          updateTime: item.updateTime || '',
+          fileId: item.id,
+          fileName: item.name,
+          fileType: item.isDir ? 'folder' : 'other',
+          fileExtension: cleanExtension,
+          extendName: item.extendName, // 保留原始值
+          fileSize: item.size,
+          filePath: item.filePath,
+          parentId: null,
+          isFolder: item.isDir,
+          isDir: item.isDir,
+          modifyTime: item.updateTime,
+          contentType: item.contentType,
+          mediaCover: item.mediaCover || false
+        };
+      });
       return {
         ...res,
         data: {

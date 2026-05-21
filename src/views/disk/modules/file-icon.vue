@@ -73,7 +73,8 @@ const thumbnailError = ref(false);
 const icon = computed(() => {
   if (props.fileType === 'folder') return folderIcon;
   if (props.extension) {
-    const ext = props.extension.toLowerCase();
+    // 处理扩展名：去掉前导的点号（如 '.md' -> 'md'）
+    const ext = props.extension.toLowerCase().replace(/^\./, '');
     if (extensionIconMap[ext]) return extensionIconMap[ext];
   }
   return fileTypeIconMap[props.fileType] || defaultIcon;

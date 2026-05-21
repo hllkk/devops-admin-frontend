@@ -300,7 +300,7 @@ checkDBStatus();
           </NAlert>
 
           <!-- 初始化模式选择 -->
-          <div v-if="autoInit && configReady" class="mb-24px">
+          <div v-if="autoInit && configReady" class="mb-24px flex justify-center">
             <NRadioGroup v-model:value="autoInitMode">
               <NRadioButton :value="true">
                 <div class="flex items-center gap-4px">
@@ -318,29 +318,27 @@ checkDBStatus();
           </div>
 
           <!-- 自动初始化模式 -->
-          <div v-if="autoInitMode && autoInit && configReady">
-            <div class="text-center py-40px">
-              <SvgIcon icon="mdi:rocket-launch" class="text-80px text-primary" />
-              <p class="mt-16px text-gray-600">
-                Docker 环境已配置完成，点击下方按钮一键初始化
-              </p>
-              <p class="mt-8px text-gray-400 text-sm">
-                默认管理员密码：<span class="text-primary font-medium">Admin@2026</span>
-                （可通过环境变量 INIT_ADMIN_PASSWORD 自定义）
-              </p>
-              <NButton
-                type="primary"
-                size="large"
-                class="mt-24px"
-                :loading="loading"
-                @click="handleAutoInit"
-              >
-                <template #icon>
-                  <SvgIcon icon="mdi:auto-fix" />
-                </template>
-                一键初始化
-              </NButton>
-            </div>
+          <div v-if="autoInitMode && autoInit && configReady" class="flex-center flex-col py-40px">
+            <SvgIcon icon="mdi:rocket-launch" class="text-80px text-primary" />
+            <p class="mt-16px text-gray-600">
+              Docker 环境已配置完成，点击下方按钮一键初始化
+            </p>
+            <p class="mt-8px text-gray-400 text-sm">
+              默认管理员密码：<span class="text-primary font-medium">Admin@2026</span>
+              （可通过环境变量 INIT_ADMIN_PASSWORD 自定义）
+            </p>
+            <NButton
+              type="primary"
+              size="large"
+              class="mt-24px"
+              :loading="loading"
+              @click="handleAutoInit"
+            >
+              <template #icon>
+                <SvgIcon icon="mdi:auto-fix" />
+              </template>
+              一键初始化
+            </NButton>
           </div>
 
           <!-- 手动初始化模式 -->
@@ -362,18 +360,6 @@ checkDBStatus();
             >
               <!-- 步骤1: 数据库配置 -->
               <div v-show="currentStep === 1">
-                <NFormItem label="部署环境" path="deployEnv">
-                  <NRadioGroup v-model:value="model.deployEnv">
-                    <NRadioButton
-                      v-for="option in deployEnvOptions"
-                      :key="option.value"
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </NRadioButton>
-                  </NRadioGroup>
-                </NFormItem>
-
                 <NFormItem label="数据库类型" path="dbType">
                   <NSelect v-model:value="model.dbType" :options="dbTypeOptions" />
                 </NFormItem>
@@ -504,7 +490,7 @@ checkDBStatus();
         </div>
 
         <!-- 无需初始化 -->
-        <div v-else class="text-center py-40px">
+        <div v-else class="flex-center flex-col py-40px">
           <SvgIcon icon="mdi:check-circle" class="text-80px text-green-500" />
           <p class="mt-16px text-gray-500">系统已完成初始化</p>
           <NButton type="primary" class="mt-16px" @click="goToLogin">

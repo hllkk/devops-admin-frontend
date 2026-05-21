@@ -45,35 +45,42 @@ function contentTypeToFileType(contentType: string): string {
 
 /** 将后端 FileListResponse 转换为前端 FileItem 格式 */
 export function mapBackendFileList(backendData: { list: any[]; total: number }) {
-  const list: Api.Disk.FileItem[] = (backendData.list || []).map(item => ({
-    createBy: '',
-    createTime: item.createTime || '',
-    updateBy: '',
-    updateTime: item.updateTime || '',
-    fileId: item.id,
-    fileName: item.name,
-    fileType: item.isDir ? 'folder' : contentTypeToFileType(item.contentType),
-    fileSize: item.size,
-    fileExtension: item.extendName,
-    parentId: null,
-    filePath: item.filePath,
-    modifyTime: item.updateTime,
-    isFolder: item.isDir,
-    icon: item.isDir ? 'material-symbols:folder' : getFileIcon(item.extendName),
-    mediaCover: item.mediaCover || false,
-    showCover: item.showCover || false,
-    music: item.music,
-    video: item.video,
-    isFavorite: item.isFavorite || false,
-    isShare: item.isShare || false
-  }));
+  const list: Api.Disk.FileItem[] = (backendData.list || []).map(item => {
+    // 处理扩展名：去掉前导的点号（如 '.md' -> 'md'）
+    const cleanExtension = item.extendName ? item.extendName.replace(/^\./, '') : undefined;
+
+    return {
+      createBy: '',
+      createTime: item.createTime || '',
+      updateBy: '',
+      updateTime: item.updateTime || '',
+      fileId: item.id,
+      fileName: item.name,
+      fileType: item.isDir ? 'folder' : contentTypeToFileType(item.contentType),
+      fileSize: item.size,
+      fileExtension: cleanExtension,
+      extendName: item.extendName, // 保留原始值供其他组件使用
+      parentId: null,
+      filePath: item.filePath,
+      modifyTime: item.updateTime,
+      isFolder: item.isDir,
+      icon: item.isDir ? 'material-symbols:folder' : getFileIcon(cleanExtension),
+      mediaCover: item.mediaCover || false,
+      showCover: item.showCover || false,
+      music: item.music,
+      video: item.video,
+      isFavorite: item.isFavorite || false,
+      isShare: item.isShare || false
+    };
+  });
 
   return { rows: list, total: backendData.total || 0 };
 }
 
 function getFileIcon(ext?: string): string {
   if (!ext) return 'material-symbols:description';
-  const lower = ext.toLowerCase();
+  // 处理扩展名：去掉前导的点号（如 '.md' -> 'md'）
+  const lower = ext.toLowerCase().replace(/^\./, '');
   if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(lower)) return 'material-symbols:image';
   if (['mp4', 'avi', 'mkv', 'mov', 'wmv', 'flv'].includes(lower)) return 'material-symbols:videocam';
   if (['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma'].includes(lower)) return 'material-symbols:audiotrack';
