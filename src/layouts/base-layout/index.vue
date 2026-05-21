@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue';
+import { computed, watch, defineAsyncComponent } from 'vue';
+import { useRoute } from 'vue-router';
 import { AdminLayout, LAYOUT_SCROLL_EL_ID } from '@sa/materials';
 import type { LayoutMode } from '@sa/materials';
 import { useAppStore } from '@/store/modules/app';
 import { useThemeStore } from '@/store/modules/theme';
+import { useRouteStore } from '@/store/modules/route';
 import GlobalHeader from '../modules/global-header/index.vue';
 import GlobalSider from '../modules/global-sider/index.vue';
 import GlobalTab from '../modules/global-tab/index.vue';
@@ -16,9 +18,19 @@ defineOptions({
   name: 'BaseLayout'
 });
 
+const route = useRoute();
 const appStore = useAppStore();
 const themeStore = useThemeStore();
+const routeStore = useRouteStore();
 const { secondLevelMenus, childLevelMenus, isActiveFirstLevelMenuHasChildren } = provideMixMenuContext();
+
+watch(
+  () => route.path,
+  () => {
+    routeStore.setCurrentModule('admin');
+  },
+  { immediate: true }
+);
 
 const GlobalMenu = defineAsyncComponent(() => import('../modules/global-menu/index.vue'));
 
