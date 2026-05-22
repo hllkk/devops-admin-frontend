@@ -87,6 +87,7 @@
     "@soybeanjs/eslint-config-vue": "^0.0.2",
     "@types/node": "25.7.0",
     "@types/nprogress": "0.2.3",
+    "@types/streamsaver": "^2.0.5",
     "@vitejs/plugin-vue": "6.0.6",
     "@vitejs/plugin-vue-jsx": "5.1.5",
     "consola": "3.4.2",
@@ -116,5 +117,6 @@
     "node": ">=20.19.0",
     "pnpm": ">=10.5.0"
   },
-  "website": "https://admin.soybeanjs.cn"
+  "website": "https://admin.soybeanjs.cn",
+  "packageManager": "pnpm@11.2.2+sha512.36e6621fad506178936455e70247b8808ef4ec25797a9f437a93281a020484e2607f6a469a22e982987c3dbb8866e3071514ab10a4a1749e06edcd1ec118436f"
 }

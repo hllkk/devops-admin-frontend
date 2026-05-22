@@ -173,6 +173,13 @@ function closePanel() {
   }
 }
 
+// 新上传开始时自动展示传输面板
+watch(() => diskStore.uploadingCount, (newCount, oldCount) => {
+  if (newCount > oldCount && !isVisible.value) {
+    showDefault();
+  }
+});
+
 function switchToSphere() {
   viewMode.value = 'sphere';
 }
