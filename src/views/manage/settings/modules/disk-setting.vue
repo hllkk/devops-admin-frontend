@@ -1,5 +1,9 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+
 import type { DiskSettingConfig } from '../types';
+
+import { fetchCheckOfficeHealth } from '@/service/api/disk/office';
 
 defineOptions({
   name: 'DiskSetting'
@@ -18,6 +22,27 @@ const transcodePresetOptions = [
   { label: 'slower', value: 'slower' },
   { label: 'veryslow', value: 'veryslow' }
 ];
+
+const healthChecking = ref(false);
+const healthResult = ref<{ available: boolean; message: string } | null>(null);
+
+async function testConnection() {
+  healthChecking.value = true;
+  healthResult.value = null;
+  try {
+    const res = await fetchCheckOfficeHealth();
+    const data = res.data;
+    if (data?.available) {
+      healthResult.value = { available: true, message: `连接成功 (${data.responseMs}ms)` };
+    } else {
+      healthResult.value = { available: false, message: data?.error || '连接失败' };
+    }
+  } catch {
+    healthResult.value = { available: false, message: '请求失败，请检查后端服务' };
+  } finally {
+    healthChecking.value = false;
+  }
+}
 </script>
 
 <template>
@@ -121,6 +146,20 @@ const transcodePresetOptions = [
                 OnlyOffice容器需要能访问此地址来保存文档。请填写后端服务的完整地址（含协议和端口），如: http://后端IP:端口/api
               </NTooltip>
             </template>
+          </NFormItem>
+          <NFormItem label="连接状态">
+            <NSpace align="center">
+              <NButton
+                type="primary"
+                :loading="healthChecking"
+                @click="testConnection"
+              >
+                测试连接
+              </NButton>
+              <NTag v-if="healthResult" :type="healthResult.available ? 'success' : 'error'">
+                {{ healthResult.message }}
+              </NTag>
+            </NSpace>
           </NFormItem>
         </NForm>
       </NTabPane>
