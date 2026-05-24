@@ -43,16 +43,17 @@ const preview = reactive(useFilePreview({ fileList, imagePreviewRef, audioFilter
 // 重命名状态
 const renamingFile = ref<Api.Disk.FileItem | null>(null);
 
-// 分享结果
-const shareResultVisible = ref(false);
-const shareResult = ref<Api.Disk.ShareResult | null>(null);
-
 // 文件详情
 const detailVisible = ref(false);
 const detailFile = ref<Api.Disk.FileItem | null>(null);
 
 // 已有链接分享信息（传入 share-dialog 供展示）
 const existingShareInfo = ref<Api.Disk.ShareResult | null>(null);
+
+// 分享结果相关
+const shareResult = ref<Api.Disk.ShareResult | null>(null);
+const shareResultVisible = ref(false);
+const lastSharedFileId = ref<CommonType.IdType | null>(null);
 
 // 显示容量开关
 const showCapacity = ref(true);
@@ -283,6 +284,7 @@ function handleShareSuccess(result: Api.Disk.ShareResult) {
     if (fileIndex !== -1) {
       fileList.value[fileIndex].isShare = true;
     }
+    lastSharedFileId.value = shareFileId;
   }
   shareResult.value = result;
   shareResultVisible.value = true;
@@ -290,8 +292,7 @@ function handleShareSuccess(result: Api.Disk.ShareResult) {
 
 /** 分享取消处理 - 乐观更新文件的 isShare 状态 */
 function handleShareCancelled() {
-  // 乐观更新：立即取消文件的分享状态
-  const shareFileId = diskStore.shareFile?.fileId;
+  const shareFileId = diskStore.shareFile?.fileId ?? lastSharedFileId.value;
   if (shareFileId) {
     const fileIndex = fileList.value.findIndex(f => f.fileId === shareFileId);
     if (fileIndex !== -1) {
@@ -299,6 +300,7 @@ function handleShareCancelled() {
     }
   }
   shareResult.value = null;
+  lastSharedFileId.value = null;
 }
 
 /** 取消分享处理（从 share-dialog 触发） - 乐观更新 */
@@ -629,50 +631,50 @@ onMounted(async () => {
         />
         <!-- File Content -->
         <FileGrid
-            v-if="diskStore.viewMode === 'grid'"
-            :files="fileList"
-            :loading="loading"
-            page-type="disk"
-            class="h-full"
-            @file-dbl-click="handleFileDblClick"
-            @file-created="handleFileCreated"
-            @folder-created="handleFolderCreated"
-            @file-share="handleFileAction('share', $event)"
-            @file-download="handleFileAction('download', $event)"
-            @file-delete="handleFileAction('delete', $event)"
-            @file-rename="handleFileAction('rename', $event)"
-            @file-rename-confirm="handleRenameConfirm"
-            @file-rename-cancel="() => { diskStore.cancelRenaming(); renamingFile = null; }"
-            @file-copy="handleFileAction('copy', $event)"
-            @file-move="handleFileAction('move', $event)"
-            @file-favorite="handleFileFavorite"
-            @file-add-favorite="handleAddFavorite"
-            @file-remove-favorite="handleRemoveFavorite"
-            @file-detail="handleFileAction('detail', $event)"
-            @refresh="handleRefresh"
-          />
-          <FileList
-            v-if="diskStore.viewMode === 'list'"
-            :files="fileList"
-            :loading="loading"
-            page-type="disk"
-            @file-dbl-click="handleFileDblClick"
-            @file-created="handleFileCreated"
-            @folder-created="handleFolderCreated"
-            @file-share="handleFileAction('share', $event)"
-            @file-download="handleFileAction('download', $event)"
-            @file-delete="handleFileAction('delete', $event)"
-            @file-rename="handleFileAction('rename', $event)"
-            @file-rename-confirm="handleRenameConfirm"
-            @file-rename-cancel="() => { diskStore.cancelRenaming(); renamingFile = null; }"
-            @file-copy="handleFileAction('copy', $event)"
-            @file-move="handleFileAction('move', $event)"
-            @file-favorite="handleFileFavorite"
-            @file-add-favorite="handleAddFavorite"
-            @file-remove-favorite="handleRemoveFavorite"
-            @file-detail="handleFileAction('detail', $event)"
-            @refresh="handleRefresh"
-          />
+          v-if="diskStore.viewMode === 'grid'"
+          :files="fileList"
+          :loading="loading"
+          page-type="disk"
+          class="h-full"
+          @file-dbl-click="handleFileDblClick"
+          @file-created="handleFileCreated"
+          @folder-created="handleFolderCreated"
+          @file-share="handleFileAction('share', $event)"
+          @file-download="handleFileAction('download', $event)"
+          @file-delete="handleFileAction('delete', $event)"
+          @file-rename="handleFileAction('rename', $event)"
+          @file-rename-confirm="handleRenameConfirm"
+          @file-rename-cancel="() => { diskStore.cancelRenaming(); renamingFile = null; }"
+          @file-copy="handleFileAction('copy', $event)"
+          @file-move="handleFileAction('move', $event)"
+          @file-favorite="handleFileFavorite"
+          @file-add-favorite="handleAddFavorite"
+          @file-remove-favorite="handleRemoveFavorite"
+          @file-detail="handleFileAction('detail', $event)"
+          @refresh="handleRefresh"
+        />
+        <FileList
+          v-if="diskStore.viewMode === 'list'"
+          :files="fileList"
+          :loading="loading"
+          page-type="disk"
+          @file-dbl-click="handleFileDblClick"
+          @file-created="handleFileCreated"
+          @folder-created="handleFolderCreated"
+          @file-share="handleFileAction('share', $event)"
+          @file-download="handleFileAction('download', $event)"
+          @file-delete="handleFileAction('delete', $event)"
+          @file-rename="handleFileAction('rename', $event)"
+          @file-rename-confirm="handleRenameConfirm"
+          @file-rename-cancel="() => { diskStore.cancelRenaming(); renamingFile = null; }"
+          @file-copy="handleFileAction('copy', $event)"
+          @file-move="handleFileAction('move', $event)"
+          @file-favorite="handleFileFavorite"
+          @file-add-favorite="handleAddFavorite"
+          @file-remove-favorite="handleRemoveFavorite"
+          @file-detail="handleFileAction('detail', $event)"
+          @refresh="handleRefresh"
+        />
       </NCard>
     </div>
     <!-- Transfer Panel -->

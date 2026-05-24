@@ -30,16 +30,16 @@ function handleVerify() {
   }
 
   loading.value = true;
-  emit('verify', extractionCode.value.toUpperCase());
+  emit('verify', extractionCode.value);
   // loading 由父组件控制，这里延迟关闭
   setTimeout(() => {
     loading.value = false;
   }, 1000);
 }
 
-// 输入框自动转大写并过滤非法字符
+// 输入框过滤非法字符
 function handleInput(value: string) {
-  extractionCode.value = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+  extractionCode.value = value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4);
 }
 </script>
 

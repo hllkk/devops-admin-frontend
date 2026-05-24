@@ -302,7 +302,7 @@ function getRowProps(row: Api.System.User) {
 </script>
 
 <template>
-  <TableSiderLayout :sider-title="$t('page.system.dept.title')">
+  <TableSiderLayout :sider-title="$t('page.system.dept.title')" :default-expanded="true">
     <template #header-extra>
       <NButton size="small" text class="h-18px" @click.stop="() => handleResetTreeData()">
         <template #icon>
