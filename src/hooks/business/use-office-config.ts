@@ -3,7 +3,7 @@
  */
 
 import { ref, computed } from 'vue';
-import { fetchGetOfficeConfig, fetchGetPublicOfficeConfig } from '@/service/api/disk/office';
+import { fetchGetOfficeConfig, fetchGetPublicOfficeConfig, fetchCheckOfficeHealth } from '@/service/api/disk/office';
 import { getOfficeApiUrl } from '@/utils/office-config';
 import type { ServerConfig } from '@/types/office';
 
@@ -79,6 +79,18 @@ export function useOfficeConfig(shareId?: string) {
     error.value = null;
   }
 
+  /**
+   * 检查 OnlyOffice 服务可用性
+   */
+  async function checkHealth(): Promise<boolean> {
+    try {
+      const response = await fetchCheckOfficeHealth();
+      return response.data?.available ?? false;
+    } catch {
+      return false;
+    }
+  }
+
   return {
     config,
     loading,
@@ -88,6 +100,7 @@ export function useOfficeConfig(shareId?: string) {
     loadConfig,
     getApiUrl,
     getCallbackBaseUrl,
+    checkHealth,
     reset
   };
 }

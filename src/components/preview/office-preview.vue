@@ -77,7 +77,7 @@ const { darkMode } = storeToRefs(themeStore);
 const { userInfo, token } = storeToRefs(authStore);
 
 // Hooks
-const { config, loading: configLoading, error: configError, loadConfig, getApiUrl, getCallbackBaseUrl, isTokenEnabled } = useOfficeConfig(props.shareId);
+const { config, loading: configLoading, error: configError, loadConfig, getApiUrl, getCallbackBaseUrl, isTokenEnabled, checkHealth } = useOfficeConfig(props.shareId);
 const historyHook = useOfficeHistory(
   props.file?.id || props.fileId || 0,
   token.value,
@@ -90,6 +90,7 @@ const docEditor = ref<DocEditorInstance | null>(null);
 const fileInfo = ref<FileInfo | null>(null);
 const isSaved = ref(true);
 const isReady = ref(false);
+const serviceUnavailable = ref(false);
 const editorLoading = ref(false);
 const editorError = ref<string | null>(null);
 
@@ -231,8 +232,16 @@ async function initEditor() {
 
   editorLoading.value = true;
   editorError.value = null;
+  serviceUnavailable.value = false;
 
   try {
+    // 先检查服务可用性
+    const available = await checkHealth();
+    if (!available) {
+      serviceUnavailable.value = true;
+      throw new Error('文档服务暂不可用，请稍后重试或联系管理员');
+    }
+
     // 加载 OnlyOffice API
     const apiUrl = getApiUrl();
     await loadOfficeApi(apiUrl);
@@ -402,9 +411,12 @@ onUnmounted(() => {
       v-if="configError || editorError"
       class="absolute inset-0 flex-center bg-white/80 dark:bg-black/80"
     >
-      <NResult status="error" :title="configError || editorError || '加载失败'">
+      <NResult :status="serviceUnavailable ? 'warning' : 'error'" :title="configError || editorError || '加载失败'">
         <template #footer>
-          <NButton type="primary" @click="emit('close')">关闭</NButton>
+          <NSpace>
+            <NButton type="primary" @click="initEditor">重试</NButton>
+            <NButton @click="emit('close')">关闭</NButton>
+          </NSpace>
         </template>
       </NResult>
     </div>
