@@ -197,6 +197,18 @@ export interface ServerConfig {
   tokenEnabled: boolean;
 }
 
+/** 健康检查响应 */
+export interface HealthCheckResult {
+  /** OnlyOffice 是否可用 */
+  available: boolean;
+  /** 响应时间（毫秒） */
+  responseMs?: number;
+  /** 版本信息 */
+  version?: string;
+  /** 错误信息 */
+  error?: string;
+}
+
 /** 历史变更 */
 export interface HistoryChange {
   /** 变更用户 */

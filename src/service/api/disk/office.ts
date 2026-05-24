@@ -3,7 +3,7 @@
  */
 
 import { request } from '@/service/request';
-import type { ServerConfig, EditorConfig, HistoryVersion } from '@/types/office';
+import type { ServerConfig, EditorConfig, HistoryVersion, HealthCheckResult } from '@/types/office';
 
 /**
  * 获取 Office 服务器配置
@@ -11,6 +11,16 @@ import type { ServerConfig, EditorConfig, HistoryVersion } from '@/types/office'
 export function fetchGetOfficeConfig() {
   return request<ServerConfig>({
     url: '/office/config',
+    method: 'get'
+  });
+}
+
+/**
+ * 检查 OnlyOffice 服务健康状态
+ */
+export function fetchCheckOfficeHealth() {
+  return request<HealthCheckResult>({
+    url: '/office/health',
     method: 'get'
   });
 }
