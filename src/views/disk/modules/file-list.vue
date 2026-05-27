@@ -205,6 +205,7 @@ function emitCreate(name: string) {
 
 function handleCreateCancel() {
   if (isConfirming.value) return;
+  isConfirming.value = true;
   diskStore.cancelCreating();
   createName.value = '';
 }
@@ -216,6 +217,14 @@ function handleCreateKeydown(e: KeyboardEvent) {
   } else if (e.key === 'Escape') {
     handleCreateCancel();
   }
+}
+
+function handleCreateBlur() {
+  setTimeout(() => {
+    if (isConfirming.value) return;
+    if (!diskStore.creatingType) return;
+    handleCreateConfirm();
+  }, 150);
 }
 
 const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
@@ -245,7 +254,8 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
               size: 'small',
               class: 'max-w-300px',
               onClick: (e: Event) => e.stopPropagation(),
-              onKeydown: handleCreateKeydown
+              onKeydown: handleCreateKeydown,
+              onBlur: handleCreateBlur
             }),
             h('button', {
               class: 'flex items-center justify-center w-22px h-22px rd-4px cursor-pointer border-none bg-primary/10 hover:bg-primary/20 text-primary dark:bg-primary/20 dark:hover:bg-primary/30',

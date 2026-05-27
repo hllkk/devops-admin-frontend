@@ -350,6 +350,7 @@ async function handleDeleteFile(file: Api.Disk.FileItem) {
       const { error } = await fetchDeleteFile([file.fileId]);
       if (!error) {
         window.$message?.success($t('page.disk.trash.moveToTrashSuccess'));
+        diskStore.clearSelection();
         getFileList();
       }
     },
@@ -364,6 +365,7 @@ async function handleDeleteFile(file: Api.Disk.FileItem) {
           const { error } = await fetchDeleteFile([file.fileId], true);
           if (!error) {
             window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
+            diskStore.clearSelection();
             getFileList();
             loadQuotaInfo(); // 刷新配额信息
           }

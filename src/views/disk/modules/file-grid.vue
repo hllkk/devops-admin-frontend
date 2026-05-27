@@ -279,6 +279,7 @@ function emitCreate(name: string) {
 
 function handleCreateCancel() {
   if (isConfirming.value) return;
+  isConfirming.value = true;
   diskStore.cancelCreating();
   createName.value = '';
 }
@@ -290,6 +291,15 @@ function handleCreateKeydown(e: KeyboardEvent) {
   } else if (e.key === 'Escape') {
     handleCreateCancel();
   }
+}
+
+function handleCreateBlur() {
+  // 延迟检查，让按钮的 mousedown 先设置 isConfirming 标志
+  setTimeout(() => {
+    if (isConfirming.value) return;
+    if (!diskStore.creatingType) return;
+    handleCreateConfirm();
+  }, 150);
 }
 
 let resizeObserver: ResizeObserver | undefined;
@@ -363,6 +373,7 @@ watch(
                 v-model:value="createName"
                 size="small"
                 @keydown="handleCreateKeydown"
+                @blur="handleCreateBlur"
               />
             </div>
           </div>
