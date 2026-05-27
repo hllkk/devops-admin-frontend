@@ -316,11 +316,11 @@ watch(
 
 <template>
   <div class="h-full">
-    <!-- 空状态 -->
-    <FileEmpty v-if="showEmpty" />
+    <!-- 空状态（正在创建时不展示，让网格布局展示创建卡片） -->
+    <FileEmpty v-if="showEmpty && !diskStore.creatingType" />
 
     <!-- 文件网格 - 滚动容器 -->
-    <NSpin v-else :show="loading">
+    <NSpin v-if="!showEmpty || (!disableCreate && diskStore.creatingType)" :show="loading">
       <div
         ref="gridScrollRef"
         class="file-grid-scroll overflow-y-auto pr-4px"
@@ -331,8 +331,26 @@ watch(
           <!-- 内联创建占位卡片 -->
           <div
             v-if="!disableCreate && diskStore.creatingType"
-            class="flex flex-col items-center px-8px py-16px rd-8px bg-primary/5 dark:bg-primary/10"
+            class="relative flex flex-col items-center px-8px py-16px rd-8px bg-primary/5 dark:bg-primary/10"
           >
+            <!-- 确认/取消按钮 -->
+            <div
+              class="absolute top-4px left-4px right-4px z-1 flex items-center justify-end gap-2px"
+              @click.stop
+            >
+              <button
+                class="p-4px rd-4px cursor-pointer hover:bg-primary/15 dark:hover:bg-primary/25 text-primary border-none bg-transparent"
+                @mousedown.prevent="handleCreateConfirm"
+              >
+                <SvgIcon icon="mdi:check" :size="14" />
+              </button>
+              <button
+                class="p-4px rd-4px cursor-pointer hover:bg-primary/15 dark:hover:bg-primary/25 text-gray-500 border-none bg-transparent"
+                @mousedown.prevent="handleCreateCancel"
+              >
+                <SvgIcon icon="mdi:close" :size="14" />
+              </button>
+            </div>
             <div class="mb-8px mt-16px">
               <FileIcon
                 :file-type="diskStore.creatingType === 'folder' ? 'folder' : 'other'"
@@ -345,7 +363,6 @@ watch(
                 v-model:value="createName"
                 size="small"
                 @keydown="handleCreateKeydown"
-                @blur="handleCreateCancel"
               />
             </div>
           </div>

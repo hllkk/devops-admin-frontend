@@ -67,6 +67,26 @@ const isMobile = breakpoints.smaller('sm');
 // 是否显示空状态
 const showEmpty = computed(() => props.files.length === 0 && !props.loading);
 
+// 虚拟创建行ID
+const CREATION_ROW_ID = -1;
+
+/** 表格数据（创建时在顶部插入虚拟行） */
+const tableData = computed(() => {
+  if (!diskStore.creatingType || props.disableCreate) return props.files;
+  const creationItem = {
+    fileId: CREATION_ROW_ID,
+    fileName: '',
+    fileType: diskStore.creatingType === 'folder' ? 'folder' : 'other',
+    fileSize: 0,
+    parentId: null,
+    filePath: '',
+    modifyTime: '',
+    isFolder: diskStore.creatingType === 'folder',
+    _isCreating: true
+  } as Api.Disk.FileItem & { _isCreating: boolean };
+  return [creationItem, ...props.files];
+});
+
 // --- 内联重命名 ---
 const renameName = ref('');
 const isRenaming = ref(false);
@@ -116,6 +136,88 @@ function handleRenameKeydown(e: KeyboardEvent) {
   }
 }
 
+// --- 内联创建 ---
+const createName = ref('');
+const isConfirming = ref(false);
+const createInputRef = ref<InstanceType<typeof NInput>>();
+
+watch(() => diskStore.creatingType, type => {
+  if (!type) {
+    isConfirming.value = false;
+    return;
+  }
+  isConfirming.value = false;
+  if (type === 'file') {
+    createName.value = $t('page.disk.createInline.defaultFileName');
+  } else if (type === 'folder') {
+    createName.value = $t('page.disk.createInline.defaultFolderName');
+  }
+  nextTick(() => {
+    createInputRef.value?.focus();
+  });
+});
+
+function handleCreateConfirm() {
+  if (isConfirming.value) return;
+  const name = createName.value.trim();
+  if (!name) {
+    window.$message?.warning($t('page.disk.createInline.emptyName'));
+    return;
+  }
+
+  const existingNames = props.files.map(f => f.fileName);
+  if (existingNames.includes(name)) {
+    isConfirming.value = true;
+    window.$dialog?.warning({
+      title: $t('page.disk.createInline.confirmCreate'),
+      content: $t('page.disk.createInline.nameExists', { name }),
+      positiveText: $t('page.disk.createInline.confirmCreate'),
+      negativeText: $t('page.disk.createInline.cancelCreate'),
+      onPositiveClick: () => {
+        const resolvedName = resolveNameConflict(name, existingNames);
+        emitCreate(resolvedName);
+      },
+      onNegativeClick: () => {
+        isConfirming.value = false;
+        diskStore.cancelCreating();
+        createName.value = '';
+      },
+      onClose: () => {
+        isConfirming.value = false;
+        diskStore.cancelCreating();
+        createName.value = '';
+      }
+    });
+    return;
+  }
+
+  isConfirming.value = true;
+  emitCreate(name);
+}
+
+function emitCreate(name: string) {
+  if (diskStore.creatingType === 'file') {
+    emit('fileCreated', name);
+  } else if (diskStore.creatingType === 'folder') {
+    emit('folderCreated', name);
+  }
+}
+
+function handleCreateCancel() {
+  if (isConfirming.value) return;
+  diskStore.cancelCreating();
+  createName.value = '';
+}
+
+function handleCreateKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    handleCreateConfirm();
+  } else if (e.key === 'Escape') {
+    handleCreateCancel();
+  }
+}
+
 const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
   const cols: DataTableColumns<Api.Disk.FileItem> = [
     {
@@ -129,6 +231,38 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
       align: 'left',
       ellipsis: true,
       render: row => {
+        const isCreatingThis = (row as any)._isCreating;
+        if (isCreatingThis) {
+          return h('div', { class: 'flex items-center gap-8px w-full' }, [
+            h(FileIcon, {
+              fileType: row.isFolder ? 'folder' : 'other',
+              size: 'small'
+            }),
+            h(NInput, {
+              ref: (el: any) => { createInputRef.value = el; },
+              value: createName.value,
+              'onUpdate:value': (val: string) => { createName.value = val; },
+              size: 'small',
+              class: 'max-w-300px',
+              onClick: (e: Event) => e.stopPropagation(),
+              onKeydown: handleCreateKeydown
+            }),
+            h('button', {
+              class: 'flex items-center justify-center w-22px h-22px rd-4px cursor-pointer border-none bg-primary/10 hover:bg-primary/20 text-primary dark:bg-primary/20 dark:hover:bg-primary/30',
+              onClick: (e: Event) => { e.stopPropagation(); handleCreateConfirm(); },
+              onMousedown: (e: Event) => e.preventDefault()
+            }, [
+              h(SvgIcon, { icon: 'mdi:check', size: 14 })
+            ]),
+            h('button', {
+              class: 'flex items-center justify-center w-22px h-22px rd-4px cursor-pointer border-none bg-primary/10 hover:bg-primary/20 text-gray-500 dark:bg-primary/20 dark:hover:bg-primary/30',
+              onClick: (e: Event) => { e.stopPropagation(); handleCreateCancel(); },
+              onMousedown: (e: Event) => e.preventDefault()
+            }, [
+              h(SvgIcon, { icon: 'mdi:close', size: 14 })
+            ])
+          ]);
+        }
         const isRenamingThis = diskStore.renamingFileId === row.fileId;
         if (isRenamingThis) {
           return h('div', { class: 'flex items-center gap-8px w-full' }, [
@@ -221,11 +355,11 @@ const currentSelectedFiles = computed(() => {
 });
 
 function handleCheckedRowKeysChange(keys: CommonType.IdType[]) {
-  // 如果提供了 selectedFiles prop，则通过 emit 更新
+  const filtered = keys.filter(id => id !== CREATION_ROW_ID);
   if (props.selectedFiles !== undefined) {
-    emit('selectionChange', keys);
+    emit('selectionChange', filtered);
   } else {
-    diskStore.setSelectedFiles(keys);
+    diskStore.setSelectedFiles(filtered);
   }
 }
 
@@ -301,6 +435,7 @@ function handleContextSelect(key: string) {
 }
 
 function getRowProps(row: Api.Disk.FileItem) {
+  if ((row as any)._isCreating) return { style: 'cursor: default' };
   const selectId = getSelectId(row);
   return {
     style: 'cursor: pointer',
@@ -322,125 +457,24 @@ function getRowProps(row: Api.Disk.FileItem) {
 }
 
 function getRowKey(row: Api.Disk.FileItem) {
-  return getSelectId(row);
+  return (row as any)._isCreating ? CREATION_ROW_ID : getSelectId(row);
 }
 
-// --- 内联创建 ---
-const createName = ref('');
-const isConfirming = ref(false);
-const createInputRef = ref<InstanceType<typeof NInput>>();
 
-watch(() => diskStore.creatingType, type => {
-  if (!type) {
-    isConfirming.value = false;
-    return;
-  }
-  isConfirming.value = false;
-  if (type === 'file') {
-    createName.value = $t('page.disk.createInline.defaultFileName');
-  } else if (type === 'folder') {
-    createName.value = $t('page.disk.createInline.defaultFolderName');
-  }
-  nextTick(() => {
-    createInputRef.value?.focus();
-  });
-});
-
-function handleCreateConfirm() {
-  if (isConfirming.value) return;
-  const name = createName.value.trim();
-  if (!name) {
-    window.$message?.warning($t('page.disk.createInline.emptyName'));
-    return;
-  }
-
-  const existingNames = props.files.map(f => f.fileName);
-  if (existingNames.includes(name)) {
-    isConfirming.value = true;
-    window.$dialog?.warning({
-      title: $t('page.disk.createInline.confirmCreate'),
-      content: $t('page.disk.createInline.nameExists', { name }),
-      positiveText: $t('page.disk.createInline.confirmCreate'),
-      negativeText: $t('page.disk.createInline.cancelCreate'),
-      onPositiveClick: () => {
-        const resolvedName = resolveNameConflict(name, existingNames);
-        emitCreate(resolvedName);
-      },
-      onNegativeClick: () => {
-        isConfirming.value = false;
-        diskStore.cancelCreating();
-        createName.value = '';
-      },
-      onClose: () => {
-        isConfirming.value = false;
-        diskStore.cancelCreating();
-        createName.value = '';
-      }
-    });
-    return;
-  }
-
-  isConfirming.value = true;
-  emitCreate(name);
-}
-
-function emitCreate(name: string) {
-  if (diskStore.creatingType === 'file') {
-    emit('fileCreated', name);
-  } else if (diskStore.creatingType === 'folder') {
-    emit('folderCreated', name);
-  }
-}
-
-function handleCreateCancel() {
-  if (isConfirming.value) return;
-  diskStore.cancelCreating();
-  createName.value = '';
-}
-
-function handleCreateKeydown(e: KeyboardEvent) {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    handleCreateConfirm();
-  } else if (e.key === 'Escape') {
-    handleCreateCancel();
-  }
-}
 </script>
 
 <template>
   <div class="h-full flex flex-col" @contextmenu.prevent="handleContextMenu">
-    <!-- 空状态 -->
-    <FileEmpty v-if="showEmpty" />
-
-    <!-- 内联创建占位行 -->
-    <div
-      v-if="!disableCreate && diskStore.creatingType && !showEmpty"
-      class="flex items-center gap-8px px-12px py-8px bg-primary/5 dark:bg-primary/10"
-    >
-      <div class="flex items-center gap-8px flex-1">
-        <FileIcon
-          :file-type="diskStore.creatingType === 'folder' ? 'folder' : 'other'"
-          size="small"
-        />
-        <NInput
-          ref="createInputRef"
-          v-model:value="createName"
-          size="small"
-          class="max-w-300px"
-          @keydown="handleCreateKeydown"
-          @blur="handleCreateCancel"
-        />
-      </div>
-    </div>
+    <!-- 空状态（正在创建时不展示） -->
+    <FileEmpty v-if="showEmpty && !diskStore.creatingType" />
 
     <!-- 文件列表 -->
     <NDataTable
-      v-if="!showEmpty"
+      v-if="!showEmpty || (!disableCreate && diskStore.creatingType)"
       :columns="columns"
-      :data="files"
+      :data="tableData"
       :loading="loading"
-      :checked-row-keys="currentSelectedFiles"
+      :checked-row-keys="currentSelectedFiles.filter(id => id !== CREATION_ROW_ID)"
       :row-key="getRowKey"
       :row-props="getRowProps"
       size="small"
