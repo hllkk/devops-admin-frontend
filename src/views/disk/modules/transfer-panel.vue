@@ -953,6 +953,27 @@ onMounted(() => {
   box-shadow: 0 0 6px var(--primary-400), 0 0 12px rgba(100, 108, 255, 0.3);
 }
 
+
+/* ---- 手机端校正 ---- */
+@media (max-width: 640px) {
+  .sphere-body {
+    top: 8px;
+    left: 8px;
+    width: 114px;
+    height: 114px;
+  }
+  .orbit-1 {
+    width: 136px;
+    height: 136px;
+    margin: -68px 0 0 -68px;
+  }
+  .orbit-2 {
+    width: 150px;
+    height: 150px;
+    margin: -75px 0 0 -75px;
+  }
+}
+
 @keyframes pulseGlow {
   0%, 100% { opacity: 0.5; box-shadow: 0 0 10px rgba(100, 108, 255, 0.04); }
   50% { opacity: 1; box-shadow: 0 0 20px rgba(100, 108, 255, 0.1), 0 0 40px rgba(100, 108, 255, 0.05); }
