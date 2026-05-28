@@ -1,9 +1,11 @@
 import { isCancel } from 'axios';
 import type { AxiosError } from 'axios';
+import SparkMD5 from 'spark-md5';
 import { fetchCheckFile, fetchMergeChunks, fetchUploadChunk } from '@/service/api/disk/file';
 import { useDiskStore } from '@/store/modules/disk';
 import { useAuthStore } from '@/store/modules/auth';
 import { computeFileHash } from './instant-check';
+import { onSSEMessage } from '@/hooks/common/sse';
 import {
   getChunkSize,
   getConcurrency,
@@ -363,8 +365,10 @@ export class UploaderEngine {
     const abortController = new AbortController();
     task.abortController = abortController;
 
-    const fileHash = await computeFileHash(task.file, () => {
-      // Don't update progress during hashing — UI shows status text instead
+    const fileHash = await computeFileHash(task.file, (progress: number) => {
+      if (abortController.signal.aborted) return;
+      task.progress = progress;
+      this.syncToStore(task);
     });
 
     if (abortController.signal.aborted) {
@@ -525,6 +529,12 @@ export class UploaderEngine {
         const chunk = sliceChunk(task.file, chunkIndex, chunkSize);
         const currentChunkSize = chunk.size;
 
+        // 计算单个分片的 MD5，用于服务端写入后校验
+        const chunkArrayBuffer = await chunk.arrayBuffer();
+        const chunkSpark = new SparkMD5.ArrayBuffer();
+        chunkSpark.append(chunkArrayBuffer);
+        const chunkHash = chunkSpark.end();
+
         const userId = getUserId();
         const currentDirectory = getCurrentDirectory();
 
@@ -541,7 +551,8 @@ export class UploaderEngine {
           userId,
           currentDirectory,
           isFolder: !!task.folderId,
-          folderPath: task.folderName
+          folderPath: task.folderName,
+          chunkHash
         });
 
         if (error) {
@@ -577,6 +588,15 @@ export class UploaderEngine {
     task.status = 'merging';
     this.syncToStore(task);
 
+    // 监听后端 SSE 合并进度
+    const offSSE = onSSEMessage('merge_progress', msg => {
+      const data = msg.data as { identifier?: string; progress?: number; phase?: string } | undefined;
+      if (data?.identifier === task.fileHash && typeof data.progress === 'number') {
+        task.progress = data.progress;
+        this.syncToStore(task);
+      }
+    });
+
     const userId = getUserId();
     const currentDirectory = getCurrentDirectory();
 
@@ -588,6 +608,7 @@ export class UploaderEngine {
           identifier: task.fileHash,
           fileName: task.fileName,
           totalSize: task.fileSize,
+          totalChunks: task.totalChunks,
           userId,
           currentDirectory,
           relativePath: task.relativePath || task.fileName,
@@ -600,6 +621,7 @@ export class UploaderEngine {
           throw new Error(getErrorMessage(error, '合并分片失败'));
         }
 
+        offSSE();
         return;
       } catch (error: unknown) {
         lastError = new Error(getErrorMessage(error, '合并分片失败'));
@@ -611,6 +633,7 @@ export class UploaderEngine {
       }
     }
 
+    offSSE();
     throw lastError ?? new Error('合并分片失败');
   }
 

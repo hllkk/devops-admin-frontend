@@ -9,6 +9,7 @@
     "unicorn/consistent-function-scoping": "off",
     "unicorn/no-array-sort": "off",
     "unicorn/no-array-reverse": "off",
-    "unicorn/require-module-specifiers": "off"
+    "unicorn/require-module-specifiers": "off",
+    "no-underscore-dangle": ["error", { "allow": ["_router", "_controller", "_isCreating", "_handleClose", "_handleDelete", "_addBtnMenu", "_handleUpdateBtnMenu", "_deployEnvOptions", "_toggleInitMode", "_hasMediaSection", "_spaceRight", "_hasPutPermission", "_hasDeletePermission", "_currentList"] }]
   }
 }

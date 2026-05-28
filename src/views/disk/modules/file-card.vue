@@ -69,7 +69,7 @@ const isImage = computed(() => props.file.fileType === 'image');
 const videoInfo = computed(() => props.file.video);
 const musicInfo = computed(() => props.file.music);
 
-const hasMediaSection = computed(() => {
+const _hasMediaSection = computed(() => {
   if (isVideo.value && videoInfo.value) return true;
   if (isAudio.value && musicInfo.value) return true;
   if (isImage.value) return true;
@@ -115,7 +115,7 @@ function showHoverInfo() {
     const rect = anchor.getBoundingClientRect();
     const popW = 220;
     const spaceLeft = rect.left;
-    const spaceRight = window.innerWidth - rect.right;
+    const _spaceRight = window.innerWidth - rect.right;
     const centerY = rect.top + rect.height / 2;
     if (spaceLeft >= popW + 12) {
       hoverPlacement.value = 'left';
@@ -380,70 +380,70 @@ function handleMoreSelect(key: string) {
             @mouseenter="hoverVisible = true"
             @mouseleave="hideHoverInfo"
           >
-          <!-- 基本信息 -->
-          <div class="space-y-6px">
-            <div class="flex">
-              <span class="info-label">{{ $t('page.disk.file.name') }}</span>
-              <span class="info-value flex-1 break-all">{{ file.fileName }}</span>
-            </div>
-            <div v-if="!file.isFolder" class="flex">
-              <span class="info-label">{{ $t('page.disk.file.size') }}</span>
-              <span class="info-value">{{ formattedSize }}</span>
-            </div>
-            <div class="flex">
-              <span class="info-label">{{ $t('page.disk.file.path') }}</span>
-              <span class="info-value flex-1 break-all">{{ file.filePath || '-' }}</span>
-            </div>
-            <div class="flex">
-              <span class="info-label">{{ $t('page.disk.file.createTime') }}</span>
-              <span class="info-value">{{ formatDateTime(file.createTime) || '-' }}</span>
-            </div>
-            <div class="flex">
-              <span class="info-label">{{ $t('page.disk.file.modifyTime') }}</span>
-              <span class="info-value">{{ formatDateTime(file.updateTime) }}</span>
-            </div>
-          </div>
-
-          <!-- 视频信息 -->
-          <template v-if="isVideo && videoInfo">
-            <div class="divider-line" />
-            <div class="space-y-6px">
-              <div v-if="videoInfo.width && videoInfo.height" class="flex">
-                <span class="info-label">{{ $t('page.disk.file.resolution') }}</span>
-                <span class="info-value">{{ videoInfo.width }} x {{ videoInfo.height }}</span>
-              </div>
-              <div v-if="videoInfo.bitrate" class="flex">
-                <span class="info-label">{{ $t('page.disk.file.bitrate') }}</span>
-                <span class="info-value">{{ formatBitrate(videoInfo.bitrate) }}</span>
-              </div>
-              <div v-if="videoInfo.frameRate" class="flex">
-                <span class="info-label">{{ $t('page.disk.file.frameRate') }}</span>
-                <span class="info-value">{{ videoInfo.frameRate }} fps</span>
-              </div>
-              <div v-if="videoInfo.format" class="flex">
-                <span class="info-label">{{ $t('page.disk.file.format') }}</span>
-                <span class="info-value">{{ videoInfo.format }}</span>
-              </div>
-              <div v-if="videoInfo.duration" class="flex">
-                <span class="info-label">{{ $t('page.disk.file.duration') }}</span>
-                <span class="info-value">{{ formatDuration(videoInfo.duration) }}</span>
-              </div>
-            </div>
-          </template>
-
-          <!-- 图片信息 -->
-          <template v-if="isImage && imageResolution">
-            <div class="divider-line" />
+            <!-- 基本信息 -->
             <div class="space-y-6px">
               <div class="flex">
-                <span class="info-label">{{ $t('page.disk.file.type') }}</span>
-                <span class="info-value">{{ imageResolution }}</span>
+                <span class="info-label">{{ $t('page.disk.file.name') }}</span>
+                <span class="info-value flex-1 break-all">{{ file.fileName }}</span>
+              </div>
+              <div v-if="!file.isFolder" class="flex">
+                <span class="info-label">{{ $t('page.disk.file.size') }}</span>
+                <span class="info-value">{{ formattedSize }}</span>
+              </div>
+              <div class="flex">
+                <span class="info-label">{{ $t('page.disk.file.path') }}</span>
+                <span class="info-value flex-1 break-all">{{ file.filePath || '-' }}</span>
+              </div>
+              <div class="flex">
+                <span class="info-label">{{ $t('page.disk.file.createTime') }}</span>
+                <span class="info-value">{{ formatDateTime(file.createTime) || '-' }}</span>
+              </div>
+              <div class="flex">
+                <span class="info-label">{{ $t('page.disk.file.modifyTime') }}</span>
+                <span class="info-value">{{ formatDateTime(file.updateTime) }}</span>
               </div>
             </div>
-          </template>
+
+            <!-- 视频信息 -->
+            <template v-if="isVideo && videoInfo">
+              <div class="divider-line" />
+              <div class="space-y-6px">
+                <div v-if="videoInfo.width && videoInfo.height" class="flex">
+                  <span class="info-label">{{ $t('page.disk.file.resolution') }}</span>
+                  <span class="info-value">{{ videoInfo.width }} x {{ videoInfo.height }}</span>
+                </div>
+                <div v-if="videoInfo.bitrate" class="flex">
+                  <span class="info-label">{{ $t('page.disk.file.bitrate') }}</span>
+                  <span class="info-value">{{ formatBitrate(videoInfo.bitrate) }}</span>
+                </div>
+                <div v-if="videoInfo.frameRate" class="flex">
+                  <span class="info-label">{{ $t('page.disk.file.frameRate') }}</span>
+                  <span class="info-value">{{ videoInfo.frameRate }} fps</span>
+                </div>
+                <div v-if="videoInfo.format" class="flex">
+                  <span class="info-label">{{ $t('page.disk.file.format') }}</span>
+                  <span class="info-value">{{ videoInfo.format }}</span>
+                </div>
+                <div v-if="videoInfo.duration" class="flex">
+                  <span class="info-label">{{ $t('page.disk.file.duration') }}</span>
+                  <span class="info-value">{{ formatDuration(videoInfo.duration) }}</span>
+                </div>
+              </div>
+            </template>
+
+            <!-- 图片信息 -->
+            <template v-if="isImage && imageResolution">
+              <div class="divider-line" />
+              <div class="space-y-6px">
+                <div class="flex">
+                  <span class="info-label">{{ $t('page.disk.file.type') }}</span>
+                  <span class="info-value">{{ imageResolution }}</span>
+                </div>
+              </div>
+            </template>
+          </div>
         </div>
-      </div>
-    </Transition>
+      </Transition>
     </Teleport>
   </div>
 </template>

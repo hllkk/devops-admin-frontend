@@ -48,7 +48,7 @@ const dbTypeOptions = [
 ];
 
 // 部署环境选项
-const deployEnvOptions = [
+const _deployEnvOptions = [
   { label: '本地部署', value: 'local' },
   { label: 'Docker部署', value: 'docker' }
 ];
@@ -171,7 +171,7 @@ async function checkDBStatus() {
 }
 
 // 切换初始化模式
-function toggleInitMode() {
+function _toggleInitMode() {
   autoInitMode.value = !autoInitMode.value;
 }
 

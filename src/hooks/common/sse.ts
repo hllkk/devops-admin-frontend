@@ -31,6 +31,21 @@ let intentionalClose = false;
 
 export const connected = ref(false);
 
+/** 注册型 SSE 消息监听器，用于业务模块订阅特定类型的 SSE 事件 */
+type SSEListener = (msg: SSEMessage) => void;
+const listeners: Map<string, Set<SSEListener>> = new Map();
+
+/** 注册监听指定类型的 SSE 消息，返回取消注册函数 */
+export function onSSEMessage(type: string, listener: SSEListener): () => void {
+  if (!listeners.has(type)) {
+    listeners.set(type, new Set());
+  }
+  listeners.get(type)!.add(listener);
+  return () => {
+    listeners.get(type)?.delete(listener);
+  };
+}
+
 function getSSEUrl(): string {
   const backendUrl = import.meta.env.VITE_SERVICE_BASE_URL || '';
   const basePath = import.meta.env.VITE_APP_BASE_API || '/api/v1';
@@ -101,6 +116,14 @@ function handleMessage(event: MessageEvent) {
     const shareData = msg.data as ShareNotificationData;
     if (shareData) {
       showShareNotification(shareData);
+    }
+  }
+
+  // 分发到注册的监听器
+  const typeListeners = listeners.get(msg.type);
+  if (typeListeners) {
+    for (const listener of typeListeners) {
+      listener(msg);
     }
   }
 }

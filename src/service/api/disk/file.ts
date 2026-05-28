@@ -122,6 +122,7 @@ export function fetchUploadChunk(data: Api.Disk.ChunkUploadParams) {
   if (data.currentDirectory) formData.append('currentDirectory', data.currentDirectory);
   if (data.isFolder) formData.append('isFolder', 'true');
   if (data.folderPath) formData.append('folderPath', data.folderPath);
+  if (data.chunkHash) formData.append('chunkHash', data.chunkHash);
 
   return request<{ pass: boolean; upload: boolean; merge: boolean }>({
     url: '/file-meta/upload',
@@ -140,7 +141,7 @@ export function fetchMergeChunks(data: Api.Disk.MergeChunksParams) {
     url: '/file-meta/merge',
     method: 'post',
     data,
-    timeout: 5 * 60 * 1000
+    timeout: 15 * 60 * 1000
   });
 }
 

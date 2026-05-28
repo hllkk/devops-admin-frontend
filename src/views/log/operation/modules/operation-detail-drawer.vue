@@ -36,6 +36,19 @@ function closeDrawer() {
 }
 </script>
 
+<script lang="ts">
+function formatJson(str: string | undefined): string {
+  if (!str) return '';
+  try {
+    return JSON.stringify(JSON.parse(str), null, 2);
+  } catch {
+    return str;
+  }
+}
+
+const isMobile = window.innerWidth < 640;
+</script>
+
 <template>
   <NDrawer v-model:show="visible" :title="title" display-directive="show" :width="800" class="max-w-90%">
     <NDrawerContent :title="title" :native-scrollbar="false" closable>
@@ -98,18 +111,5 @@ function closeDrawer() {
     </NDrawerContent>
   </NDrawer>
 </template>
-
-<script lang="ts">
-function formatJson(str: string | undefined): string {
-  if (!str) return '';
-  try {
-    return JSON.stringify(JSON.parse(str), null, 2);
-  } catch {
-    return str;
-  }
-}
-
-const isMobile = window.innerWidth < 640;
-</script>
 
 <style scoped></style>

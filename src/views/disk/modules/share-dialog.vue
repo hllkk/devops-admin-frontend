@@ -31,6 +31,8 @@ const emit = defineEmits<Emits>();
 
 const diskStore = useDiskStore();
 
+const shareFile = computed(() => diskStore.shareFile);
+
 // 有效期选项
 const validityOptions = computed(() => [
   { label: $t('page.disk.share.oneDay'), value: '1' },
@@ -133,8 +135,6 @@ const filteredUserOptions = computed(() => {
   return userOptions.value.filter(u => !excludeIds.has(u.value));
 });
 
-// 待分享的文件
-const shareFile = computed(() => diskStore.shareFile);
 
 // 是否已有链接分享
 const hasExistingShare = computed(() => !!props.existingShare);
@@ -266,7 +266,8 @@ function toggleUserPermission(userId: number, perm: string) {
 function removeUser(userId: number) {
   selectedUsers.value = selectedUsers.value.filter(id => id !== userId);
   const updated = { ...userPermissionMap.value };
-  delete updated[userId];
+  const { [userId]: _, ...rest } = updated;
+  userPermissionMap.value = rest;
   userPermissionMap.value = updated;
 }
 

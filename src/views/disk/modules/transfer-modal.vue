@@ -13,7 +13,7 @@ interface Props {
   visible: boolean;
 }
 
-const _props = defineProps<Props>();
+defineProps<Props>();
 
 interface Emits {
   (e: 'update:visible', value: boolean): void;

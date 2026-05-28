@@ -40,6 +40,7 @@ interface Emits {
   (e: 'fileRename', file: Api.Disk.FileItem): void;
   (e: 'fileCopy', file: Api.Disk.FileItem): void;
   (e: 'fileMove', file: Api.Disk.FileItem): void;
+  // eslint-disable-next-line vue/no-unused-emit-declarations
   (e: 'fileFavorite', file: Api.Disk.FileItem): void;
   (e: 'fileAddFavorite', file: Api.Disk.FileItem): void;
   (e: 'fileRemoveFavorite', file: Api.Disk.FileItem): void;

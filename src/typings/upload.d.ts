@@ -8,8 +8,10 @@ declare namespace Api {
       chunkSizeSmall: number;
       /** 100MB-1GB 文件分片大小 (MB) */
       chunkSizeMedium: number;
-      /** >1GB 文件分片大小 (MB) */
+      /** 1-5GB 文件分片大小 (MB) */
       chunkSizeLarge: number;
+      /** >5GB 文件分片大小 (MB) */
+      chunkSizeHuge?: number;
       /** 最大上传大小 (MB)，联动网盘系统设置 */
       maxUploadSize?: number;
     };
@@ -89,6 +91,8 @@ declare namespace Api {
       isFolder?: boolean;
       /** 文件夹路径 */
       folderPath?: string;
+      /** 单个分片的 MD5，用于写入后校验 */
+      chunkHash?: string;
     };
 
     /** 合并分片请求参数 (匹配后端 FileMergeRequest) */
@@ -99,6 +103,8 @@ declare namespace Api {
       fileName: string;
       /** 文件总大小 */
       totalSize: number;
+      /** 总分片数 */
+      totalChunks?: number;
       /** 当前用户ID */
       userId: number;
       /** 当前目录 */

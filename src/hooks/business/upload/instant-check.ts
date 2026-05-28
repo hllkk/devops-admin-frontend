@@ -13,7 +13,7 @@ export function computeFileHash(
         { type: 'module' }
       );
 
-      worker.onmessage = (e: MessageEvent) => {
+      worker.addEventListener('message', (e: MessageEvent) => {
         const data = e.data;
         if (data.type === 'progress') {
           onProgress?.(data.progress);
@@ -24,14 +24,16 @@ export function computeFileHash(
           worker.terminate();
           reject(new Error(data.message));
         }
-      };
+      });
 
-      worker.onerror = (err) => {
+      worker.addEventListener('error', () => {
         worker.terminate();
         // Worker 加载失败，回退到主线程
         computeFileHashMainThread(file, onProgress).then(resolve, reject);
-      };
+      });
 
+      // DedicatedWorker: postMessage 不需要 targetOrigin 参数
+      // eslint-disable-next-line unicorn/require-post-message-target-origin
       worker.postMessage({ type: 'compute', file });
     } catch {
       // Worker 不可用（如某些浏览器环境），回退到主线程

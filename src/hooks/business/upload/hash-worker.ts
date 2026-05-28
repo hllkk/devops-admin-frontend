@@ -22,7 +22,7 @@ interface HashWorkerError {
   message: string;
 }
 
-self.onmessage = async (e: MessageEvent<HashWorkerMessage>) => {
+self.addEventListener('message', async (e: MessageEvent<HashWorkerMessage>) => {
   if (e.data.type !== 'compute') return;
 
   const { file } = e.data;
@@ -38,13 +38,14 @@ self.onmessage = async (e: MessageEvent<HashWorkerMessage>) => {
       const buffer = await blob.arrayBuffer();
       spark.append(buffer);
       currentChunk++;
+      // eslint-disable-next-line unicorn/require-post-message-target-origin
       self.postMessage({ type: 'progress', progress: Math.round((currentChunk / chunks) * 100) } as HashWorkerResult);
     }
+    // eslint-disable-next-line unicorn/require-post-message-target-origin
     self.postMessage({ type: 'done', hash: spark.end() } as HashWorkerComplete);
   } catch (err) {
-    self.postMessage({
-      type: 'error',
-      message: err instanceof Error ? err.message : '文件哈希计算失败'
-    } as HashWorkerError);
+    /* eslint-disable unicorn/require-post-message-target-origin */
+    self.postMessage({ type: 'error', message: err instanceof Error ? err.message : '文件哈希计算失败' } as HashWorkerError);
+    /* eslint-enable unicorn/require-post-message-target-origin */
   }
-};
+});

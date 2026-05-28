@@ -106,18 +106,18 @@ const hasUploadPermission = computed(() => {
 });
 
 // 检查是否有编辑权限（PUT）
-const hasPutPermission = computed(() => {
+const _hasPutPermission = computed(() => {
   if (!browsingFolder.value) return false;
   return browsingFolder.value.permissions.includes('PUT');
 });
 
 // 检查是否有删除权限（DELETE）
-const hasDeletePermission = computed(() => {
+const _hasDeletePermission = computed(() => {
   if (!browsingFolder.value) return false;
   return browsingFolder.value.permissions.includes('DELETE');
 });
 
-const currentList = computed(() => {
+const _currentList = computed(() => {
   if (isBrowsingFolder.value) return folderContents.value;
   return shareList.value.map(convertToFileItem);
 });

@@ -8,6 +8,7 @@ defineOptions({
 
 interface Props {
   /** 短链接ID（父组件传递，本组件暂未使用） */
+  // eslint-disable-next-line vue/no-unused-properties
   shortId?: string;
   shareInfo: Api.Disk.SharePublicInfo | null;
 }
@@ -16,7 +17,7 @@ interface Emits {
   (e: 'verify', code: string): void;
 }
 
-const _props = defineProps<Props>();
+defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const extractionCode = ref('');

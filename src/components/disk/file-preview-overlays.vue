@@ -21,12 +21,12 @@ defineProps<{
 }>();
 
 defineEmits<{
-  'close-video': [];
-  'video-token-update': [token: string];
-  'close-audio': [];
-  'audio-overlay-click': [];
-  'update:is-audio-compact': [value: boolean];
-  'update:preview-visible': [value: boolean];
+  'closeVideo': [];
+  'videoTokenUpdate': [token: string];
+  'closeAudio': [];
+  'audioOverlayClick': [];
+  'update:isAudioCompact': [value: boolean];
+  'update:previewVisible': [value: boolean];
 }>();
 </script>
 
@@ -35,8 +35,8 @@ defineEmits<{
   <FilePreviewOverlay
     :visible="previewVisible"
     :file="previewFile"
-    @update:visible="$emit('update:preview-visible', $event)"
-    @close="$emit('update:preview-visible', false)"
+    @update:visible="$emit('update:previewVisible', $event)"
+    @close="$emit('update:previewVisible', false)"
   />
 
   <!-- Video preview -->
@@ -46,8 +46,8 @@ defineEmits<{
       :src="videoStreamBaseUrl"
       :file-name="videoPreviewFile.fileName || videoPreviewFile.name || ''"
       :stream-token="videoStreamToken"
-      @close="$emit('close-video')"
-      @token-update="$emit('video-token-update', $event)"
+      @close="$emit('closeVideo')"
+      @token-update="$emit('videoTokenUpdate', $event)"
     />
   </Teleport>
 
@@ -58,14 +58,14 @@ defineEmits<{
         v-if="audioPreviewVisible"
         class="fixed inset-0 z-9999 flex items-center justify-center"
         :class="isAudioCompact ? 'pointer-events-none' : 'bg-black/40 backdrop-blur-sm'"
-        @click.self="$emit('audio-overlay-click')"
+        @click.self="$emit('audioOverlayClick')"
       >
         <AudioPreview
           v-if="audioPreviewFile && audioPlaylist.length > 0"
           :playlist="audioPlaylist"
           :initial-index="currentAudioIndex"
-          @close="$emit('close-audio')"
-          @compact-change="$emit('update:is-audio-compact', $event)"
+          @close="$emit('closeAudio')"
+          @compact-change="$emit('update:isAudioCompact', $event)"
         />
       </div>
     </Transition>
