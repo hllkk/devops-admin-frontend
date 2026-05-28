@@ -47,6 +47,8 @@ declare namespace Api {
       isFolder?: boolean;
       /** 文件夹路径 */
       folderPath?: string;
+      /** 快速指纹（首尾采样 MD5，用于秒传预检） */
+      quickHash?: string;
     };
 
     /** 秒传/断点检测响应 (匹配后端 CheckFileExistResponse) */
@@ -95,6 +97,16 @@ declare namespace Api {
       chunkHash?: string;
     };
 
+    /** 分块去重检查请求 */
+    type CheckChunksParams = {
+      chunks: { index: number; hash: string }[];
+    };
+
+    /** 分块去重检查响应 */
+    type CheckChunksResponse = {
+      existing: number[];
+    };
+
     /** 合并分片请求参数 (匹配后端 FileMergeRequest) */
     type MergeChunksParams = {
       /** 文件MD5标识 */
@@ -117,6 +129,8 @@ declare namespace Api {
       folder: string;
       /** 是否覆盖 */
       override?: boolean;
+      /** 上传会话ID (quickHash)，用于定位chunk目录 */
+      uploadId?: string;
     };
 
     /** 合并分片响应 */
@@ -152,6 +166,10 @@ declare namespace Api {
       relativePath?: string;
       /** 是否覆盖同名文件 */
       override?: boolean;
+      /** 快速指纹 (quickHash)，用于上传阶段的临时标识 */
+      quickHash?: string;
+      /** 各分片的 MD5 hash，按 chunkIndex 索引 */
+      chunkHashes?: string[];
     };
   }
 }

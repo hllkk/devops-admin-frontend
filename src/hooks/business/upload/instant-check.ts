@@ -1,4 +1,27 @@
 const HASH_CHUNK_SIZE = 2 * 1024 * 1024;
+const QUICK_SAMPLE_SIZE = 2 * 1024 * 1024;
+
+/** 采样快速指纹：MD5(首 2MB + fileSize LE + 尾 2MB)，任何文件 < 100ms */
+export async function computeQuickHash(file: File): Promise<string> {
+  const headBlob = file.slice(0, Math.min(QUICK_SAMPLE_SIZE, file.size));
+  const tailStart = Math.max(0, file.size - QUICK_SAMPLE_SIZE);
+  const tailBlob = file.size > QUICK_SAMPLE_SIZE ? file.slice(tailStart) : new Blob();
+
+  const [headBuf, tailBuf] = await Promise.all([headBlob.arrayBuffer(), tailBlob.arrayBuffer()]);
+
+  const sizeBuf = new ArrayBuffer(8);
+  new DataView(sizeBuf).setBigUint64(0, BigInt(file.size), true);
+
+  const combined = new Uint8Array(headBuf.byteLength + 8 + tailBuf.byteLength);
+  combined.set(new Uint8Array(headBuf), 0);
+  combined.set(new Uint8Array(sizeBuf), headBuf.byteLength);
+  combined.set(new Uint8Array(tailBuf), headBuf.byteLength + 8);
+
+  const { default: SparkMD5 } = await import('spark-md5');
+  const spark = new SparkMD5.ArrayBuffer();
+  spark.append(combined.buffer);
+  return spark.end();
+}
 
 /** 分片读取文件计算 MD5 hash（Web Worker 版本，不阻塞主线程） */
 export function computeFileHash(

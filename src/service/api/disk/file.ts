@@ -135,6 +135,15 @@ export function fetchUploadChunk(data: Api.Disk.ChunkUploadParams) {
   });
 }
 
+/** 批量检查分片是否已存在于服务端去重池 (POST /file-meta/check-chunks) */
+export function fetchCheckChunks(chunks: { index: number; hash: string }[]) {
+  return request<Api.Disk.CheckChunksResponse>({
+    url: '/file-meta/check-chunks',
+    method: 'post',
+    data: { chunks }
+  });
+}
+
 /** 合并分片 (POST /file-meta/merge) */
 export function fetchMergeChunks(data: Api.Disk.MergeChunksParams) {
   return request<boolean>({

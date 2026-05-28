@@ -204,14 +204,14 @@ function getStatusColor(status: Api.Disk.TransferItem['status']) {
     pending: '#999',
     hashing: '#f0a020',
     checking: '#f0a020',
-    uploading: 'var(--primary-color)',
-    transferring: 'var(--primary-color)',
-    merging: 'var(--primary-color)',
-    completed: 'var(--n-success-color)',
-    failed: 'var(--n-error-color)',
-    paused: '#f0a020'
+    uploading: 'rgb(var(--primary-color))',
+    transferring: 'rgb(var(--primary-color))',
+    merging: 'rgb(var(--primary-color))',
+    completed: 'rgb(var(--n-success-color))',
+    failed: 'rgb(var(--n-error-color))',
+    paused: '#999'
   };
-  return map[status] || 'var(--primary-color)';
+  return map[status] || 'rgb(var(--primary-color))';
 }
 
 function getStatusText(item: Api.Disk.TransferItem): string {
@@ -389,26 +389,26 @@ onMounted(() => {
     <Transition name="view-switch" mode="out-in">
       <div
         v-if="isVisible && viewMode === 'list'" key="list"
-        class="w-480px lt-sm:w-280px max-h-500px bg-[rgba(255,255,255,0.92)] dark:bg-[rgba(15,18,30,0.92)] border-1px border-solid border-[rgba(100,108,255,0.2)] rd-12px backdrop-blur-16px overflow-hidden"
+        class="w-560px lt-sm:w-340px max-h-600px bg-[rgba(255,255,255,0.92)] dark:bg-[rgba(15,18,30,0.92)] border-1px border-solid border-[rgba(100,108,255,0.2)] rd-12px backdrop-blur-16px overflow-hidden"
         :style="{ boxShadow: '0 6px 24px rgba(0,0,0,0.08), 0 0 1px rgba(100,108,255,0.3), inset 0 1px 0 rgba(255,255,255,0.3)' }"
       >
         <!-- Header -->
-        <div class="flex justify-between items-center px-12px py-10px border-b-1px border-b-solid border-[var(--primary-color)]/20">
-          <div class="flex items-center gap-6px text-12px font-500 dark:text-white/85 text-gray-800">
-            <span class="w-5px h-5px rd-full bg-[var(--primary-color)] shadow-[0_0_6px_var(--primary-color)]" />
+        <div class="flex justify-between items-center px-14px py-12px border-b-1px border-b-solid border-[var(--primary-color)]/20">
+          <div class="flex items-center gap-8px text-14px font-500 dark:text-white/85 text-gray-800">
+            <span class="w-6px h-6px rd-full bg-[var(--primary-color)] shadow-[0_0_6px_var(--primary-color)]" />
             <span>传输列表</span>
-            <span class="text-10px bg-[var(--primary-color)]/15 dark:text-[var(--primary-400)] text-[var(--primary-600)] px-6px rd-6px">{{ activeCount }}</span>
+            <span class="text-14px bg-[var(--primary-color)]/15 dark:text-[var(--primary-400)] text-[var(--primary-600)] px-6px rd-6px">{{ activeCount }}</span>
           </div>
-          <div class="flex gap-4px">
-            <button class="w-24px h-24px border-none rd-6px bg-transparent text-black/40 dark:text-white/50 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[rgba(100,108,255,0.15)] hover:text-[var(--primary-color)]" title="球体视图" @click="switchToSphere">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
+          <div class="flex gap-6px">
+            <button class="w-28px h-28px border-none rd-6px bg-transparent text-black/40 dark:text-white/50 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[rgba(100,108,255,0.15)] hover:text-[var(--primary-color)]" title="球体视图" @click="switchToSphere">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
                 <circle cx="12" cy="12" r="9" />
                 <ellipse cx="12" cy="12" rx="9" ry="4" />
                 <ellipse cx="12" cy="12" rx="4" ry="9" />
               </svg>
             </button>
-            <button class="w-24px h-24px border-none rd-6px bg-transparent text-black/40 dark:text-white/50 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[rgba(100,108,255,0.15)] hover:text-[var(--primary-color)]" @click="closePanel">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <button class="w-28px h-28px border-none rd-6px bg-transparent text-black/40 dark:text-white/50 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[rgba(100,108,255,0.15)] hover:text-[var(--primary-color)]" @click="closePanel">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
@@ -421,48 +421,48 @@ onMounted(() => {
           <!-- Folder groups -->
           <div v-for="[folderId, group] in folderGroups" :key="folderId" class="mb-4px rd-8px border-1px border-solid border-[rgba(100,108,255,0.1)] overflow-hidden dark:border-[rgba(100,108,255,0.15)]">
             <!-- Folder header -->
-            <div class="flex justify-between items-center p-8px-10px cursor-pointer transition-bg duration-200 hover:bg-[rgba(100,108,255,0.04)] dark:hover:bg-[rgba(100,108,255,0.08)]" @click="toggleFolder(folderId)">
-              <div class="flex items-center gap-6px overflow-hidden flex-1">
+            <div class="flex justify-between items-center p-10px-12px cursor-pointer transition-bg duration-200 hover:bg-[rgba(100,108,255,0.04)] dark:hover:bg-[rgba(100,108,255,0.08)]" @click="toggleFolder(folderId)">
+              <div class="flex items-center gap-8px overflow-hidden flex-1">
                 <svg
                   class="shrink-0 transition-transform duration-200"
                   :style="{ transform: expandedFolders.has(folderId) ? 'rotate(90deg)' : 'rotate(0deg)' }"
-                  viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"
+                  viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
                 >
                   <polyline points="9 6 15 12 9 18" />
                 </svg>
                 <FileIcon file-type="folder" size="small" />
-                <span class="text-12px dark:text-white/80 text-gray-700 whitespace-nowrap truncate">{{ group.name }}</span>
+                <span class="text-14px dark:text-white/80 text-gray-700 whitespace-nowrap truncate">{{ group.name }}</span>
               </div>
-              <div class="flex items-center gap-6px" @click.stop>
-                <span class="text-11px dark:text-white/40 text-gray-400">
+              <div class="flex items-center gap-8px" @click.stop>
+                <span class="text-13px dark:text-white/40 text-gray-400">
                   {{ group.items.filter(i => i.status === 'completed').length }}/{{ group.items.length }}
                 </span>
-                <span class="text-12px font-600 tabular-nums" :style="{ color: getStatusColor(getFolderStatus(group.items)) }">
+                <span class="text-14px font-600 tabular-nums" :style="{ color: getStatusColor(getFolderStatus(group.items)) }">
                   {{ getFolderProgress(group.items) }}%
                 </span>
                 <button
                   v-if="getFolderStatus(group.items) === 'transferring'"
-                  class="w-22px h-22px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
+                  class="w-28px h-28px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
                   title="暂停全部"
                   @click="pauseFolder(folderId)"
                 >
-                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
                     <line x1="10" y1="6" x2="10" y2="18" />
                     <line x1="14" y1="6" x2="14" y2="18" />
                   </svg>
                 </button>
                 <button
                   v-if="getFolderStatus(group.items) === 'paused'"
-                  class="w-22px h-22px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--primary-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
+                  class="w-28px h-28px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--primary-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
                   title="继续全部"
                   @click="resumeFolder(folderId)"
                 >
-                  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                     <polygon points="8,6 18,12 8,18" />
                   </svg>
                 </button>
-                <button class="w-22px h-22px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]" title="取消全部" @click="cancelFolder(folderId)">
-                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+                <button class="w-28px h-28px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]" title="取消全部" @click="cancelFolder(folderId)">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
                     <line x1="18" y1="6" x2="6" y2="18" />
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
@@ -470,63 +470,63 @@ onMounted(() => {
               </div>
             </div>
             <!-- Folder aggregate progress bar -->
-            <div class="h-4px rd-2px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px mb-2px">
+            <div class="h-6px rd-3px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px mb-2px">
               <div
-                class="h-full rd-2px transition-width duration-300"
+                class="h-full rd-3px transition-width duration-300"
                 :style="{ width: `${getFolderProgress(group.items)}%`, background: getStatusColor(getFolderStatus(group.items)) }"
               />
             </div>
             <!-- Expanded file list -->
             <div v-if="expandedFolders.has(folderId)" class="p-x-4px pb-4px border-t-1px border-t-solid border-t-[rgba(100,108,255,0.08)] dark:border-t-[rgba(100,108,255,0.12)]">
-              <div v-for="item in group.items" :key="item.transferId" class="p-6px mb-2px rd-6px transition-bg duration-200 hover:bg-[rgba(100,108,255,0.06)] dark:hover:bg-[rgba(100,108,255,0.1)]">
+              <div v-for="item in group.items" :key="item.transferId" class="p-8px mb-3px rd-8px transition-bg duration-200 hover:bg-[rgba(100,108,255,0.06)] dark:hover:bg-[rgba(100,108,255,0.1)]">
                 <div class="flex justify-between items-center mb-4px">
-                  <div class="flex items-center gap-6px overflow-hidden">
+                  <div class="flex items-center gap-8px overflow-hidden">
                     <FileIcon :file-type="getFileTypeCategory(item.fileType)" :extension="item.fileType" size="small" />
-                    <span class="text-11px dark:text-white/80 text-gray-700 whitespace-nowrap truncate max-w-180px">{{ item.fileName }}</span>
+                    <span class="text-13px dark:text-white/80 text-gray-700 whitespace-nowrap truncate max-w-300px">{{ item.fileName }}</span>
                   </div>
-                  <div class="flex items-center gap-4px">
-                    <span class="text-11px font-600 tabular-nums" :style="{ color: getStatusColor(item.status) }">
+                  <div class="flex items-center gap-6px">
+                    <span class="text-13px font-600 tabular-nums" :style="{ color: getStatusColor(item.status) }">
                       {{ isPreparingStatus(item.status) ? getStatusText(item) : item.status === 'failed' ? getStatusText(item) : `${item.progress}%` }}
                     </span>
                     <button
                       v-if="isActiveStatus(item.status)"
-                      class="w-22px h-22px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
+                      class="w-28px h-28px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
                       title="暂停"
                       @click="pause(item.transferId)"
                     >
-                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
                         <line x1="10" y1="6" x2="10" y2="18" />
                         <line x1="14" y1="6" x2="14" y2="18" />
                       </svg>
                     </button>
                     <button
                       v-if="item.status === 'paused'"
-                      class="w-22px h-22px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--primary-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
+                      class="w-28px h-28px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--primary-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
                       title="继续"
                       @click="resume(item.transferId)"
                     >
-                      <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                         <polygon points="8,6 18,12 8,18" />
                       </svg>
                     </button>
                     <button
                       v-if="item.status === 'failed'"
-                      class="w-22px h-22px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--n-warning-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
+                      class="w-28px h-28px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--n-warning-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
                       title="重试"
                       @click="retry(item.transferId)"
                     >
-                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
                         <polyline points="1,4 1,10 7,10" />
                         <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
                       </svg>
                     </button>
                     <button
                       v-if="item.status !== 'completed'"
-                      class="w-22px h-22px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
+                      class="w-28px h-28px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
                       title="取消"
                       @click="cancelTransfer(item.transferId)"
                     >
-                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
                         <line x1="18" y1="6" x2="6" y2="18" />
                         <line x1="6" y1="6" x2="18" y2="18" />
                       </svg>
@@ -534,31 +534,31 @@ onMounted(() => {
                   </div>
                 </div>
                 <!-- Preparing: indeterminate bar -->
-                <div v-if="isPreparingStatus(item.status)" class="h-4px rd-2px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px">
+                <div v-if="isPreparingStatus(item.status)" class="h-6px rd-3px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px">
                   <div class="h-full rd-2px w-30% progress-indeterminate" :style="{ background: getStatusColor(item.status) }" />
                 </div>
                 <!-- Uploading/merging: real progress -->
-                <div v-else class="h-4px rd-2px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px">
+                <div v-else class="h-6px rd-3px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px">
                   <div
-                    class="h-full rd-2px transition-width duration-300"
+                    class="h-full rd-3px transition-width duration-300"
                     :style="{ width: `${item.progress}%`, background: getStatusColor(item.status) }"
                   />
                 </div>
                 <!-- Progress info -->
-                <div v-if="!isPreparingStatus(item.status) && isActiveStatus(item.status)" class="flex justify-between items-center text-10px dark:text-white/35 text-gray-400 mt-3px tabular-nums mx-10px">
+                <div v-if="!isPreparingStatus(item.status) && isActiveStatus(item.status)" class="flex justify-between items-center text-14px dark:text-white/35 text-gray-400 mt-3px tabular-nums mx-10px">
                   <span>{{ formatFileSize(item.transferredSize) }} / {{ formatFileSize(item.totalSize) }}</span>
-                  <div class="flex items-center gap-4px">
+                  <div class="flex items-center gap-6px">
                     <span>{{ formatFileSize(item.speed) }}/s</span>
-                    <button class="text-9px text-[var(--primary-color)] opacity-60 hover:opacity-100 cursor-pointer bg-transparent border-none px-2px" @click.stop="toggleDetail(item.transferId)">
+                    <button class="text-11px text-[var(--primary-color)] opacity-60 hover:opacity-100 cursor-pointer bg-transparent border-none px-2px" @click.stop="toggleDetail(item.transferId)">
                       {{ expandedDetails.has(item.transferId) ? '收起' : '详情' }}
                     </button>
                   </div>
                 </div>
-                <div v-else-if="getStatusText(item)" class="text-10px mt-3px tabular-nums mx-10px">
+                <div v-else-if="getStatusText(item)" class="text-14px mt-3px tabular-nums mx-10px">
                   <span :style="{ color: getStatusColor(item.status) }">{{ getStatusText(item) }}</span>
                 </div>
                 <!-- Chunk detail -->
-                <div v-if="expandedDetails.has(item.transferId)" class="mt-4px mx-10px px-6px py-4px rd-4px bg-[rgba(100,108,255,0.04)] dark:bg-[rgba(100,108,255,0.08)] text-10px dark:text-white/40 text-gray-400 flex flex-col gap-2px tabular-nums">
+                <div v-if="expandedDetails.has(item.transferId)" class="mt-4px mx-10px px-6px py-4px rd-4px bg-[rgba(100,108,255,0.04)] dark:bg-[rgba(100,108,255,0.08)] text-14px dark:text-white/40 text-gray-400 flex flex-col gap-2px tabular-nums">
                   <div class="flex justify-between">
                     <span>文件大小</span>
                     <span>{{ formatFileSize(item.totalSize) }}</span>
@@ -581,24 +581,24 @@ onMounted(() => {
           </div>
 
           <!-- Ungrouped individual items -->
-          <div v-for="item in ungroupedItems" :key="item.transferId" class="p-8px-10px rd-6px mb-4px transition-bg duration-200 hover:bg-[rgba(100,108,255,0.06)] dark:hover:bg-[rgba(100,108,255,0.1)]">
+          <div v-for="item in ungroupedItems" :key="item.transferId" class="p-10px-12px rd-6px mb-4px transition-bg duration-200 hover:bg-[rgba(100,108,255,0.06)] dark:hover:bg-[rgba(100,108,255,0.1)]">
             <div class="flex justify-between items-center mb-4px">
-              <div class="flex items-center gap-6px overflow-hidden">
+              <div class="flex items-center gap-8px overflow-hidden">
                 <FileIcon :file-type="getFileTypeCategory(item.fileType)" :extension="item.fileType" size="small" />
-                <span class="text-12px dark:text-white/80 text-gray-700 whitespace-nowrap truncate max-w-200px">{{ item.fileName }}</span>
+                <span class="text-14px dark:text-white/80 text-gray-700 whitespace-nowrap truncate max-w-360px">{{ item.fileName }}</span>
               </div>
-              <div class="flex items-center gap-6px">
-                <span class="text-12px font-600 tabular-nums" :style="{ color: getStatusColor(item.status) }">
+              <div class="flex items-center gap-8px">
+                <span class="text-14px font-600 tabular-nums" :style="{ color: getStatusColor(item.status) }">
                   {{ item.status === 'failed' ? getStatusText(item) : `${item.progress}%` }}
                 </span>
                 <!-- Pause button: active statuses -->
                 <button
                   v-if="isActiveStatus(item.status)"
-                  class="w-22px h-22px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
+                  class="w-28px h-28px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
                   title="暂停"
                   @click="pause(item.transferId)"
                 >
-                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
                     <line x1="10" y1="6" x2="10" y2="18" />
                     <line x1="14" y1="6" x2="14" y2="18" />
                   </svg>
@@ -606,22 +606,22 @@ onMounted(() => {
                 <!-- Resume button: paused -->
                 <button
                   v-if="item.status === 'paused'"
-                  class="w-22px h-22px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--primary-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
+                  class="w-28px h-28px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--primary-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
                   title="继续"
                   @click="resume(item.transferId)"
                 >
-                  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                     <polygon points="8,6 18,12 8,18" />
                   </svg>
                 </button>
                 <!-- Retry button: failed -->
                 <button
                   v-if="item.status === 'failed'"
-                  class="w-22px h-22px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--n-warning-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
+                  class="w-28px h-28px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--n-warning-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
                   title="重试"
                   @click="retry(item.transferId)"
                 >
-                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
                     <polyline points="1,4 1,10 7,10" />
                     <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
                   </svg>
@@ -629,38 +629,38 @@ onMounted(() => {
                 <!-- Cancel button: all non-completed -->
                 <button
                   v-if="item.status !== 'completed'"
-                  class="w-22px h-22px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
+                  class="w-28px h-28px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
                   title="取消"
                   @click="cancelTransfer(item.transferId)"
                 >
-                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
                     <line x1="18" y1="6" x2="6" y2="18" />
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
               </div>
             </div>
-            <div class="h-4px rd-2px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px">
+            <div class="h-6px rd-3px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px">
               <div
-                class="h-full rd-2px transition-width duration-300"
+                class="h-full rd-3px transition-width duration-300"
                 :style="{ width: `${item.progress}%`, background: getStatusColor(item.status) }"
               />
             </div>
             <!-- Progress info -->
-            <div v-if="isActiveStatus(item.status)" class="flex justify-between items-center text-10px dark:text-white/35 text-gray-400 mt-3px tabular-nums">
+            <div v-if="isActiveStatus(item.status)" class="flex justify-between items-center text-14px dark:text-white/35 text-gray-400 mt-3px tabular-nums">
               <span>{{ formatFileSize(item.transferredSize) }} / {{ formatFileSize(item.totalSize) }}</span>
-              <div class="flex items-center gap-4px">
+              <div class="flex items-center gap-6px">
                 <span>{{ formatFileSize(item.speed) }}/s</span>
-                <button class="text-9px text-[var(--primary-color)] opacity-60 hover:opacity-100 cursor-pointer bg-transparent border-none px-2px" @click.stop="toggleDetail(item.transferId)">
+                <button class="text-11px text-[var(--primary-color)] opacity-60 hover:opacity-100 cursor-pointer bg-transparent border-none px-2px" @click.stop="toggleDetail(item.transferId)">
                   {{ expandedDetails.has(item.transferId) ? '收起' : '详情' }}
                 </button>
               </div>
             </div>
-            <div v-else-if="getStatusText(item)" class="text-10px mt-3px tabular-nums">
+            <div v-else-if="getStatusText(item)" class="text-14px mt-3px tabular-nums">
               <span :style="{ color: getStatusColor(item.status) }">{{ getStatusText(item) }}</span>
             </div>
             <!-- Chunk detail -->
-            <div v-if="expandedDetails.has(item.transferId)" class="mt-4px px-6px py-4px rd-4px bg-[rgba(100,108,255,0.04)] dark:bg-[rgba(100,108,255,0.08)] text-10px dark:text-white/40 text-gray-400 flex flex-col gap-2px tabular-nums">
+            <div v-if="expandedDetails.has(item.transferId)" class="mt-4px px-6px py-4px rd-4px bg-[rgba(100,108,255,0.04)] dark:bg-[rgba(100,108,255,0.08)] text-14px dark:text-white/40 text-gray-400 flex flex-col gap-2px tabular-nums">
               <div class="flex justify-between">
                 <span>文件大小</span>
                 <span>{{ formatFileSize(item.totalSize) }}</span>
@@ -680,27 +680,27 @@ onMounted(() => {
             </div>
           </div>
 
-          <div v-if="activeTransfers.length === 0" class="text-center text-12px dark:text-white/30 text-gray-400 py-20px">
+          <div v-if="activeTransfers.length === 0" class="text-center text-14px dark:text-white/30 text-gray-400 py-20px">
             暂无传输任务
           </div>
         </div>
 
         <!-- Bottom action bar -->
         <div v-if="activeTransfers.length > 1" class="flex justify-between items-center px-12px py-8px border-t-1px border-t-solid border-[var(--primary-color)]/10">
-          <span class="text-11px dark:text-white/40 text-gray-400">{{ activeCount }} 个任务</span>
+          <span class="text-13px dark:text-white/40 text-gray-400">{{ activeCount }} 个任务</span>
           <div class="flex gap-8px">
-            <button class="text-11px text-[var(--primary-color)] hover:underline" @click="pauseAll">全部暂停</button>
-            <button class="text-11px text-[var(--primary-color)] hover:underline" @click="resumeAll">全部继续</button>
+            <button class="text-13px text-[var(--primary-color)] hover:underline" @click="pauseAll">全部暂停</button>
+            <button class="text-13px text-[var(--primary-color)] hover:underline" @click="resumeAll">全部继续</button>
           </div>
         </div>
       </div>
 
       <div v-else-if="isVisible && viewMode === 'sphere'" key="sphere" class="flex flex-col items-center gap-8px">
         <!-- Control buttons -->
-        <div class="flex justify-end w-160px gap-4px lt-sm:w-130px">
+        <div class="flex justify-end w-160px gap-6px lt-sm:w-130px">
           <!-- PC端才显示列表视图切换按钮 -->
           <button v-if="!appStore.isMobile" class="action-btn dark:bg-[rgba(15,18,30,0.92)] bg-white/92 border-1px border-solid border-[var(--primary-color)]/20 backdrop-blur-12px" title="列表视图" @click="switchToList">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
               <line x1="8" y1="6" x2="21" y2="6" />
               <line x1="8" y1="12" x2="21" y2="12" />
               <line x1="8" y1="18" x2="21" y2="18" />
@@ -710,7 +710,7 @@ onMounted(() => {
             </svg>
           </button>
           <button class="action-btn dark:bg-[rgba(15,18,30,0.92)] bg-white/92 border-1px border-solid border-[var(--primary-color)]/20 backdrop-blur-12px" @click="closePanel">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -762,7 +762,7 @@ onMounted(() => {
                   <circle cx="12" cy="12" r="9" />
                   <path d="M8 12h8" />
                 </svg>
-                <span class="text-11px mt-6px opacity-50 dark:text-white/50 text-gray-500">暂无任务</span>
+                <span class="text-13px mt-6px opacity-50 dark:text-white/50 text-gray-500">暂无任务</span>
               </template>
 
               <!-- Completed state -->
@@ -796,7 +796,7 @@ onMounted(() => {
               <!-- Active transfer state -->
               <template v-else>
                 <span class="text-24px font-700 dark:text-white text-gray-800 tabular-nums lh-1 sphere-percent">{{ overallProgress }}%</span>
-                <span class="text-10px mt-12px tabular-nums opacity-80 dark:text-[var(--primary-400)] text-[var(--primary-600)]">{{ formatFileSize(totalSpeed) }}/s</span>
+                <span class="text-14px mt-12px tabular-nums opacity-80 dark:text-[var(--primary-400)] text-[var(--primary-600)]">{{ formatFileSize(totalSpeed) }}/s</span>
               </template>
             </div>
           </div>
@@ -812,9 +812,9 @@ onMounted(() => {
 
         <!-- Bottom info -->
         <div>
-          <span v-if="isEmpty" class="text-10px dark:text-white/30 text-gray-400 tracking-0.5px">暂无任务</span>
-          <span v-else-if="allCompleted" class="text-10px sphere-complete-text tracking-0.5px" style="color: var(--n-success-color)">全部完成</span>
-          <span v-else class="text-10px dark:text-white/40 text-gray-400 tracking-0.5px">{{ activeCount }} 个任务传输中</span>
+          <span v-if="isEmpty" class="text-14px dark:text-white/30 text-gray-400 tracking-0.5px">暂无任务</span>
+          <span v-else-if="allCompleted" class="text-14px sphere-complete-text tracking-0.5px" style="color: var(--n-success-color)">全部完成</span>
+          <span v-else class="text-14px dark:text-white/40 text-gray-400 tracking-0.5px">{{ activeCount }} 个任务传输中</span>
         </div>
       </div>
     </Transition>
@@ -823,7 +823,7 @@ onMounted(() => {
 
 <style scoped>
 .transfer-scroll {
-  max-height: 480px;
+  max-height: 560px;
   overflow-y: auto;
   padding: 6px 8px;
 }
