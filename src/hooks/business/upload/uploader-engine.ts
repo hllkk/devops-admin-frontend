@@ -314,9 +314,18 @@ export class UploaderEngine {
         // Quick resume check using quickHash as identifier
         const quickCheck = await this.checkPhaseWithHash(task, quickHash);
 
+        // Pre-compute totalChunks so progress display is accurate even for resume/merge paths
+        const chunkSize = await getChunkSize(task.fileSize);
+        task.totalChunks = getTotalChunks(task.fileSize, chunkSize);
+
         if (quickCheck.merge) {
           // All chunks already uploaded with this quickHash, merge directly
+          // Backend handles MD5 verification for hash-while-upload resume scenarios
           task.fileHash = quickHash;
+          if (quickCheck.resume && quickCheck.resume.length > 0) {
+            task.uploadedChunks = [...quickCheck.resume];
+          }
+          this.recalcChunkProgress(task);
           await this.mergePhase(task);
         } else {
           if (quickCheck.resume && quickCheck.resume.length > 0) {
