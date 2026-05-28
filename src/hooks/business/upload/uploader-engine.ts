@@ -339,8 +339,22 @@ export class UploaderEngine {
       this.syncToStore(task);
       this.finishTask(task.taskId);
     } catch (error: unknown) {
-      // Ignore abort errors from pause/cancel
+      // Ignore abort errors from cancel
       if (isCancel(error)) {
+        this.finishTask(task.taskId);
+        return;
+      }
+
+      // pause() sets status to 'paused' before abort propagates here
+      // Release the active slot without marking as failed so resume can re-queue
+      if (task.status === 'paused') {
+        this.finishTask(task.taskId);
+        return;
+      }
+
+      // cancel() removes from taskMap before abort propagates
+      if (!this.taskMap.has(task.taskId)) {
+        this.finishTask(task.taskId);
         return;
       }
 
@@ -359,17 +373,12 @@ export class UploaderEngine {
 
   private async hashPhase(task: Api.Disk.UploadTask): Promise<void> {
     task.status = 'hashing';
-    task.progress = 0;
     this.syncToStore(task);
 
     const abortController = new AbortController();
     task.abortController = abortController;
 
-    const fileHash = await computeFileHash(task.file, (progress: number) => {
-      if (abortController.signal.aborted) return;
-      task.progress = progress;
-      this.syncToStore(task);
-    });
+    const fileHash = await computeFileHash(task.file, undefined, abortController.signal);
 
     if (abortController.signal.aborted) {
       throw new Error('Aborted');
@@ -713,7 +722,7 @@ export class UploaderEngine {
       fileName: task.fileName,
       fileType: task.fileType,
       transferType: 'upload',
-      status: task.status === 'uploading' ? 'transferring' : task.status,
+      status: (task.status === 'uploading' || task.status === 'hashing' || task.status === 'checking') ? 'transferring' : task.status,
       progress: task.progress,
       transferredSize: task.transferredSize,
       totalSize: task.fileSize,

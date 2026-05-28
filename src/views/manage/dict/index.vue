@@ -342,7 +342,7 @@ const tableTitle = computed(() => {
 </script>
 
 <template>
-  <TableSiderLayout :sider-title="$t('page.system.dict.dictTypeTitle')">
+  <TableSiderLayout :sider-title="$t('page.system.dict.dictTypeTitle')" :default-expanded="true">
     <template #header-extra>
       <ButtonIcon
         v-if="hasAuth('system:dict:add')"

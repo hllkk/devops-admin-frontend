@@ -215,7 +215,7 @@ function handleResetSearch() {
 </script>
 
 <template>
-  <TableSiderLayout sider-title="部门列表">
+  <TableSiderLayout sider-title="部门列表" :default-expanded="true">
     <template #header-extra>
       <NButton size="small" text class="h-18px" @click.stop="() => handleResetTreeData()">
         <template #icon>
