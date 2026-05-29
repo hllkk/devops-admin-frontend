@@ -1,10 +1,10 @@
 import { isCancel } from 'axios';
 import type { AxiosError } from 'axios';
 import SparkMD5 from 'spark-md5';
-import { fetchCheckChunks, fetchCheckFile, fetchMergeChunks, fetchUploadChunk } from '@/service/api/disk/file';
+import { fetchCheckFile, fetchMergeChunks, fetchUploadChunk } from '@/service/api/disk/file';
 import { useDiskStore } from '@/store/modules/disk';
 import { useAuthStore } from '@/store/modules/auth';
-import { computeFileHash, computeQuickHash } from './instant-check';
+import { computeFileHash, computeQuickHash, computeStrongHash } from './instant-check';
 import { onSSEMessage } from '@/hooks/common/sse';
 import {
   getChunkSize,
@@ -319,9 +319,8 @@ export class UploaderEngine {
         task.totalChunks = getTotalChunks(task.fileSize, chunkSize);
 
         if (quickCheck.merge) {
-          // All chunks already uploaded with this quickHash, merge directly
-          // Backend handles MD5 verification for hash-while-upload resume scenarios
-          task.fileHash = quickHash;
+          // 分片已存在，跳过上传直接合并。identifier 置空，由后端自行计算完整 MD5
+          task.fileHash = '';
           if (quickCheck.resume && quickCheck.resume.length > 0) {
             task.uploadedChunks = [...quickCheck.resume];
           }
@@ -332,28 +331,19 @@ export class UploaderEngine {
             task.uploadedChunks = [...quickCheck.resume];
             this.recalcChunkProgress(task);
           }
-          // Upload with quickHash as temporary identifier; fileHash computed incrementally
+          // Upload with quickHash as temporary identifier; backend computes full MD5 during merge
           await this.uploadChunkedPhase(task);
-          // Now fileHash is fully computed, do full check for potential 秒传
-          if (task.fileHash !== quickHash) {
-            const fullCheck = await this.checkPhaseWithHash(task, task.fileHash);
-            if (fullCheck.pass && fullCheck.exist) {
-              task.status = 'completed';
-              task.progress = 100;
-              task.transferredSize = task.fileSize;
-              this.syncToStore(task);
-              this.finishTask(task.taskId);
-              return;
-            }
-          }
+          // Set fileHash to empty so mergePhase sends empty identifier — backend will compute actual MD5
+          task.fileHash = '';
           await this.mergePhase(task);
         }
       } else {
-        // Small files: keep existing full-hash-then-upload flow
-        await this.hashPhase(task);
+        // Small files: skip full MD5, use quickHash as identifier
+        // Backend will compute actual MD5 server-side
+        task.fileHash = task.quickHash!;
 
         // Phase 2: Check (instant upload / resume)
-        const checkResult = await this.checkPhase(task);
+        const checkResult = await this.checkPhaseWithHash(task, task.quickHash!);
 
         if (checkResult.pass && checkResult.exist) {
           // File already exists on server (instant upload / 秒传)
@@ -417,12 +407,20 @@ export class UploaderEngine {
       const quickHash = await computeQuickHash(task.file);
       task.quickHash = quickHash;
 
+      // strongHash 失败不影响主流程（crypto.subtle 在非 HTTPS 环境可能不可用）
+      try {
+        task.strongHash = await computeStrongHash(task.file);
+      } catch {
+        // strongHash 可选，跳过
+      }
+
       const userId = getUserId();
       const currentDirectory = getCurrentDirectory();
 
       const { data } = await fetchCheckFile({
         identifier: quickHash,
         quickHash,
+        strongHash: task.strongHash,
         fileName: task.fileName,
         totalSize: task.fileSize,
         totalChunks: 1,
@@ -473,6 +471,8 @@ export class UploaderEngine {
 
     const { data, error } = await fetchCheckFile({
       identifier: task.fileHash,
+      quickHash: task.quickHash,
+      strongHash: task.strongHash,
       fileName: task.fileName,
       totalSize: task.fileSize,
       totalChunks: needsChunking(task.fileSize) ? getTotalChunks(task.fileSize, await getChunkSize(task.fileSize)) : 1,
@@ -498,6 +498,8 @@ export class UploaderEngine {
 
     const { data, error } = await fetchCheckFile({
       identifier: hash,
+      quickHash: task.quickHash,
+      strongHash: task.strongHash,
       fileName: task.fileName,
       totalSize: task.fileSize,
       totalChunks: needsChunking(task.fileSize) ? getTotalChunks(task.fileSize, await getChunkSize(task.fileSize)) : 1,
@@ -544,7 +546,8 @@ export class UploaderEngine {
       userId,
       currentDirectory,
       isFolder: !!task.folderId,
-      folderPath: task.folderName
+      folderPath: task.folderName,
+      strongHash: task.strongHash
     });
 
     if (abortController.signal.aborted) {
@@ -572,8 +575,6 @@ export class UploaderEngine {
     const chunkSize = await getChunkSize(task.fileSize);
     task.totalChunks = getTotalChunks(task.fileSize, chunkSize);
 
-    // Create incremental file-level MD5 hasher (hash-while-upload)
-    const fileSpark = new SparkMD5.ArrayBuffer();
     task.chunkHashes = Array.from({ length: task.totalChunks }).fill('') as string[];
 
     this.initSpeedTracker(task.taskId);
@@ -586,45 +587,10 @@ export class UploaderEngine {
       }
     }
 
-    // Chunk-level dedup: sample first 20 chunks for quick dedup check
-    // (full pre-check would require reading all chunks upfront, defeating hash-while-upload)
-    if (pendingChunks.length > 0) {
-      const sampleSize = Math.min(20, pendingChunks.length);
-      const sampleChunks = pendingChunks.slice(0, sampleSize);
-      const chunkHashEntries: { index: number; hash: string }[] = [];
-
-      for (const i of sampleChunks) {
-        const chunk = sliceChunk(task.file, i, chunkSize);
-        const buf = await chunk.arrayBuffer();
-        const chunkSpark = new SparkMD5.ArrayBuffer();
-        chunkSpark.append(buf);
-        const hash = chunkSpark.end();
-        task.chunkHashes![i] = hash;
-        chunkHashEntries.push({ index: i, hash });
-      }
-
-      const { data } = await fetchCheckChunks(chunkHashEntries);
-      if (data?.existing && data.existing.length > 0) {
-        for (const idx of data.existing) {
-          const pos = pendingChunks.indexOf(idx);
-          if (pos !== -1) {
-            pendingChunks.splice(pos, 1);
-          }
-          task.uploadedChunks = [...task.uploadedChunks, idx];
-        }
-        this.recalcChunkProgress(task);
-        this.syncToStore(task);
-      }
-    }
-
-    // Set uploading status AFTER dedup check, so progress bar shows real progress from the start
     task.status = 'uploading';
     this.syncToStore(task);
 
-    await this.uploadChunksWithConcurrency(task, pendingChunks, chunkSize, abortController.signal, fileSpark);
-
-    // Finalize file MD5 from incremental hasher
-    task.fileHash = fileSpark.end();
+    await this.uploadChunksWithConcurrency(task, pendingChunks, chunkSize, abortController.signal);
   }
 
   /** Upload pending chunks with bounded concurrency */
@@ -632,8 +598,7 @@ export class UploaderEngine {
     task: Api.Disk.UploadTask,
     chunkIndices: number[],
     chunkSize: number,
-    signal: AbortSignal,
-    fileSpark: SparkMD5.ArrayBuffer
+    signal: AbortSignal
   ): Promise<void> {
     const executing: Promise<void>[] = [];
     let idx = 0;
@@ -646,7 +611,7 @@ export class UploaderEngine {
         idx += 1;
         const chunkIndex = chunkIndices[currentIndex];
 
-        await this.uploadSingleChunk(task, chunkIndex, chunkSize, signal, fileSpark);
+        await this.uploadSingleChunk(task, chunkIndex, chunkSize, signal);
       }
     };
 
@@ -667,8 +632,7 @@ export class UploaderEngine {
     task: Api.Disk.UploadTask,
     chunkIndex: number,
     chunkSize: number,
-    signal: AbortSignal,
-    fileSpark?: SparkMD5.ArrayBuffer
+    signal: AbortSignal
   ): Promise<void> {
     let lastError: Error | undefined;
 
@@ -681,11 +645,6 @@ export class UploaderEngine {
 
         // 计算单个分片的 MD5，用于服务端写入后校验
         const chunkArrayBuffer = await chunk.arrayBuffer();
-
-        // Feed into file-level MD5 (hash-while-upload)
-        if (fileSpark) {
-          fileSpark.append(chunkArrayBuffer);
-        }
 
         const chunkSpark = new SparkMD5.ArrayBuffer();
         chunkSpark.append(chunkArrayBuffer);
@@ -716,7 +675,8 @@ export class UploaderEngine {
           currentDirectory,
           isFolder: !!task.folderId,
           folderPath: task.folderName,
-          chunkHash
+          chunkHash,
+          strongHash: task.strongHash
         });
 
         if (error) {
@@ -756,11 +716,11 @@ export class UploaderEngine {
     task.status = 'merging';
     this.syncToStore(task);
 
-    // 监听后端 SSE 合并进度 — 后端使用 identifier（完整 MD5）发送进度
-    const sseMatchId = task.fileHash;
+    // 监听后端 SSE 合并进度 — 后端使用 identifier 或 uploadId 发送进度
+    const sseMatchId = task.fileHash || task.quickHash;
     const offSSE = onSSEMessage('merge_progress', msg => {
       const data = msg.data as { identifier?: string; progress?: number; phase?: string } | undefined;
-      if (data?.identifier === sseMatchId && typeof data.progress === 'number') {
+      if (data && data.identifier === sseMatchId && typeof data.progress === 'number') {
         task.progress = data.progress;
         this.syncToStore(task);
       }
@@ -784,7 +744,8 @@ export class UploaderEngine {
           isFolder: !!task.folderId,
           folder: task.folderName || '',
           override: task.override ?? false,
-          uploadId: task.quickHash
+          uploadId: task.quickHash,
+          strongHash: task.strongHash
         });
 
         if (error) {

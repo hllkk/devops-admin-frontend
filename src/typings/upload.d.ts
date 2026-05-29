@@ -49,6 +49,8 @@ declare namespace Api {
       folderPath?: string;
       /** 快速指纹（首尾采样 MD5，用于秒传预检） */
       quickHash?: string;
+      /** SHA-256 强指纹（与 quickHash 配合消除碰撞风险） */
+      strongHash?: string;
     };
 
     /** 秒传/断点检测响应 (匹配后端 CheckFileExistResponse) */
@@ -95,6 +97,8 @@ declare namespace Api {
       folderPath?: string;
       /** 单个分片的 MD5，用于写入后校验 */
       chunkHash?: string;
+      /** SHA-256 强指纹 */
+      strongHash?: string;
     };
 
     /** 分块去重检查请求 */
@@ -131,6 +135,8 @@ declare namespace Api {
       override?: boolean;
       /** 上传会话ID (quickHash)，用于定位chunk目录 */
       uploadId?: string;
+      /** SHA-256 强指纹 */
+      strongHash?: string;
     };
 
     /** 合并分片响应 */
@@ -168,6 +174,8 @@ declare namespace Api {
       override?: boolean;
       /** 快速指纹 (quickHash)，用于上传阶段的临时标识 */
       quickHash?: string;
+      /** SHA-256 强指纹 */
+      strongHash?: string;
       /** 各分片的 MD5 hash，按 chunkIndex 索引 */
       chunkHashes?: string[];
     };

@@ -23,6 +23,27 @@ export async function computeQuickHash(file: File): Promise<string> {
   return spark.end();
 }
 
+/** SHA-256 强指纹：对同采样数据计算 SHA-256，与 quickHash 配合消除碰撞风险 */
+export async function computeStrongHash(file: File): Promise<string> {
+  const headBlob = file.slice(0, Math.min(QUICK_SAMPLE_SIZE, file.size));
+  const tailStart = Math.max(0, file.size - QUICK_SAMPLE_SIZE);
+  const tailBlob = file.size > QUICK_SAMPLE_SIZE ? file.slice(tailStart) : new Blob();
+
+  const [headBuf, tailBuf] = await Promise.all([headBlob.arrayBuffer(), tailBlob.arrayBuffer()]);
+
+  const sizeBuf = new ArrayBuffer(8);
+  new DataView(sizeBuf).setBigUint64(0, BigInt(file.size), true);
+
+  const combined = new Uint8Array(headBuf.byteLength + 8 + tailBuf.byteLength);
+  combined.set(new Uint8Array(headBuf), 0);
+  combined.set(new Uint8Array(sizeBuf), headBuf.byteLength);
+  combined.set(new Uint8Array(tailBuf), headBuf.byteLength + 8);
+
+  const hashBuffer = await crypto.subtle.digest('SHA-256', combined);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 /** 分片读取文件计算 MD5 hash（Web Worker 版本，不阻塞主线程） */
 export function computeFileHash(
   file: File,

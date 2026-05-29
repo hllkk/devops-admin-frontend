@@ -123,6 +123,7 @@ export function fetchUploadChunk(data: Api.Disk.ChunkUploadParams) {
   if (data.isFolder) formData.append('isFolder', 'true');
   if (data.folderPath) formData.append('folderPath', data.folderPath);
   if (data.chunkHash) formData.append('chunkHash', data.chunkHash);
+  if (data.strongHash) formData.append('strongHash', data.strongHash);
 
   return request<{ pass: boolean; upload: boolean; merge: boolean }>({
     url: '/file-meta/upload',
