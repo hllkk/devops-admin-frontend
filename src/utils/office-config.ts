@@ -113,50 +113,17 @@ export function getOfficeCallbackUrl(
 }
 
 /**
- * 获取文档预览 URL
- * @param userId 用户ID (数字)
- * @param filePath 文件路径 (如 "/Ai 给出的逻辑")
- * @param fileName 文件名 (如 "角色_1774948863323.xlsx")
- * @param token 用户 token
+ * 获取文档预览 URL（通过文件ID，由后端解析实际存储路径）
+ * @param fileId 文件ID
  * @param baseUrl API 基础 URL (如 http://172.21.10.40:8888/api/v1)
  * @returns 预览 URL
  */
 export function getOfficePreviewUrl(
-  userId: CommonType.IdType,
-  filePath: string,
-  fileName: string,
-  token?: string,
+  fileId: CommonType.IdType,
   baseUrl?: string
 ): string {
   const apiBase = baseUrl || DEFAULT_CALLBACK_SERVER;
-
-  // 规范化路径：确保以 / 开头，去掉末尾的 /
-  let normalizedPath = filePath;
-  if (!normalizedPath.startsWith('/')) {
-    normalizedPath = '/' + normalizedPath;
-  }
-  normalizedPath = normalizedPath.replace(/\/+$/, '');
-
-  // 编码路径（保留 / 作为分隔符）
-  const encodedPath = normalizedPath
-    .split('/')
-    .map(part => encodeURIComponent(part))
-    .join('/');
-
-  // 编码文件名
-  const encodedName = encodeURIComponent(fileName);
-
-  // 完整路径: /{userId}/{path}/{filename}
-  // 例如: /424818778103877/Ai%20给出的逻辑/角色_1774948863323.xlsx
-  const fullPath = `${userId}${encodedPath}/${encodedName}`;
-
-  let url = `${apiBase}/file/${fullPath}`;
-
-  if (token) {
-    url += `?token=${token}`;
-  }
-
-  return url;
+  return `${apiBase}/office/file/${fileId}`;
 }
 
 /**

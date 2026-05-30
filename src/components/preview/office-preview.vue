@@ -159,13 +159,19 @@ function buildEditorConfig(): EditorConfig {
     );
   } else {
     docUrl = getOfficePreviewUrl(
-      userInfo.value.userId,
-      file.path,
-      file.name,
-      undefined,
+      file.id,
       callbackBaseUrl
     );
   }
+
+
+
+
+
+
+
+
+
 
   // 回调 URL
   let callbackUrl: string | null = null;
