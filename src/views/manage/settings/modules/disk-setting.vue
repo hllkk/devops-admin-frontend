@@ -128,10 +128,32 @@ async function testConnection() {
             <NSwitch v-model:value="configModel.onlyOfficeEnabled" />
           </NFormItem>
           <NFormItem label="OnlyOffice地址" path="onlyOfficeUrl">
-            <NInput v-model:value="configModel.onlyOfficeUrl" placeholder="如: http://192.168.1.100:8080/office" class="max-w-400px" />
+            <NInput v-model:value="configModel.onlyOfficeUrl" placeholder="如: /office 或 https://domain.com/office" class="max-w-400px" />
+            <template #label>
+              <NTooltip trigger="hover">
+                <template #trigger>
+                  <span class="flex items-center gap-4px">
+                    OnlyOffice地址
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+                  </span>
+                </template>
+                Document Server 的浏览器访问地址。开发环境填写 nginx 代理地址（如 https://j.chinargb.com.cn:3000/office），生产环境填写 nginx 代理路径（如 /office 或 http://域名/office）
+              </NTooltip>
+            </template>
           </NFormItem>
           <NFormItem label="Secret密钥" path="onlyOfficeSecret">
             <NInput v-model:value="configModel.onlyOfficeSecret" type="password" placeholder="与OnlyOffice容器JWT_SECRET一致" class="max-w-400px" />
+            <template #label>
+              <NTooltip trigger="hover">
+                <template #trigger>
+                  <span class="flex items-center gap-4px">
+                    Secret密钥
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+                  </span>
+                </template>
+                与 Document Server 容器的 JWT_SECRET 环境变量保持一致。留空则不使用 JWT 签名。
+              </NTooltip>
+            </template>
           </NFormItem>
           <NFormItem label="回调地址" path="onlyOfficeCallbackUrl">
             <NInput v-model:value="configModel.onlyOfficeCallbackUrl" placeholder="如: http://192.168.1.100:3000/api (OnlyOffice容器可访问的后端地址)" class="max-w-400px" />
