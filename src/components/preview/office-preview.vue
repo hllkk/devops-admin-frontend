@@ -170,7 +170,7 @@ function buildEditorConfig(): EditorConfig {
   // 回调 URL
   let callbackUrl: string | null = null;
   if (!props.readOnly) {
-    callbackUrl = getOfficeCallbackUrl(callbackBaseUrl, undefined, username, file.id);
+    callbackUrl = getOfficeCallbackUrl(callbackBaseUrl, file.id);
   }
 
 

@@ -97,22 +97,16 @@ export function getOfficeCallbackBaseUrl(callbackServer?: string): string {
 /**
  * 获取 Office 回调 URL
  * @param callbackServer 回调服务器地址 (如 http://172.21.10.40:8888/api/v1)
- * @param token 用户 token
- * @param username 用户名
  * @param fileId 文件 ID
  * @returns 回调 URL
  */
 export function getOfficeCallbackUrl(
   callbackServer?: string,
-  token?: string,
-  username?: string,
   fileId?: CommonType.IdType
 ): string {
   const baseUrl = getOfficeCallbackBaseUrl(callbackServer);
   const params = new URLSearchParams();
 
-  if (token) params.set('token', token);
-  if (username) params.set('name', username);
   if (fileId) params.set('fileId', String(fileId));
 
   return `${baseUrl}/office/callback?${params.toString()}`;
