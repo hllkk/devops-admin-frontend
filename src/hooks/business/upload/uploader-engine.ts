@@ -547,7 +547,8 @@ export class UploaderEngine {
       currentDirectory,
       isFolder: !!task.folderId,
       folderPath: task.folderName,
-      strongHash: task.strongHash
+      strongHash: task.strongHash,
+      quickHash: task.quickHash
     });
 
     if (abortController.signal.aborted) {
@@ -676,7 +677,8 @@ export class UploaderEngine {
           isFolder: !!task.folderId,
           folderPath: task.folderName,
           chunkHash,
-          strongHash: task.strongHash
+          strongHash: task.strongHash,
+          quickHash: task.quickHash
         });
 
         if (error) {

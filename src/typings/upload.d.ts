@@ -99,6 +99,8 @@ declare namespace Api {
       chunkHash?: string;
       /** SHA-256 强指纹 */
       strongHash?: string;
+      /** 快速指纹（首尾采样 MD5） */
+      quickHash?: string;
     };
 
     /** 分块去重检查请求 */
