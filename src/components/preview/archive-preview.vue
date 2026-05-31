@@ -1,7 +1,7 @@
 <script setup lang="tsx">
 import { ref, watch, h } from 'vue';
 import type { TreeOption } from 'naive-ui';
-import { fetchListArchive, fetchListSubArchive } from '@/service/api/disk/archive';
+import { fetchListArchive } from '@/service/api/disk/archive';
 import type { ArchiveEntry } from '@/service/api/disk/archive';
 import FileIcon from '@/views/disk/modules/file-icon.vue';
 
@@ -35,17 +35,29 @@ function sortEntries(entries: ArchiveEntry[]) {
     if (a.isFolder !== b.isFolder) return a.isFolder ? -1 : 1;
     return a.name.localeCompare(b.name);
   });
+  // 递归排序子节点
+  for (const entry of entries) {
+    if (entry.children && entry.children.length > 0) {
+      sortEntries(entry.children);
+    }
+  }
 }
 
 function buildTreeNode(entry: ArchiveEntry): TreeOption {
   sizeMap.set(entry.path, entry.size);
   suffixMap.set(entry.path, entry.suffix || '');
-  return {
+
+  const node: TreeOption = {
     key: entry.path,
     label: entry.name,
-    isLeaf: !entry.isFolder,
-    children: entry.isFolder ? undefined : undefined
+    isLeaf: !entry.isFolder
   };
+
+  if (entry.isFolder && entry.children && entry.children.length > 0) {
+    node.children = entry.children.map(child => buildTreeNode(child));
+  }
+
+  return node;
 }
 
 async function loadData() {
@@ -67,14 +79,6 @@ async function loadData() {
   } finally {
     loading.value = false;
   }
-}
-
-async function handleLoad(node: TreeOption) {
-  const res = await fetchListSubArchive(String(props.fileId), node.key as string);
-  const data = (res as any).data || res;
-  const entries: ArchiveEntry[] = Array.isArray(data) ? data : [];
-  sortEntries(entries);
-  return entries.map(buildTreeNode);
 }
 
 function mapSuffixToFileType(suffix: string): string {
@@ -159,7 +163,6 @@ watch(() => props.visible, val => {
         :virtual-scroll="true"
         style="max-height: 50vh"
         block-line
-        :on-load="handleLoad"
         key-field="key"
         label-field="label"
         children-field="children"
