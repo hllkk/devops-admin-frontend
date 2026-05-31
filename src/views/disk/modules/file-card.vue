@@ -463,7 +463,6 @@ function handleMoreSelect(key: string) {
 .file-hover-pop {
   background: rgba(255, 255, 255, 0.55);
   backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.3);
 
   :root.dark & {

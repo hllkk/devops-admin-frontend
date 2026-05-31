@@ -202,7 +202,6 @@ function handleSelect(key: string) {
 .n-dropdown-menu.disk-ctx-glass {
   background: rgba(255, 255, 255, 0.55) !important;
   backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 10px;
 }

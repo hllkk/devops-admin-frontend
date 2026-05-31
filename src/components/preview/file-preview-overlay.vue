@@ -414,6 +414,7 @@ onUnmounted(() => {
 
       <!-- Close button -->
       <div
+        v-if="previewCategory !== 'office'"
         class="absolute top-0 right-0 z-2003 flex-center p-8px"
       >
         <NButton

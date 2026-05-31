@@ -25,7 +25,7 @@ export default defineConfig(configEnv => {
           api: 'modern-compiler',
           additionalData: `@use "@/styles/scss/global.scss" as *;`
         }
-      }
+      },
     },
     plugins: setupVitePlugins(viteEnv, buildTime),
     define: {
