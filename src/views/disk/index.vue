@@ -22,6 +22,8 @@ import MoveCopyDialog from './modules/move-copy-dialog.vue';
 import ShareDialog from './modules/share-dialog.vue';
 import ShareResultDialog from './modules/share-result-dialog.vue';
 import FileDetailModal from './modules/file-detail-modal.vue';
+import ArchiveActionDialog from '@/components/disk/archive-action-dialog.vue';
+import ArchivePreview from '@/components/preview/archive-preview.vue';
 
 defineOptions({
   name: 'DiskPage'
@@ -716,6 +718,18 @@ onMounted(async () => {
       @audio-overlay-click="preview.handleAudioOverlayClick"
       @update:is-audio-compact="preview.isAudioCompact = $event"
       @update:preview-visible="preview.previewVisible = $event"
+    />
+    <ArchiveActionDialog
+      v-model:visible="preview.showArchiveAction"
+      :file-name="preview.archiveFile?.fileName || preview.archiveFile?.name || ''"
+      @preview="preview.showArchivePreview = true; preview.showArchiveAction = false"
+      @extract-here="preview.showArchiveAction = false"
+      @extract-to="preview.showArchiveAction = false"
+    />
+    <ArchivePreview
+      v-model:visible="preview.showArchivePreview"
+      :file-id="preview.archiveFile?.fileId || ''"
+      :file-name="preview.archiveFile?.fileName || preview.archiveFile?.name || ''"
     />
   </TableSiderLayout>
 </template>

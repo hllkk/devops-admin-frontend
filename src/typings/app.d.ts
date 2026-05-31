@@ -1274,6 +1274,12 @@ declare namespace App {
             reload: string;
             addFavorite: string;
             removeFavorite: string;
+            previewArchive: string;
+            extractHere: string;
+            extractTo: string;
+            extracting: string;
+            extractSuccess: string;
+            extractFailed: string;
           };
           form: {
             folderName: FormMsg;

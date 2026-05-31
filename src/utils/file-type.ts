@@ -1,5 +1,5 @@
 /** 文件预览分类 */
-export type PreviewCategory = 'image' | 'pdf' | 'video' | 'audio' | 'office' | 'code' | 'markdown' | 'unknown';
+export type PreviewCategory = 'image' | 'pdf' | 'video' | 'audio' | 'office' | 'code' | 'markdown' | 'archive' | 'unknown';
 
 /** Office 文档子类型 */
 export type OfficeType = 'word' | 'excel' | 'ppt';
@@ -13,6 +13,8 @@ const VIDEO_EXTS = ['mp4', 'webm', 'ogg', 'ogv', 'flv', 'avi', 'mkv', 'mov', 'wm
 const AUDIO_EXTS = ['mp3', 'wav', 'flac', 'aac', 'ogg', 'oga', 'm4a', 'wma', 'ape', 'opus'];
 
 const MARKDOWN_EXTS = ['md', 'markdown'];
+
+const ARCHIVE_EXTS = ['zip', 'rar', '7z', 'tar', 'gz', 'tgz', 'bz2', 'tbz2', 'xz', 'txz', 'jar', 'iso', 'cab', 'ar', 'lzh', 'lz4'];
 
 const OFFICE_EXTS: Record<OfficeType, string[]> = {
   word: ['doc', 'docx'],
@@ -42,6 +44,7 @@ export function getPreviewCategory(filename: string): PreviewCategory {
   if (getAllOfficeExts().includes(lower)) return 'office';
   if (MARKDOWN_EXTS.includes(lower)) return 'markdown';
   if (CODE_EXTS.includes(lower)) return 'code';
+  if (ARCHIVE_EXTS.includes(lower)) return 'archive';
 
   return 'unknown';
 }

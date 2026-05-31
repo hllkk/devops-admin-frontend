@@ -29,6 +29,10 @@ export function useFilePreview(options: UseFilePreviewOptions) {
   const previewVisible = ref(false);
   const previewFile = ref<Api.Disk.PreviewFileInfo | null>(null);
 
+  const archiveFile = ref<Api.Disk.FileItem | null>(null);
+  const showArchiveAction = ref(false);
+  const showArchivePreview = ref(false);
+
   // --- Computed ---
   const audioPlaylist = computed(() => {
     const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
@@ -165,6 +169,10 @@ export function useFilePreview(options: UseFilePreviewOptions) {
       case 'markdown':
         openTextPreview(file);
         break;
+      case 'archive':
+        archiveFile.value = file;
+        showArchiveAction.value = true;
+        break;
       default:
         window.$notification?.warning({ content: $t('page.disk.sharedWithMe.previewNotSupported'), duration: 3000 });
     }
@@ -194,6 +202,9 @@ export function useFilePreview(options: UseFilePreviewOptions) {
     openFolderImagePreview,
     openOfficePdfPreview,
     openTextPreview,
-    previewByCategory
+    previewByCategory,
+    archiveFile,
+    showArchiveAction,
+    showArchivePreview
   };
 }

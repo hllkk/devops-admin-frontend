@@ -1488,7 +1488,13 @@ const local: App.I18n.Schema = {
         refresh: 'Refresh',
         reload: 'Reload Page',
         addFavorite: 'Add to Favorites',
-        removeFavorite: 'Remove from Favorites'
+        removeFavorite: 'Remove from Favorites',
+        previewArchive: 'Preview Archive',
+        extractHere: 'Extract Here',
+        extractTo: 'Extract to...',
+        extracting: 'Extracting...',
+        extractSuccess: 'Extraction successful',
+        extractFailed: 'Extraction failed'
       },
       form: {
         folderName: {
