@@ -1,9 +1,9 @@
 <script setup lang="tsx">
-import { ref, watch } from 'vue';
+import { ref, watch, h } from 'vue';
 import type { TreeOption } from 'naive-ui';
 import { fetchListArchive, fetchListSubArchive } from '@/service/api/disk/archive';
 import type { ArchiveEntry } from '@/service/api/disk/archive';
-import { useSvgIcon } from '@/hooks/common/icon';
+import FileIcon from '@/views/disk/modules/file-icon.vue';
 
 defineOptions({
   name: 'ArchivePreview'
@@ -21,8 +21,6 @@ const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void;
 }>();
 
-const { SvgIconVNode } = useSvgIcon();
-
 const treeData = ref<TreeOption[]>([]);
 const loading = ref(false);
 const isEmpty = ref(false);
@@ -30,9 +28,11 @@ const hasError = ref(false);
 const errorMsg = ref('');
 
 const sizeMap = new Map<string, number>();
+const suffixMap = new Map<string, string>();
 
 function buildTreeNode(entry: ArchiveEntry): TreeOption {
   sizeMap.set(entry.path, entry.size);
+  suffixMap.set(entry.path, entry.suffix || '');
   return {
     key: entry.path,
     label: entry.name,
@@ -68,15 +68,31 @@ async function handleLoad(node: TreeOption) {
   return entries.map(buildTreeNode);
 }
 
+function mapSuffixToFileType(suffix: string): string {
+  if (!suffix) return 'other';
+  const ext = suffix.toLowerCase().replace(/^\./, '');
+  const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'];
+  const videoExts = ['mp4', 'avi', 'mov', 'mkv', 'wmv', 'flv'];
+  const audioExts = ['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma', 'ape'];
+  const docExts = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'txt', 'md', 'log'];
+  if (imageExts.includes(ext)) return 'image';
+  if (videoExts.includes(ext)) return 'video';
+  if (audioExts.includes(ext)) return 'audio';
+  if (docExts.includes(ext)) return 'document';
+  return 'other';
+}
+
 function renderLabel({ option }: { option: TreeOption }) {
   const isFolder = !option.isLeaf;
-  const iconName = isFolder ? 'mdi:folder-outline' : 'mdi:file-outline';
-  const fileSize = sizeMap.get(option.key as string);
+  const key = option.key as string;
+  const fileSize = sizeMap.get(key);
+  const suffix = suffixMap.get(key) || '';
+  const fileType = isFolder ? 'folder' : mapSuffixToFileType(suffix);
 
   return (
     <div class="flex items-center gap-2 py-1 w-full min-w-0">
-      <div class="flex-shrink-0 w-5 h-5 flex items-center justify-center">
-        {SvgIconVNode({ icon: iconName, fontSize: 18 })}
+      <div class="flex-shrink-0">
+        {h(FileIcon, { fileType, extension: suffix, size: 'small' })}
       </div>
       <span class="flex-1 truncate text-14px">{option.label}</span>
       {!isFolder && fileSize !== undefined && fileSize > 0 && (
@@ -93,6 +109,7 @@ function renderLabel({ option }: { option: TreeOption }) {
 watch(() => props.fileId, () => {
   treeData.value = [];
   sizeMap.clear();
+  suffixMap.clear();
   isEmpty.value = false;
   hasError.value = false;
 });
@@ -101,6 +118,7 @@ watch(() => props.visible, val => {
   if (val) {
     treeData.value = [];
     sizeMap.clear();
+    suffixMap.clear();
     isEmpty.value = false;
     hasError.value = false;
     loadData();
