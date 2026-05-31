@@ -61,19 +61,6 @@ const DOCUMENT_TYPE_MAP: Record<string, DocumentType> = {
   fodp: 'presentation'
 };
 
-/**
- * 文件类型标准化映射
- * 将旧格式映射为新格式 (doc -> docx, xls -> xlsx, ppt -> pptx)
- */
-const FILE_TYPE_NORMALIZE: Record<string, string> = {
-  doc: 'docx',
-  word: 'docx',
-  xls: 'xlsx',
-  excel: 'xlsx',
-  ppt: 'pptx',
-  pot: 'pptx',
-  pps: 'pptx'
-};
 
 /**
  * 获取 OnlyOffice API 地址
@@ -173,22 +160,22 @@ export function getOfficeHistoryPreviewUrl(
 
 /**
  * 根据文件后缀获取文档类型
- * @param fileType 文件后缀 (不含点)
+ * @param fileType 文件后缀（可能含前缀点号）
  * @returns 文档类型: text, spreadsheet, presentation
  */
 export function getDocumentType(fileType: string): DocumentType {
-  const normalizedType = fileType.toLowerCase();
+  const normalizedType = fileType.toLowerCase().replace(/^\.+/, '');
   return DOCUMENT_TYPE_MAP[normalizedType] || 'text';
 }
 
 /**
- * 标准化文件类型
- * @param suffix 文件后缀 (不含点)
- * @returns 标准化后的文件类型
+ * 标准化文件类型（去掉前缀点号）
+ * OnlyOffice 要求 fileType 为不含点的扩展名，且必须与文件实际格式一致
+ * @param suffix 文件后缀（可能含前缀点号）
+ * @returns 标准化后的文件类型（不含点）
  */
 export function normalizeFileType(suffix: string): string {
-  const lower = suffix.toLowerCase();
-  return FILE_TYPE_NORMALIZE[lower] || lower;
+  return suffix.toLowerCase().replace(/^\.+/, '');
 }
 
 /**

@@ -11,7 +11,7 @@ import {
   fetchGetPublicFileInfoById
 } from '@/service/api/disk/office';
 import { useOfficeConfig } from '@/hooks/business/use-office-config';
-import { useOfficeHistory } from '@/hooks/business/use-office-history';
+import { useOfficeEvents } from '@/hooks/business/use-office-events';
 import {
   getOfficePreviewUrl,
   getOfficeSharePreviewUrl,
@@ -20,13 +20,10 @@ import {
   normalizeFileType,
   loadOfficeApi
 } from '@/utils/office-config';
-import type { EditorConfig, DocumentStateEvent, HistoryDataEvent, DocEditorInstance } from '@/types/office';
+import type { EditorConfig, DocEditorInstance } from '@/types/office';
 
-defineOptions({
-  name: 'OfficePreview'
-});
+defineOptions({ name: 'OfficePreview' });
 
-/** 文件信息接口 */
 interface FileInfo {
   id: CommonType.IdType;
   name: string;
@@ -39,15 +36,10 @@ interface FileInfo {
 }
 
 interface Props {
-  /** 文件信息 */
   file?: FileInfo;
-  /** 文件 ID (当 file 未传入时使用) */
   fileId?: CommonType.IdType;
-  /** 只读模式 */
   readOnly?: boolean;
-  /** 分享 ID */
   shareId?: string;
-  /** 分享 token */
   shareToken?: string;
 }
 
@@ -61,14 +53,12 @@ const props = withDefaults(defineProps<Props>(), {
 
 interface Emits {
   (e: 'ready'): void;
-  (e: 'edit', saved: boolean): void;
   (e: 'close'): void;
   (e: 'error', message: string): void;
 }
 
 const emit = defineEmits<Emits>();
 
-// Store
 const appStore = useAppStore();
 const themeStore = useThemeStore();
 const authStore = useAuthStore();
@@ -76,15 +66,17 @@ const { isMobile } = storeToRefs(appStore);
 const { darkMode } = storeToRefs(themeStore);
 const { userInfo, token } = storeToRefs(authStore);
 
-// Hooks
-const { config, loading: configLoading, error: configError, loadConfig, getApiUrl, getCallbackBaseUrl, isTokenEnabled, checkHealth } = useOfficeConfig(props.shareId);
-const historyHook = useOfficeHistory(
-  props.file?.id || props.fileId || 0,
-  token.value,
-  userInfo.value.userName
-);
+const {
+  config,
+  loading: configLoading,
+  error: configError,
+  loadConfig,
+  getApiUrl,
+  getCallbackBaseUrl,
+  isTokenEnabled,
+  checkHealth
+} = useOfficeConfig(props.shareId);
 
-// State
 const editorId = ref(`office_editor_${Math.round(Math.random() * 10000)}`);
 const docEditor = ref<DocEditorInstance | null>(null);
 const fileInfo = ref<FileInfo | null>(null);
@@ -94,15 +86,9 @@ const serviceUnavailable = ref(false);
 const editorLoading = ref(false);
 const editorError = ref<string | null>(null);
 
-// Computed
-const fileType = computed(() => {
-  const suffix = fileInfo.value?.suffix || '';
-  return normalizeFileType(suffix);
-});
-
+const fileType = computed(() => normalizeFileType(fileInfo.value?.suffix || ''));
 const isDarkTheme = computed(() => darkMode.value);
-
-const editorMode = computed(() => props.readOnly ? 'view' : 'edit');
+const editorMode = computed(() => (props.readOnly ? 'view' : 'edit'));
 
 const userConfig = computed(() => ({
   id: userInfo.value.userId?.toString() || 'visitor',
@@ -112,13 +98,33 @@ const userConfig = computed(() => ({
     : undefined
 }));
 
-/**
- * 加载文件信息
- */
+const {
+  handleAppReady,
+  handleDocumentReady,
+  handleDocumentStateChange,
+  handleRequestHistory,
+  handleRequestHistoryData,
+  handleRequestHistoryClose,
+  handleRequestClose
+} = useOfficeEvents({
+  docEditor: () => docEditor.value,
+  fileId: props.file?.id || props.fileId || 0,
+  token: token.value,
+  username: userInfo.value.userName,
+  isSaved,
+  isReady,
+  fileType: () => fileType.value,
+  reloadDocument,
+  onClose: () => emit('close'),
+  onReady: () => {
+    isReady.value = true;
+    emit('ready');
+  }
+});
+
 async function loadFileInfo() {
   const fileId = props.file?.id || props.fileId;
   if (!fileId) return;
-
   try {
     if (props.shareId) {
       const response = await fetchGetPublicFileInfoById(fileId, props.shareId);
@@ -134,54 +140,27 @@ async function loadFileInfo() {
   }
 }
 
-/**
- * 构建编辑器配置
- */
 function buildEditorConfig(): EditorConfig {
   const file = fileInfo.value!;
   const callbackBaseUrl = getCallbackBaseUrl();
-  const username = userInfo.value.userName;
+  const docKey =
+    props.readOnly && props.shareId
+      ? generateDocumentKey(file.updateTime, props.shareId, callbackBaseUrl)
+      : generateDocumentKey(file.updateTime, file.id, callbackBaseUrl);
 
-  // 生成文档 key
-  const docKey = props.readOnly && props.shareId
-    ? generateDocumentKey(file.updateTime, props.shareId, callbackBaseUrl)
-    : generateDocumentKey(file.updateTime, file.id, callbackBaseUrl);
-
-  // 文档 URL
   let docUrl: string;
   if (props.readOnly && props.shareId) {
-    docUrl = getOfficeSharePreviewUrl(
-      file.id,
-      props.shareId,
-      props.shareToken || 'none',
-      file.name,
-      callbackBaseUrl
-    );
+    docUrl = getOfficeSharePreviewUrl(file.id, props.shareId, props.shareToken || 'none', file.name, callbackBaseUrl);
   } else {
-    docUrl = getOfficePreviewUrl(
-      file.id,
-      callbackBaseUrl
-    );
+    docUrl = getOfficePreviewUrl(file.id, callbackBaseUrl);
   }
 
-
-
-
-
-
-
-
-
-
-  // 回调 URL
   let callbackUrl: string | null = null;
   if (!props.readOnly) {
     callbackUrl = getOfficeCallbackUrl(callbackBaseUrl, file.id);
   }
 
-
-
-  const editorConfig: EditorConfig = {
+  return {
     document: {
       fileType: fileType.value,
       key: docKey,
@@ -206,10 +185,7 @@ function buildEditorConfig(): EditorConfig {
         submitForm: false,
         about: null,
         feedback: false,
-        close: {
-          visible: true,
-          text: '关闭'
-        },
+        close: { visible: true, text: '关闭' },
         uiTheme: isDarkTheme.value ? 'default-dark' : 'default-light',
         macros: false,
         plugins: { autostart: [] }
@@ -226,51 +202,30 @@ function buildEditorConfig(): EditorConfig {
       onRequestClose: handleRequestClose
     }
   };
-
-  return editorConfig;
 }
 
-/**
- * 初始化编辑器
- */
 async function initEditor() {
   if (!config.value || !fileInfo.value) return;
-
   editorLoading.value = true;
   editorError.value = null;
   serviceUnavailable.value = false;
-
   try {
-    // 先检查服务可用性
     const available = await checkHealth();
     if (!available) {
       serviceUnavailable.value = true;
-      throw new Error('文档服务暂不可用，请稍后重试或联系管理员');
+      throw new Error('文档服务暂不可用');
     }
-
-    // 加载 OnlyOffice API
-    const apiUrl = getApiUrl();
-    await loadOfficeApi(apiUrl);
-
-    // 构建配置
+    await loadOfficeApi(getApiUrl());
     const editorConfig = buildEditorConfig();
-
-    // 获取 JWT Token
     if (isTokenEnabled.value) {
       if (props.shareId && props.readOnly) {
-        const response = await fetchGetPublicOfficeJwt(
-          props.shareId,
-          props.shareToken || 'none',
-          editorConfig
-        );
+        const response = await fetchGetPublicOfficeJwt(props.shareId, props.shareToken || 'none', editorConfig);
         editorConfig.token = response.data ?? undefined;
       } else {
         const response = await fetchGetOfficeJwt(editorConfig);
         editorConfig.token = response.data ?? undefined;
       }
     }
-
-    // 初始化编辑器
     await nextTick();
     if (window.DocsAPI) {
       docEditor.value = new window.DocsAPI.DocEditor(editorId.value, editorConfig);
@@ -286,9 +241,6 @@ async function initEditor() {
   }
 }
 
-/**
- * 销毁编辑器
- */
 function destroyEditor() {
   if (docEditor.value) {
     docEditor.value.destroyEditor();
@@ -297,21 +249,13 @@ function destroyEditor() {
   isReady.value = false;
 }
 
-/**
- * 重新加载文档
- * @param key 新的文档 key
- */
 function reloadDocument(key?: string) {
   destroyEditor();
-
   if (!config.value || !fileInfo.value || !window.DocsAPI) return;
-
   const editorConfig = buildEditorConfig();
   if (key) {
     editorConfig.document.key = key;
   }
-
-  // 重新获取 JWT
   if (isTokenEnabled.value) {
     fetchGetOfficeJwt(editorConfig).then(response => {
       editorConfig.token = response.data ?? undefined;
@@ -319,65 +263,17 @@ function reloadDocument(key?: string) {
         docEditor.value = new window.DocsAPI.DocEditor(editorId.value, editorConfig);
       }
     });
-  } else {
-    if (window.DocsAPI) {
-      docEditor.value = new window.DocsAPI.DocEditor(editorId.value, editorConfig);
-    }
+  } else if (window.DocsAPI) {
+    docEditor.value = new window.DocsAPI.DocEditor(editorId.value, editorConfig);
   }
 }
 
-// Event Handlers
-function handleAppReady() {
-  isReady.value = true;
-  emit('ready');
-}
-
-function handleDocumentReady() {
-  // 加载历史版本
-  if (!props.readOnly && fileInfo.value?.id) {
-    historyHook.loadHistory();
-  }
-}
-
-function handleDocumentStateChange(event: DocumentStateEvent) {
-  isSaved.value = event.data;
-  emit('edit', isSaved.value);
-}
-
-function handleRequestHistory() {
-  if (docEditor.value) {
-    historyHook.refreshHistory(docEditor.value);
-  }
-}
-
-function handleRequestHistoryData(event: HistoryDataEvent) {
-  if (docEditor.value) {
-    historyHook.getHistoryData(event.data, docEditor.value, fileType.value);
-  }
-}
-
-function handleRequestHistoryClose() {
-  historyHook.cancelViewHistory();
-  reloadDocument();
-}
-
-function handleRequestClose() {
-  emit('close');
-}
-
-// Watchers
 watch(
   () => props.fileId || props.file?.id,
-  async (id) => {
+  async id => {
     if (!id) return;
-
-    // 先加载配置
     await loadConfig();
-
-    // 加载文件信息
     await loadFileInfo();
-
-    // 初始化编辑器
     if (config.value && fileInfo.value) {
       await initEditor();
     }
@@ -385,14 +281,12 @@ watch(
   { immediate: true }
 );
 
-// 监听主题变化，重新初始化编辑器
 watch(darkMode, () => {
   if (isReady.value) {
     reloadDocument();
   }
 });
 
-// Cleanup
 onUnmounted(() => {
   destroyEditor();
 });
@@ -400,7 +294,6 @@ onUnmounted(() => {
 
 <template>
   <div class="office-preview-container relative w-full h-full">
-    <!-- 加载状态 -->
     <div
       v-if="configLoading || editorLoading"
       class="absolute inset-0 flex-center bg-white/80 dark:bg-black/80"
@@ -412,7 +305,6 @@ onUnmounted(() => {
       </NSpin>
     </div>
 
-    <!-- 错误状态 -->
     <div
       v-if="configError || editorError"
       class="absolute inset-0 flex-center bg-white/80 dark:bg-black/80"
@@ -427,7 +319,6 @@ onUnmounted(() => {
       </NResult>
     </div>
 
-    <!-- 编辑器容器 -->
     <div
       :id="editorId"
       class="office-editor-placeholder w-full h-full"
@@ -442,7 +333,7 @@ onUnmounted(() => {
 }
 
 .office-editor-placeholder {
-  iframe {
+  :deep(iframe) {
     width: 100%;
     height: 100%;
     border: none;
