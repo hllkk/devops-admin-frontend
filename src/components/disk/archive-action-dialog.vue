@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useSvgIcon } from '@/hooks/common/icon';
 import { $t } from '@/locales';
 
 defineOptions({
@@ -19,8 +18,6 @@ const emit = defineEmits<{
   (e: 'extractHere'): void;
   (e: 'extractTo'): void;
 }>();
-
-const { SvgIconVNode } = useSvgIcon();
 </script>
 
 <template>
@@ -33,7 +30,7 @@ const { SvgIconVNode } = useSvgIcon();
     @update:show="emit('update:visible', $event)"
   >
     <div class="flex items-center gap-2 mb-4 text-14px text-gray-500">
-      <SvgIconVNode icon="mdi:folder-zip-outline" :font-size="24" />
+      <SvgIcon icon="mdi:folder-zip-outline" :size="24" />
       <span class="truncate">{{ fileName }}</span>
     </div>
     <div class="flex justify-center gap-3">
