@@ -30,6 +30,13 @@ const errorMsg = ref('');
 const sizeMap = new Map<string, number>();
 const suffixMap = new Map<string, string>();
 
+function sortEntries(entries: ArchiveEntry[]) {
+  entries.sort((a, b) => {
+    if (a.isFolder !== b.isFolder) return a.isFolder ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
 function buildTreeNode(entry: ArchiveEntry): TreeOption {
   sizeMap.set(entry.path, entry.size);
   suffixMap.set(entry.path, entry.suffix || '');
@@ -50,6 +57,7 @@ async function loadData() {
     const res = await fetchListArchive(String(props.fileId));
     const data = (res as any).data || res;
     const entries: ArchiveEntry[] = Array.isArray(data) ? data : [];
+    sortEntries(entries);
     isEmpty.value = entries.length === 0;
     treeData.value = entries.map(buildTreeNode);
   } catch (e: any) {
@@ -65,6 +73,7 @@ async function handleLoad(node: TreeOption) {
   const res = await fetchListSubArchive(String(props.fileId), node.key as string);
   const data = (res as any).data || res;
   const entries: ArchiveEntry[] = Array.isArray(data) ? data : [];
+  sortEntries(entries);
   return entries.map(buildTreeNode);
 }
 
