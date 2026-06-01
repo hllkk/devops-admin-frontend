@@ -1,8 +1,10 @@
 <script setup lang="tsx">
 import { ref, watch, h } from 'vue';
 import type { TreeOption } from 'naive-ui';
+import { NTooltip } from 'naive-ui';
 import { fetchListArchive } from '@/service/api/disk/archive';
 import type { ArchiveEntry } from '@/service/api/disk/archive';
+import { formatFileSize } from '@/utils/format';
 import FileIcon from '@/views/disk/modules/file-icon.vue';
 
 defineOptions({
@@ -107,12 +109,17 @@ function renderLabel({ option }: { option: TreeOption }) {
       <div class="flex-shrink-0">
         {h(FileIcon, { fileType, extension: suffix, size: 'small' })}
       </div>
-      <span class="flex-1 truncate text-14px">{option.label}</span>
+      <NTooltip placement="top" disabled={!option.label}>
+        {{
+          trigger: () => (
+            <span class="flex-1 truncate text-14px">{option.label}</span>
+          ),
+          default: () => option.label as string
+        }}
+      </NTooltip>
       {!isFolder && fileSize !== undefined && fileSize > 0 && (
         <span class="text-12px text-gray-400 flex-shrink-0">
-          {fileSize >= 1024
-            ? `${(fileSize / 1024).toFixed(1)} KB`
-            : `${fileSize} B`}
+          {formatFileSize(fileSize)}
         </span>
       )}
     </div>
@@ -143,12 +150,22 @@ watch(() => props.visible, val => {
   <NModal
     :show="visible"
     preset="card"
-    :title="`预览: ${fileName}`"
     style="width: 600px; max-height: 70vh"
     :closable="true"
     @update:show="emit('update:visible', $event)"
     @after-enter="loadData"
   >
+    <template #header>
+      <div class="flex items-center min-w-0">
+        <span class="flex-shrink-0">预览:</span>
+        <NTooltip placement="top">
+          <template #trigger>
+            <span class="truncate ml-1">{{ fileName }}</span>
+          </template>
+          {{ fileName }}
+        </NTooltip>
+      </div>
+    </template>
     <NSpin :show="loading">
       <div v-if="!loading && isEmpty" class="flex-center py-12 text-gray-400 text-14px">
         压缩包为空
