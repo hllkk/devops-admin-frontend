@@ -341,6 +341,10 @@ declare namespace Api {
       viewCount: number;
       /** 下载次数 */
       downloadCount: number;
+      /** 文件类型 */
+      fileType: string;
+      /** 文件扩展名 */
+      fileExtension?: string;
       /** 文件列表 */
       files: ShareFileItem[];
     };

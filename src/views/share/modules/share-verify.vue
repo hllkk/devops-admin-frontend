@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { $t } from '@/locales';
+import FileIcon from '@/views/disk/modules/file-icon.vue';
 
 defineOptions({
   name: 'ShareVerify'
@@ -55,10 +56,10 @@ function handleInput(value: string) {
     <!-- 分享文件信息 -->
     <div v-if="shareInfo" class="w-full p-16px rounded bg-white dark:bg-gray-800 shadow-sm">
       <div class="flex items-center gap-12px">
-        <SvgIcon
-          :icon="shareInfo.isFolder ? 'mdi:folder' : 'mdi:file-document'"
-          :size="32"
-          class="text-amber-500"
+        <FileIcon
+          :file-type="shareInfo.fileType"
+          :extension="shareInfo.fileExtension"
+          size="medium"
         />
         <div class="flex-1 min-w-0">
           <div class="text-14px font-medium truncate">{{ shareInfo.fileName }}</div>

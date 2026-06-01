@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { $t } from '@/locales';
 import { fetchDownloadShareFile, fetchDownloadSharePackage } from '@/service/api/disk/share-public';
+import FileIcon from '@/views/disk/modules/file-icon.vue';
 
 defineOptions({
   name: 'ShareList'
@@ -35,17 +36,6 @@ function formatFileSize(size: number): string {
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
   return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-}
-
-// 获取文件图标
-function getFileIcon(item: Api.Disk.ShareFileItem): string {
-  if (item.isFolder) return 'mdi:folder';
-  const ext = item.fileExtension?.toLowerCase() || '';
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext)) return 'mdi:image';
-  if (['mp4', 'avi', 'mkv', 'mov', 'wmv', 'flv'].includes(ext)) return 'mdi:videocam';
-  if (['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma'].includes(ext)) return 'mdi:audiotrack';
-  if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'pdf', 'txt', 'md'].includes(ext)) return 'mdi:file-document';
-  return 'mdi:file';
 }
 
 // 下载单个文件
@@ -100,10 +90,10 @@ function handleDoubleClick(item: Api.Disk.ShareFileItem) {
     <div v-if="shareInfo" class="p-16px rounded bg-white dark:bg-gray-800 shadow-sm">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-12px min-w-0 flex-1">
-          <SvgIcon
-            :icon="shareInfo.isFolder ? 'mdi:folder' : 'mdi:file-document'"
-            :size="32"
-            class="text-amber-500"
+          <FileIcon
+            :file-type="shareInfo.fileType"
+            :extension="shareInfo.fileExtension"
+            size="medium"
           />
           <div class="min-w-0 flex-1">
             <div class="text-16px font-medium truncate">{{ shareInfo.fileName }}</div>
@@ -138,7 +128,11 @@ function handleDoubleClick(item: Api.Disk.ShareFileItem) {
           class="flex items-center gap-12px px-16px py-12px cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           @dblclick="handleDoubleClick(item)"
         >
-          <SvgIcon :icon="getFileIcon(item)" :size="40" class="flex-shrink-0" />
+          <FileIcon
+            :file-type="item.fileType"
+            :extension="item.fileExtension"
+            size="medium"
+          />
           <div class="min-w-0 flex-1">
             <div class="text-14px truncate">{{ item.fileName }}</div>
             <div class="text-12px opacity-50">
