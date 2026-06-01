@@ -3,7 +3,10 @@ import { ref, computed, reactive } from 'vue';
 import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
-import { fetchGetRecentList, fetchDeleteRecent, fetchClearRecent, fetchAddRecent } from '@/service/api/disk';
+import { fetchGetRecentList, fetchDeleteRecent, fetchClearRecent, fetchAddRecent, fetchRenameFile, fetchAddFavorite, fetchRemoveFavorite } from '@/service/api/disk';
+import { fetchIsAllowDownload } from '@/service/api/disk/file';
+import { fetchGetShareInfo } from '@/service/api/disk/share';
+import { getServiceBaseURL } from '@/utils/service';
 import { useFilePreview } from '@/hooks/business/disk/use-file-preview';
 import ImagePreview from '@/components/preview/image-preview.vue';
 import FilePreviewOverlays from '@/components/disk/file-preview-overlays.vue';
@@ -11,6 +14,10 @@ import SimpleToolbar from '../disk/modules/simple-toolbar.vue';
 import FileGrid from '../disk/modules/file-grid.vue';
 import FileList from '../disk/modules/file-list.vue';
 import FileEmpty from '@/components/disk/file-empty.vue';
+import MoveCopyDialog from '../disk/modules/move-copy-dialog.vue';
+import ShareDialog from '../disk/modules/share-dialog.vue';
+import ShareResultDialog from '../disk/modules/share-result-dialog.vue';
+import FileDetailModal from '../disk/modules/file-detail-modal.vue';
 
 defineOptions({
   name: 'RecentPage'
@@ -19,7 +26,6 @@ defineOptions({
 const diskStore = useDiskStore();
 const { loading, startLoading, endLoading } = useLoading();
 
-// 搜索参数
 const searchParams = ref<Api.Disk.RecentListParams>({
   pageNum: 1,
   pageSize: 100,
@@ -27,16 +33,22 @@ const searchParams = ref<Api.Disk.RecentListParams>({
   sortOrder: null
 });
 
-// 最近访问列表
 const recentList = ref<Api.Disk.RecentItem[]>([]);
-
-// 本地选中状态（不污染 diskStore）
 const selectedFiles = ref<CommonType.IdType[]>([]);
-
-// 图片预览 ref
 const imagePreviewRef = ref<InstanceType<typeof ImagePreview>>();
 
-// 将 RecentItem 转换为 FileItem 格式（用于复用文件组件）
+// 重命名状态
+const renamingFile = ref<Api.Disk.FileItem | null>(null);
+
+// 分享状态
+const existingShareInfo = ref<Api.Disk.ShareResult | null>(null);
+const shareResult = ref<Api.Disk.ShareResult | null>(null);
+const shareResultVisible = ref(false);
+
+// 文件详情
+const detailVisible = ref(false);
+const detailFile = ref<Api.Disk.FileItem | null>(null);
+
 function convertToFileItem(item: Api.Disk.RecentItem): Api.Disk.FileItem {
   return {
     fileId: item.fileId,
@@ -48,6 +60,8 @@ function convertToFileItem(item: Api.Disk.RecentItem): Api.Disk.FileItem {
     filePath: item.filePath,
     parentId: null,
     isFolder: item.isFolder,
+    isFavorite: item.isFavorite,
+    isShare: item.isShare,
     modifyTime: item.visitTime,
     createTime: item.visitTime,
     updateTime: item.visitTime,
@@ -59,16 +73,11 @@ function convertToFileItem(item: Api.Disk.RecentItem): Api.Disk.FileItem {
 
 const fileList = computed(() => recentList.value.map(convertToFileItem));
 
-// 文件预览 hook
 const preview = reactive(useFilePreview({ fileList, imagePreviewRef }));
 
-// 选中数量
 const selectedCount = computed(() => selectedFiles.value.length);
-
-// 是否显示空状态
 const showEmpty = computed(() => recentList.value.length === 0 && !loading.value);
 
-// 获取最近访问列表
 async function getData() {
   startLoading();
   const { data, error } = await fetchGetRecentList(searchParams.value);
@@ -81,29 +90,112 @@ async function getData() {
   }
 }
 
-// 处理排序
 function handleSort(field: string, order: 'asc' | 'desc') {
   searchParams.value.sortField = field as 'visitTime' | 'fileName' | 'size';
   searchParams.value.sortOrder = order;
   getData();
 }
 
-// 切换视图
 function toggleView() {
   diskStore.setViewMode(diskStore.viewMode === 'grid' ? 'list' : 'grid');
 }
 
-// 取消选中
 function handleClearSelection() {
   selectedFiles.value = [];
 }
 
-// 处理选中状态变化
 function handleSelectionChange(files: CommonType.IdType[]) {
   selectedFiles.value = files;
 }
 
-// 清除选中项的访问记录
+// --- 下载 ---
+function triggerBrowserDownload(downloadUrl: string) {
+  const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
+  const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
+  const fullUrl = `${baseURL}${downloadUrl}`;
+
+  const link = document.createElement('a');
+  link.href = fullUrl;
+  link.style.display = 'none';
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+async function handleDownload(file: Api.Disk.FileItem) {
+  const { data, error } = await fetchIsAllowDownload([file.fileId]);
+  if (error || !data?.allowDownload) {
+    window.$message?.error('下载失败，请稍后重试');
+    return;
+  }
+  triggerBrowserDownload(data.downloadUrl);
+}
+
+// --- 分享 ---
+async function handleShareFile(file: Api.Disk.FileItem) {
+  existingShareInfo.value = null;
+  const { data } = await fetchGetShareInfo(file.fileId);
+  if (data) {
+    existingShareInfo.value = data;
+  }
+  diskStore.openShareDialog(file);
+}
+
+function handleShareSuccess(result: Api.Disk.ShareResult) {
+  shareResult.value = result;
+  shareResultVisible.value = true;
+  getData();
+}
+
+// --- 收藏 ---
+async function handleAddFavorite(file: Api.Disk.FileItem) {
+  const fileId = Number(file.fileId);
+  diskStore.addFavoriteIds([fileId]);
+
+  const { error } = await fetchAddFavorite([fileId]);
+  if (error) {
+    diskStore.removeFavoriteIds([fileId]);
+    window.$message?.error('收藏失败');
+    return;
+  }
+  window.$message?.success(`已收藏 "${file.fileName}"`);
+  getData();
+}
+
+async function handleRemoveFavorite(file: Api.Disk.FileItem) {
+  const fileId = Number(file.fileId);
+  diskStore.removeFavoriteIds([fileId]);
+
+  const { error } = await fetchRemoveFavorite([fileId]);
+  if (error) {
+    diskStore.addFavoriteIds([fileId]);
+    window.$message?.error('取消收藏失败');
+    return;
+  }
+  window.$message?.success(`已取消收藏 "${file.fileName}"`);
+  getData();
+}
+
+// --- 重命名 ---
+async function handleRenameConfirm(newName: string) {
+  if (!renamingFile.value || !newName.trim()) return;
+  if (newName.trim() === renamingFile.value.fileName) {
+    diskStore.cancelRenaming();
+    renamingFile.value = null;
+    return;
+  }
+  const { error } = await fetchRenameFile(renamingFile.value.fileId, newName.trim());
+  if (!error) {
+    window.$message?.success('重命名成功');
+    diskStore.cancelRenaming();
+    renamingFile.value = null;
+    getData();
+  }
+}
+
+// --- 删除访问记录（工具栏批量） ---
 async function handleClearRecent() {
   const selectedIds = selectedFiles.value;
   if (selectedIds.length === 0) return;
@@ -129,7 +221,18 @@ async function handleClearRecent() {
   });
 }
 
-// 清空全部访问记录
+// --- 删除单个访问记录（右键菜单） ---
+async function handleDeleteRecentRecord(file: Api.Disk.FileItem) {
+  const recordId = file.recordId!;
+  const { error } = await fetchDeleteRecent([recordId]);
+  if (!error) {
+    recentList.value = recentList.value.filter(item => item.recordId !== recordId);
+    selectedFiles.value = selectedFiles.value.filter(id => id !== recordId);
+    window.$message?.success('已移除访问记录');
+  }
+}
+
+// --- 清空全部 ---
 function handleClearAll() {
   window.$dialog?.warning({
     title: $t('page.disk.recent.clearAll'),
@@ -152,7 +255,6 @@ function handleClearAll() {
   });
 }
 
-// 处理文件双击 - 打开预览
 function handleFileDblClick(file: Api.Disk.FileItem) {
   if (file.isFolder) {
     window.$message?.info('暂不支持预览文件夹');
@@ -162,26 +264,48 @@ function handleFileDblClick(file: Api.Disk.FileItem) {
   preview.previewByCategory(file);
 }
 
-// 处理文件操作
+// --- 文件操作分发 ---
 function handleFileAction(action: string, file: Api.Disk.FileItem) {
   switch (action) {
     case 'download':
-      window.$message?.info('下载功能开发中');
+      handleDownload(file);
+      break;
+    case 'share':
+      handleShareFile(file);
+      break;
+    case 'rename':
+      diskStore.startRenaming(file.fileId, file.fileName);
+      renamingFile.value = file;
+      break;
+    case 'copy':
+      diskStore.openMoveCopyDialog('copy', [file]);
+      break;
+    case 'move':
+      diskStore.openMoveCopyDialog('move', [file]);
       break;
     case 'delete':
-      // 删除操作使用 recordId（访问记录ID），而非 fileId（文件ID）
-      selectedFiles.value = [file.recordId!];
-      handleClearRecent();
+      handleDeleteRecentRecord(file);
+      break;
+    case 'detail':
+      detailFile.value = file;
+      detailVisible.value = true;
       break;
   }
 }
 
-// 下载功能提示
-function handleDownloadTip() {
-  window.$message?.info('下载功能开发中');
+// --- 工具栏下载 ---
+function handleToolbarDownload() {
+  if (selectedFiles.value.length === 0) {
+    window.$message?.warning('请先选择文件');
+    return;
+  }
+  const selectId = selectedFiles.value[0];
+  const file = fileList.value.find(f => (f.recordId ?? f.fileId) === selectId);
+  if (file) {
+    handleDownload(file);
+  }
 }
 
-// 初始化
 getData();
 </script>
 
@@ -189,7 +313,6 @@ getData();
   <div class="min-h-500px h-full flex-col-stretch gap-0 overflow-hidden lt-lg:overflow-auto">
     <NCard :bordered="false" size="small" class="card-wrapper h-full flex-1-hidden">
       <div class="h-full flex flex-col">
-        <!-- 简化工具栏 -->
         <SimpleToolbar
           page-type="recent"
           :selected-count="selectedCount"
@@ -199,15 +322,12 @@ getData();
           @clear-selection="handleClearSelection"
           @clear-recent="handleClearRecent"
           @clear-all="handleClearAll"
-          @download="handleDownloadTip"
+          @download="handleToolbarDownload"
         />
 
-        <!-- 内容区域 -->
         <div class="flex-1 overflow-hidden lt-sm:flex-initial lt-sm:overflow-auto">
-          <!-- 空状态 -->
           <FileEmpty v-if="showEmpty" :description="$t('page.disk.recent.empty')" />
 
-          <!-- 网格视图 -->
           <FileGrid
             v-if="!showEmpty && diskStore.viewMode === 'grid'"
             :files="fileList"
@@ -217,12 +337,20 @@ getData();
             disable-create
             @file-dbl-click="handleFileDblClick"
             @file-download="handleFileAction('download', $event)"
+            @file-share="handleFileAction('share', $event)"
             @file-delete="handleFileAction('delete', $event)"
+            @file-rename="handleFileAction('rename', $event)"
+            @file-rename-confirm="handleRenameConfirm"
+            @file-rename-cancel="() => { diskStore.cancelRenaming(); renamingFile = null; }"
+            @file-copy="handleFileAction('copy', $event)"
+            @file-move="handleFileAction('move', $event)"
+            @file-detail="handleFileAction('detail', $event)"
+            @file-add-favorite="handleAddFavorite"
+            @file-remove-favorite="handleRemoveFavorite"
             @selection-change="handleSelectionChange"
             @refresh="getData"
           />
 
-          <!-- 列表视图 -->
           <FileList
             v-if="!showEmpty && diskStore.viewMode === 'list'"
             :files="fileList"
@@ -232,7 +360,16 @@ getData();
             disable-create
             @file-dbl-click="handleFileDblClick"
             @file-download="handleFileAction('download', $event)"
+            @file-share="handleFileAction('share', $event)"
             @file-delete="handleFileAction('delete', $event)"
+            @file-rename="handleFileAction('rename', $event)"
+            @file-rename-confirm="handleRenameConfirm"
+            @file-rename-cancel="() => { diskStore.cancelRenaming(); renamingFile = null; }"
+            @file-copy="handleFileAction('copy', $event)"
+            @file-move="handleFileAction('move', $event)"
+            @file-detail="handleFileAction('detail', $event)"
+            @file-add-favorite="handleAddFavorite"
+            @file-remove-favorite="handleRemoveFavorite"
             @selection-change="handleSelectionChange"
             @refresh="getData"
           />
@@ -240,7 +377,6 @@ getData();
       </div>
     </NCard>
 
-    <!-- Image Preview -->
     <ImagePreview ref="imagePreviewRef" />
     <FilePreviewOverlays
       :video-preview-file="preview.videoPreviewFile"
@@ -261,6 +397,10 @@ getData();
       @update:is-audio-compact="preview.isAudioCompact = $event"
       @update:preview-visible="preview.previewVisible = $event"
     />
+    <MoveCopyDialog @success="getData" />
+    <ShareDialog :existing-share="existingShareInfo" @success="handleShareSuccess" />
+    <ShareResultDialog v-model:visible="shareResultVisible" :result="shareResult" />
+    <FileDetailModal v-model:visible="detailVisible" :file="detailFile" />
   </div>
 </template>
 

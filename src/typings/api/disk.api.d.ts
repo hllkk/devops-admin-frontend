@@ -424,6 +424,10 @@ declare namespace Api {
       filePath: string;
       /** 是否有媒体封面 */
       hasMediaCover?: boolean;
+      /** 是否已收藏 */
+      isFavorite?: boolean;
+      /** 是否已分享 */
+      isShare?: boolean;
     };
 
     /** 最近访问列表参数 */
