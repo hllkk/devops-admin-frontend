@@ -32,6 +32,10 @@ interface UserInfoMap {
 const props = defineProps<{
   fileId?: CommonType.IdType;
   activeVersionId?: CommonType.IdType;
+  /** 为 true 时预览不加载内容，直接触发事件交给父组件处理（适用于 Office 文件） */
+  emitOnly?: boolean;
+  /** 为 true 时不显示触发按钮，通过 toggle() 手动控制（用于 OnlyOffice iframe 内注入按钮场景） */
+  invisibleTrigger?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -112,6 +116,11 @@ async function loadHistoryVersions() {
 }
 
 async function handlePreview(version: HistoryVersion) {
+  if (props.emitOnly) {
+    emit('preview', '', version);
+    popoverVisible.value = false;
+    return;
+  }
   historyLoading.value = true;
   try {
     const { data, error } = await fetchHistoryContent(version.id);
@@ -178,19 +187,26 @@ watch(
     popoverVisible.value = false;
   }
 );
+
+function toggle() {
+  popoverVisible.value = !popoverVisible.value;
+}
+
+defineExpose({ toggle });
 </script>
 
 <template>
   <NPopover
     v-model:show="popoverVisible"
-    trigger="click"
+    :trigger="invisibleTrigger ? 'manual' : 'click'"
     placement="bottom-end"
     :width="420"
     :style="{ maxHeight: '480px' }"
     :content-style="{ padding: 0 }"
   >
     <template #trigger>
-      <slot />
+      <slot v-if="!invisibleTrigger" />
+      <span v-else style="position:absolute;width:0;height:0;overflow:hidden;" />
     </template>
 
     <div class="history-popover">
