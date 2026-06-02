@@ -1586,7 +1586,21 @@ const local: App.I18n.Schema = {
         dept: '部门',
         sharedUsers: '已共享用户',
         sharedDepts: '已共享部门',
-        addUser: '添加用户'
+        addUser: '添加用户',
+        // 新增：已有分享管理
+        shareManagement: '分享管理',
+        copyLink: '复制链接',
+        copyCode: '复制口令',
+        qrCode: '二维码',
+        expireTime: '到期时间',
+        operationPermissions: '操作权限',
+        permEdit: '编辑',
+        permDelete: '删除',
+        permUpload: '上传',
+        shareForm: '分享形式',
+        shareFormPublic: '公开链接',
+        shareFormPrivate: '私密链接',
+        updateSuccess: '更新分享成功',
       },
       myShare: {
         title: '我的分享',

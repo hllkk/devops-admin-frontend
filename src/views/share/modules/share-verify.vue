@@ -12,16 +12,18 @@ interface Props {
   // eslint-disable-next-line vue/no-unused-properties
   shortId?: string;
   shareInfo: Api.Disk.SharePublicInfo | null;
+  /** 预填提取码（来自 URL ?pwd= 参数） */
+  prefillCode?: string;
 }
 
 interface Emits {
   (e: 'verify', code: string): void;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-const extractionCode = ref('');
+const extractionCode = ref(props.prefillCode || '');
 const loading = ref(false);
 
 // 提交验证

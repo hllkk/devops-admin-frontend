@@ -1377,6 +1377,19 @@ declare namespace App {
             sharedUsers: string;
             sharedDepts: string;
             addUser: string;
+            shareManagement: string;
+            copyLink: string;
+            copyCode: string;
+            qrCode: string;
+            expireTime: string;
+            operationPermissions: string;
+            permEdit: string;
+            permUpload: string;
+            permDelete: string;
+            shareForm: string;
+            shareFormPublic: string;
+            shareFormPrivate: string;
+            updateSuccess: string;
           };
           myShare: {
             title: string;

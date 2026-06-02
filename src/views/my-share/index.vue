@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { h, ref, computed } from 'vue';
 import { NTag } from 'naive-ui';
+import SvgIcon from '@/components/custom/svg-icon.vue';
 import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
-import { fetchGetMyShareList, fetchCancelShare } from '@/service/api/disk/share';
+import { fetchGetMyShareList, fetchCancelShare, fetchGetShareInfo } from '@/service/api/disk/share';
+import { useDiskStore } from '@/store/modules/disk';
 import { handleCopy } from '@/utils/copy';
 import FileIcon from '../disk/modules/file-icon.vue';
 import FileEmpty from '@/components/disk/file-empty.vue';
+import ShareDialog from '../disk/modules/share-dialog.vue';
 
 defineOptions({
   name: 'MySharePage'
@@ -20,6 +23,28 @@ const pagination = ref({ pageNum: 1, pageSize: 20 });
 const checkedRowKeys = ref<number[]>([]);
 
 const checkedCount = computed(() => checkedRowKeys.value.length);
+const diskStore = useDiskStore();
+
+const existingShareInfo = ref<Api.Disk.ShareResult | null>(null);
+
+async function handleFileNameClick(item: Api.Disk.MyShareItem) {
+  existingShareInfo.value = null;
+  const { data } = await fetchGetShareInfo(item.fileId);
+  if (data) {
+    existingShareInfo.value = data;
+  }
+  diskStore.openShareDialog({
+    fileId: item.fileId,
+    fileName: item.fileName,
+    fileType: contentTypeToFileType(item.contentType, item.isFolder),
+    fileExtension: item.fileExtension,
+    isFolder: item.isFolder,
+    fileSize: item.fileSize,
+    parentId: null,
+    filePath: '',
+    modifyTime: ''
+  } as Api.Disk.FileItem);
+}
 
 function buildShareLink(shortId: string) {
   return `${window.location.origin}/s/${shortId}`;
@@ -71,7 +96,7 @@ const columns = [
           extension: row.fileExtension,
           size: 'small'
         }),
-        h('span', { class: 'truncate' }, row.fileName)
+        h('span', { class: 'truncate cursor-pointer hover:text-primary transition-colors', onClick: () => handleFileNameClick(row) }, row.fileName)
       ]);
     }
   },
@@ -81,7 +106,7 @@ const columns = [
     width: 380,
     render(row: Api.Disk.MyShareItem) {
       const link = buildShareLink(row.shortId);
-      return h('div', { class: 'flex items-center gap-8px group' }, [
+      return h('div', { class: 'flex items-center gap-8px share-link-cell' }, [
         h(
           'span',
           {
@@ -93,27 +118,13 @@ const columns = [
         h(
           'button',
           {
-            class: 'opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:opacity-80 p-0 bg-transparent border-none',
+            class: 'row-action-btn opacity-0 transition-opacity cursor-pointer hover:opacity-80 p-0 bg-transparent border-none',
             onClick: (e: MouseEvent) => {
               e.stopPropagation();
               handleCancelSingle(row.shareId, row.fileName);
             }
           },
-          h('svg', {
-            xmlns: 'http://www.w3.org/2000/svg',
-            viewBox: '0 0 24 24',
-            width: '16',
-            height: '16',
-            class: 'text-error'
-          }, [
-            h('path', {
-              d: 'M6.5 6.5L17.5 17.5M17.5 6.5L6.5 17.5',
-              stroke: 'currentColor',
-              'stroke-width': '2',
-              'stroke-linecap': 'round',
-              fill: 'none'
-            })
-          ])
+          h(SvgIcon, { icon: 'material-symbols:share-off-outline-rounded', class: 'text-error', style: 'font-size:20px' })
         )
       ]);
     }
@@ -315,6 +326,13 @@ getData();
         </div>
       </div>
     </NCard>
+
+    <!-- Share Dialog -->
+    <ShareDialog
+      :existing-share="existingShareInfo"
+      @success="getData"
+      @cancel-share="getData"
+    />
   </div>
 </template>
 
@@ -324,5 +342,9 @@ getData();
   height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+:deep(.n-data-table-tr:hover) .row-action-btn {
+  opacity: 1;
 }
 </style>

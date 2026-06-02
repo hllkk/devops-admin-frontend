@@ -438,48 +438,48 @@ function handleRefresh() {
 
           <!-- 搜索框：平板及以上显示 -->
           <NInputGroup class="hidden sm:flex w-180px lg:w-240px">
-          <NPopover
-            trigger="focus"
-            placement="bottom-start"
-            :show-arrow="false"
-            :disabled="recentSearches.length === 0"
-            :style="{ width: '100%' }"
-            content-style="padding: 8px 0;"
-          >
-            <template #trigger>
-              <NInput
-                v-model:value="searchKeyword"
-                :placeholder="$t('page.disk.toolbar.searchPlaceholder')"
-                clearable
-                @keydown.enter="handleSearch"
-              />
-            </template>
-            <div class="flex flex-col gap-4px min-w-150px">
-              <div class="flex items-center justify-between px-8px mb-4px text-12px text-gray-500">
-                <span>{{ $t('page.disk.toolbar.recentSearch') }}</span>
-                <NButton text size="tiny" @click.stop="handleClearRecent">
-                  {{ $t('common.clear') }}
-                </NButton>
+            <NPopover
+              trigger="focus"
+              placement="bottom-start"
+              :show-arrow="false"
+              :disabled="recentSearches.length === 0"
+              :style="{ width: '100%' }"
+              content-style="padding: 8px 0;"
+            >
+              <template #trigger>
+                <NInput
+                  v-model:value="searchKeyword"
+                  :placeholder="$t('page.disk.toolbar.searchPlaceholder')"
+                  clearable
+                  @keydown.enter="handleSearch"
+                />
+              </template>
+              <div class="flex flex-col gap-4px min-w-150px">
+                <div class="flex items-center justify-between px-8px mb-4px text-12px text-gray-500">
+                  <span>{{ $t('page.disk.toolbar.recentSearch') }}</span>
+                  <NButton text size="tiny" @click.stop="handleClearRecent">
+                    {{ $t('common.clear') }}
+                  </NButton>
+                </div>
+                <div
+                  v-for="item in recentSearches"
+                  :key="item"
+                  class="flex items-center gap-8px px-8px py-6px cursor-pointer hover:bg-primary/10 rd-4px text-13px"
+                  @click="handleRecentSearchClick(item)"
+                >
+                  <SvgIcon icon="mdi:clock-outline" :size="14" class="text-gray-400" />
+                  <span class="flex-1 truncate">{{ item }}</span>
+                </div>
               </div>
-              <div
-                v-for="item in recentSearches"
-                :key="item"
-                class="flex items-center gap-8px px-8px py-6px cursor-pointer hover:bg-primary/10 rd-4px text-13px"
-                @click="handleRecentSearchClick(item)"
-              >
-                <SvgIcon icon="mdi:clock-outline" :size="14" class="text-gray-400" />
-                <span class="flex-1 truncate">{{ item }}</span>
-              </div>
-            </div>
-          </NPopover>
-          <NButton type="primary" @click="handleSearch">
-            <template #icon>
-              <SvgIcon icon="mdi:magnify" :size="18" class="dark:text-white" />
-            </template>
-          </NButton>
-        </NInputGroup>
-      </div>
-    </template>
+            </NPopover>
+            <NButton type="primary" @click="handleSearch">
+              <template #icon>
+                <SvgIcon icon="mdi:magnify" :size="18" class="dark:text-white" />
+              </template>
+            </NButton>
+          </NInputGroup>
+        </div>
+      </template>
     </template>
 
     <!-- 选中状态 -->

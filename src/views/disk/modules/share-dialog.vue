@@ -2,13 +2,14 @@
 import { ref, computed, watch, h } from 'vue';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
-import { fetchCreateShare, fetchCancelShare } from '@/service/api/disk/share';
+import { fetchCreateShare, fetchCancelShare, fetchUpdateShare } from '@/service/api/disk/share';
 import { fetchCreateInternalShare, fetchGetFileShareTargets } from '@/service/api/disk/internal-share';
 import { fetchGetUserSelect } from '@/service/api/system/user';
 import { formatFileSize } from '@/utils/format';
 import { handleCopy } from '@/utils/copy';
 import DeptTree from '@/components/custom/dept-tree.vue';
 import FileIcon from './file-icon.vue';
+import QRCode from 'qrcode';
 
 defineOptions({
   name: 'ShareDialog'
@@ -51,7 +52,7 @@ const codeModeOptions = computed(() => [
   { label: $t('page.disk.share.customCode'), value: 'custom' }
 ]);
 
-// 链接分享配置
+// 链接分享配置（创建模式）
 const validity = ref('7');
 const shareType = ref('public');
 const codeMode = ref('random');
@@ -64,7 +65,7 @@ const loading = ref(false);
 // Tab
 const activeTab = ref('link');
 
-// 共享给用户 — 逐用户权限
+// 共享给用户
 const selectedUsers = ref<number[]>([]);
 interface UserOption {
   label: string;
@@ -76,15 +77,41 @@ const userLoading = ref(false);
 const userPermissionMap = ref<Record<number, string[]>>({});
 const internalRemark = ref('');
 
-// 已有共享目标（回显用）
+// 已有共享目标
 const existingTargets = ref<Api.Disk.FileShareTargetItem[]>([]);
 
-// 共享给部门 — 逐部门权限
+// 共享给部门
 const selectedDepts = ref<number[]>([]);
 const deptOptions = ref<any[]>([]);
 const deptPermissionMap = ref<Record<number, string[]>>({});
 
-// 根据文件类型过滤可用权限
+// ===== 已有分享管理状态 =====
+const editShareType = ref<'public' | 'private'>('public');
+const editExpireTimestamp = ref<number | null>(null);
+const editPermissions = ref<string[]>([]);
+const qrCodeDataUrl = ref('');
+const updateLoading = ref(false);
+
+// 已有分享本地副本
+const currentShare = ref<Api.Disk.ShareResult | null>(null);
+
+// 已有分享完整链接
+const existingShareLink = computed(() => {
+  if (!currentShare.value) return '';
+  return `${window.location.origin}${currentShare.value.link}`;
+});
+
+// 口令文本：链接?pwd=提取码，浏览器打开时自动填写
+const shareCodeText = computed(() => {
+  if (!currentShare.value) return '';
+  const code = currentShare.value.extractionCode || '';
+  if (code) {
+    return `${existingShareLink.value}?pwd=${code}`;
+  }
+  return existingShareLink.value;
+});
+
+// 根据文件类型过滤可用权限（创建内部共享时）
 const availablePermissions = computed(() => {
   const all = [
     { label: $t('page.disk.sharedWithMe.permDownload'), value: 'DOWNLOAD' },
@@ -96,12 +123,32 @@ const availablePermissions = computed(() => {
   return all.filter(p => p.value !== 'UPLOAD');
 });
 
+// 已有分享时的可编辑权限（文件: 编辑+删除, 文件夹: 上传+编辑+删除）
+const editablePermissions = computed(() => {
+  if (shareFile.value?.isFolder) {
+    return [
+      { label: $t('page.disk.share.permUpload'), value: 'UPLOAD' },
+      { label: $t('page.disk.share.permEdit'), value: 'PUT' },
+      { label: $t('page.disk.share.permDelete'), value: 'DELETE' }
+    ];
+  }
+  return [
+    { label: $t('page.disk.share.permEdit'), value: 'PUT' },
+    { label: $t('page.disk.share.permDelete'), value: 'DELETE' }
+  ];
+});
+
+// 分享形式下拉选项
+const shareFormOptions = computed(() => [
+  { label: $t('page.disk.share.shareFormPublic'), value: 'public' },
+  { label: $t('page.disk.share.shareFormPrivate'), value: 'private' }
+]);
+
 const defaultNewUserPermissions = computed(() => {
   const perms = availablePermissions.value.map(p => p.value);
   return ['DOWNLOAD', ...perms.filter(p => p !== 'DOWNLOAD')].slice(0, 1);
 });
 
-// 部门ID到名称的映射
 const deptNameMap = computed(() => {
   const map: Record<number, string> = {};
   function walk(nodes: any[]) {
@@ -116,17 +163,14 @@ const deptNameMap = computed(() => {
   return map;
 });
 
-// 已有共享的用户目标
 const existingUserTargets = computed(() =>
   existingTargets.value.filter(t => t.targetType === 'user')
 );
 
-// 已有共享的部门目标
 const existingDeptTargets = computed(() =>
   existingTargets.value.filter(t => t.targetType === 'dept')
 );
 
-// 下拉框过滤：排除已选用户和已有共享用户
 const filteredUserOptions = computed(() => {
   const excludeIds = new Set([
     ...selectedUsers.value,
@@ -135,41 +179,27 @@ const filteredUserOptions = computed(() => {
   return userOptions.value.filter(u => !excludeIds.has(u.value));
 });
 
+const hasExistingShare = computed(() => !!currentShare.value);
 
-// 是否已有链接分享
-const hasExistingShare = computed(() => !!props.existingShare);
-
-// 已有分享的完整链接
-const existingShareLink = computed(() => {
-  if (!props.existingShare) return '';
-  const baseUrl = window.location.origin;
-  return `${baseUrl}${props.existingShare.link}`;
-});
-
-// 是否私密分享
 const isPrivate = computed(() => shareType.value === 'private');
 
-// 提取码验证
 const codeValid = computed(() => {
   if (!isPrivate.value) return true;
   if (codeMode.value === 'random') return randomCode.value.length === 4;
   return /^[a-zA-Z0-9]{4}$/.test(customCode.value);
 });
 
-// 自定义地址验证
 const addressValid = computed(() => {
   if (!customAddressEnabled.value) return true;
   if (!customAddress.value) return false;
   return /^[a-zA-Z0-9_-]{3,32}$/.test(customAddress.value);
 });
 
-// 链接预览
 const shareLinkPreview = computed(() => {
   const shortId = customAddressEnabled.value && customAddress.value ? customAddress.value : 'xxxxxx';
   return `/s/${shortId}`;
 });
 
-// 链接分享表单验证
 const formValid = computed(() => {
   if (!shareFile.value) return false;
   if (!codeValid.value) return false;
@@ -188,7 +218,6 @@ const fileInfo = computed(() => {
   };
 });
 
-// 用户选项名 map
 const userOptionMap = computed(() => {
   const map: Record<number, UserOption> = {};
   userOptions.value.forEach(u => {
@@ -196,6 +225,111 @@ const userOptionMap = computed(() => {
   });
   return map;
 });
+
+// ===== 同步已有分享数据 =====
+watch(() => props.existingShare, async (share) => {
+  if (share) {
+    currentShare.value = { ...share, operationPermissionList: share.operationPermissionList ? [...share.operationPermissionList] : [] };
+    editShareType.value = share.isPrivate ? 'private' : 'public';
+    editPermissions.value = share.operationPermissionList ? [...share.operationPermissionList] : [];
+    if (share.expireDate) {
+      editExpireTimestamp.value = new Date(share.expireDate).getTime();
+    } else {
+      editExpireTimestamp.value = null;
+    }
+    try {
+      const fullUrl = window.location.origin + share.link;
+      qrCodeDataUrl.value = await QRCode.toDataURL(fullUrl, {
+        width: 120,
+        margin: 2
+      });
+    } catch {
+      qrCodeDataUrl.value = '';
+    }
+  } else {
+    currentShare.value = null;
+    qrCodeDataUrl.value = '';
+  }
+}, { immediate: true });
+
+// ===== 更新分享处理 =====
+async function handleUpdateShareType(value: 'public' | 'private') {
+  if (!currentShare.value?.shareId) return;
+  updateLoading.value = true;
+  const isPriv = value === 'private';
+  const params: Api.Disk.UpdateShareParams = {
+    shareId: currentShare.value.shareId,
+    isPrivate: isPriv
+  };
+  // 从公开切换到私密时，自动生成提取码
+  if (isPriv) {
+    params.extractionCode = generateRandomCode();
+  }
+  const { error, data } = await fetchUpdateShare(params);
+  if (!error && data) {
+    window.$message?.success($t('page.disk.share.updateSuccess'));
+    currentShare.value.isPrivate = isPriv;
+    if (data.extractionCode) {
+      currentShare.value.extractionCode = data.extractionCode;
+    } else if (!isPriv) {
+      currentShare.value.extractionCode = '';
+    }
+    editShareType.value = isPriv ? 'private' : 'public';
+  }
+  updateLoading.value = false;
+}
+
+async function handleUpdateExpireDate(ts: number) {
+  if (!currentShare.value?.shareId) return;
+  updateLoading.value = true;
+  const { error } = await fetchUpdateShare({
+    shareId: currentShare.value.shareId,
+    expireAt: Math.floor(ts / 1000)
+  });
+  if (!error) {
+    window.$message?.success($t('page.disk.share.updateSuccess'));
+    currentShare.value.expireDate = new Date(ts).toISOString();
+    editExpireTimestamp.value = ts;
+  }
+  updateLoading.value = false;
+}
+
+async function handleUpdatePermissions(perms: string[]) {
+  if (!currentShare.value?.shareId) return;
+  updateLoading.value = true;
+  const { error } = await fetchUpdateShare({
+    shareId: currentShare.value.shareId,
+    operationPermissionList: perms
+  });
+  if (!error) {
+    window.$message?.success($t('page.disk.share.updateSuccess'));
+    if (currentShare.value) {
+      currentShare.value.operationPermissionList = [...perms];
+    }
+  }
+  updateLoading.value = false;
+}
+
+function toggleEditPermission(perm: string) {
+  const current = [...editPermissions.value];
+  const idx = current.indexOf(perm);
+  if (idx >= 0) {
+    current.splice(idx, 1);
+  } else {
+    current.push(perm);
+  }
+  editPermissions.value = current;
+  handleUpdatePermissions(current);
+}
+
+// ===== 复制处理 =====
+function handleCopyExistingLink() {
+  handleCopy(existingShareLink.value);
+}
+
+function handleCopyExistingCode() {
+  handleCopy(shareCodeText.value);
+}
 
 function generateRandomCode(): string {
   const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -246,7 +380,6 @@ function renderUserLabel(option: UserOption) {
   return h('div', { style: 'display:flex;align-items:center;gap:8px;' }, [avatar, option.label]);
 }
 
-// 切换用户权限
 function toggleUserPermission(userId: number, perm: string) {
   const current = userPermissionMap.value[userId] || [];
   if (current.includes(perm)) {
@@ -262,16 +395,13 @@ function toggleUserPermission(userId: number, perm: string) {
   }
 }
 
-// 移除已选用户
 function removeUser(userId: number) {
   selectedUsers.value = selectedUsers.value.filter(id => id !== userId);
   const updated = { ...userPermissionMap.value };
   const { [userId]: _, ...rest } = updated;
   userPermissionMap.value = rest;
-  userPermissionMap.value = updated;
 }
 
-// 批量设置用户权限
 function setAllUsersPermission(perm: string, checked: boolean) {
   const updated = { ...userPermissionMap.value };
   for (const userId of selectedUsers.value) {
@@ -285,7 +415,6 @@ function setAllUsersPermission(perm: string, checked: boolean) {
   userPermissionMap.value = updated;
 }
 
-// 切换部门权限
 function toggleDeptPermission(deptId: number, perm: string) {
   const current = deptPermissionMap.value[deptId] || [];
   if (current.includes(perm)) {
@@ -301,7 +430,6 @@ function toggleDeptPermission(deptId: number, perm: string) {
   }
 }
 
-// 批量设置部门权限
 function setAllDeptsPermission(perm: string, checked: boolean) {
   const updated = { ...deptPermissionMap.value };
   for (const deptId of selectedDepts.value) {
@@ -357,7 +485,7 @@ watch(() => diskStore.shareDialogVisible, async visible => {
     deptPermissionMap.value = {};
     internalRemark.value = '';
     existingTargets.value = [];
-    activeTab.value = hasExistingShare.value ? 'user' : 'link';
+    activeTab.value = 'link';
     loadUserOptions();
     loadExistingTargets();
   }
@@ -369,7 +497,6 @@ watch(activeTab, tab => {
   }
 });
 
-// 新选用户时自动分配默认权限
 watch(selectedUsers, (newVal, oldVal) => {
   const added = newVal.filter(id => !oldVal?.includes(id));
   if (added.length > 0) {
@@ -384,7 +511,6 @@ watch(selectedUsers, (newVal, oldVal) => {
   }
 }, { deep: true });
 
-// 新选部门时自动分配默认权限
 watch(selectedDepts, (newVal, oldVal) => {
   const added = newVal.filter(id => !oldVal?.includes(id));
   if (added.length > 0) {
@@ -480,26 +606,23 @@ async function handleDeptShare() {
 }
 
 async function handleCancelExistingShare() {
-  if (!props.existingShare?.shareId || !shareFile.value) return;
+  if (!currentShare.value?.shareId || !shareFile.value) return;
   loading.value = true;
-  const { error } = await fetchCancelShare(props.existingShare.shareId);
+  const { error } = await fetchCancelShare(currentShare.value.shareId);
   loading.value = false;
   if (!error) {
     window.$message?.success($t('page.disk.share.cancelSuccess'));
     emit('cancelShare', shareFile.value.fileId);
+    currentShare.value = null;
     diskStore.closeShareDialog();
   }
-}
-
-function handleCopyExistingLink() {
-  handleCopy(existingShareLink.value);
 }
 
 // 权限标签映射
 const permLabelMap: Record<string, string> = {
   DOWNLOAD: $t('page.disk.sharedWithMe.permDownload'),
-  UPLOAD: $t('page.disk.sharedWithMe.permUpload'),
-  PUT: $t('page.disk.sharedWithMe.permEdit'),
+  UPLOAD: $t('page.disk.share.permUpload'),
+  PUT: $t('page.disk.share.permEdit'),
   DELETE: $t('page.disk.sharedWithMe.permDelete'),
   SHARE: $t('page.disk.sharedWithMe.permShare')
 };
@@ -530,33 +653,101 @@ const permLabelMap: Record<string, string> = {
         </div>
       </div>
 
-      <!-- 已有链接分享状态条 -->
-      <div v-if="hasExistingShare" class="flex items-center gap-8px p-10px rounded bg-primary/8 dark:bg-primary/15">
-        <SvgIcon icon="mdi:link-variant" :size="18" class="text-primary shrink-0" />
-        <div class="flex-1 min-w-0">
-          <div class="text-13px">
-            <span class="opacity-70">{{ $t('page.disk.share.linkShare') }}：</span>
-            <span class="font-mono text-12px select-all">{{ existingShareLink }}</span>
-          </div>
-          <div v-if="props.existingShare?.isPrivate && props.existingShare.extractionCode" class="text-12px opacity-60 mt-2px">
-            {{ $t('page.disk.share.extractionCode') }}：{{ props.existingShare.extractionCode }}
-          </div>
-        </div>
-        <NButton quaternary size="tiny" @click="handleCopyExistingLink">
-          <template #icon><SvgIcon icon="mdi:content-copy" :size="14" /></template>
-        </NButton>
-        <NButton quaternary size="tiny" type="error" :loading="loading" @click="handleCancelExistingShare">
-          <template #icon><SvgIcon icon="mdi:close-circle-outline" :size="14" /></template>
-        </NButton>
-      </div>
-
       <!-- Share Type Tabs -->
       <NTabs v-model:value="activeTab" type="line" animated>
         <!-- Link Share Tab -->
-        <NTabPane name="link" :tab="$t('page.disk.share.linkShare')" :disabled="hasExistingShare">
-          <div v-if="hasExistingShare" class="text-13px opacity-50 py-8px text-center">
-            {{ $t('page.disk.share.existingShareTip') }}
+        <NTabPane name="link" :tab="$t('page.disk.share.linkShare')">
+          <!-- === 已有分享 — 管理界面 === -->
+          <div v-if="hasExistingShare" class="flex flex-col gap-16px mt-4px">
+            <!-- 第一行：右侧到期时间 -->
+            <div class="flex justify-end items-center gap-8px">
+              <span class="text-13px opacity-70 w-56px text-right">{{ $t('page.disk.share.expireTime') }}</span>
+              <NDatePicker
+                :value="editExpireTimestamp"
+                type="date"
+                size="small"
+                style="width:140px"
+                :disabled="updateLoading"
+                @update:value="(val: number) => val && handleUpdateExpireDate(val)"
+              />
+            </div>
+
+            <!-- 第二行：右侧分享形式下拉 -->
+            <div class="flex justify-end items-center gap-8px">
+              <span class="text-13px opacity-70 w-56px text-right">{{ $t('page.disk.share.shareForm') }}</span>
+              <NSelect
+                :value="editShareType"
+                :options="shareFormOptions"
+                size="small"
+                style="width:140px"
+                :disabled="updateLoading"
+                @update:value="(val: 'public' | 'private') => handleUpdateShareType(val)"
+              />
+            </div>
+
+            <!-- 第三行：分享链接输入组 + 二维码 -->
+            <div class="bg-gray-100 dark:bg-gray-800 rounded">
+            <NInputGroup>
+              <NInput
+                :value="existingShareLink"
+                readonly
+                size="small"
+                style="width:90%"
+              />
+              <NPopover trigger="hover" placement="right">
+                <template #trigger>
+                  <NButton size="small" style="width:10%">
+                    <template #icon><SvgIcon icon="mdi:qrcode" :size="18" /></template>
+                  </NButton>
+                </template>
+                <div v-if="qrCodeDataUrl" class="p-8px bg-white rounded">
+                  <img :src="qrCodeDataUrl" alt="QR Code" class="w-128px h-128px block" />
+                </div>
+                <span v-else class="text-13px opacity-50">{{ $t('page.disk.share.qrCode') }}</span>
+              </NPopover>
+            </NInputGroup>
+            </div>
+
+            <!-- 第四行（仅私密）：提取码 -->
+            <div v-if="editShareType === 'private' && currentShare?.extractionCode" class="flex items-center gap-8px">
+              <span class="text-13px opacity-70">{{ $t('page.disk.share.extractionCode') }}</span>
+              <span class="text-16px font-bold tracking-widest text-primary">{{ currentShare.extractionCode }}</span>
+            </div>
+
+            <!-- 第五行：操作权限标签（仅私密） -->
+            <div v-if="editShareType === 'private' && currentShare?.operationPermissionList && currentShare.operationPermissionList.length > 0">
+              <div class="text-13px opacity-70 mb-6px">{{ $t('page.disk.share.operationPermissions') }}</div>
+              <div class="flex flex-wrap gap-6px">
+                <NTag
+                  v-for="perm in currentShare.operationPermissionList"
+                  :key="perm"
+                  size="small"
+                  :bordered="false"
+                  type="info"
+                >
+                  {{ permLabelMap[perm] || perm }}
+                </NTag>
+              </div>
+            </div>
+
+            <!-- 第六行：权限多选框（仅私密） -->
+            <div v-if="editShareType === 'private'">
+              <div class="text-13px opacity-70 mb-8px">{{ $t('page.disk.share.operationPermissions') }}</div>
+              <div class="flex flex-wrap gap-16px">
+                <NCheckbox
+                  v-for="perm in editablePermissions"
+                  :key="perm.value"
+                  :checked="editPermissions.includes(perm.value)"
+                  :disabled="updateLoading"
+                  @update:checked="toggleEditPermission(perm.value)"
+                >
+                  {{ perm.label }}
+                </NCheckbox>
+              </div>
+            </div>
           </div>
+
+          <!-- === 未分享 — 创建界面 === -->
           <div v-else class="flex flex-col gap-16px">
             <!-- 有效期 -->
             <div>
@@ -875,7 +1066,21 @@ const permLabelMap: Record<string, string> = {
     </div>
 
     <template #footer>
-      <div class="flex justify-end gap-8px">
+      <!-- 已分享状态 — 链接 Tab 按钮 -->
+      <div v-if="hasExistingShare && activeTab === 'link'" class="flex justify-end gap-8px">
+        <NButton type="error" :loading="loading" @click="handleCancelExistingShare">
+          {{ $t('page.disk.share.cancelShare') }}
+        </NButton>
+        <NButton v-if="editShareType === 'private'" @click="handleCopyExistingCode">
+          {{ $t('page.disk.share.copyCode') }}
+        </NButton>
+        <NButton type="primary" @click="handleCopyExistingLink">
+          {{ $t('page.disk.share.copyLink') }}
+        </NButton>
+      </div>
+
+      <!-- 未分享状态 / 其他 Tab -->
+      <div v-else class="flex justify-end gap-8px">
         <NButton @click="handleCancel">{{ $t('common.cancel') }}</NButton>
         <NButton type="primary" :loading="loading" :disabled="!canSubmit" @click="handleConfirm">
           {{ $t('page.disk.share.createShare') }}

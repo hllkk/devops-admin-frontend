@@ -31,6 +31,15 @@ export function fetchCancelShare(shareId: CommonType.IdType) {
   });
 }
 
+/** 更新分享 */
+export function fetchUpdateShare(data: Api.Disk.UpdateShareParams) {
+  return request<Api.Disk.ShareResult>({
+    url: '/share/update',
+    method: 'post',
+    data
+  });
+}
+
 /** 获取用户的分享列表 */
 export function fetchGetMyShareList(params: Api.Disk.MyShareListParams) {
   return request<Api.Disk.MyShareList>({

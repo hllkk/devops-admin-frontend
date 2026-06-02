@@ -319,6 +319,22 @@ declare namespace Api {
       expireDate?: string | null;
       /** 是否私密 */
       isPrivate: boolean;
+      /** 操作权限列表 */
+      operationPermissionList?: string[];
+    };
+
+    /** 更新分享参数 */
+    type UpdateShareParams = {
+      /** 分享ID */
+      shareId: number;
+      /** 是否私密 */
+      isPrivate?: boolean;
+      /** 过期时间戳（秒） */
+      expireAt?: number;
+      /** 提取码 */
+      extractionCode?: string;
+      /** 操作权限列表 */
+      operationPermissionList?: string[];
     };
 
     /** 公开分享信息 */
@@ -371,10 +387,14 @@ declare namespace Api {
     type MyShareItem = {
       /** 分享ID */
       shareId: number;
+      /** 文件ID */
+      fileId: number;
       /** 短链接ID */
       shortId: string;
       /** 文件名 */
       fileName: string;
+      /** 文件大小 */
+      fileSize: number;
       /** 文件MIME类型 */
       contentType: string;
       /** 文件扩展名 */

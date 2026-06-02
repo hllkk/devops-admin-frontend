@@ -53,15 +53,8 @@ async function loadShareInfo() {
 
   // 判断是否需要验证提取码
   if (data.isPrivate) {
-    // 私密分享：检查 URL 中是否有 pwd 参数
-    if (pwdParam.value) {
-      // 自动验证
-      await verifyWithCode(pwdParam.value);
-      verifiedExtractionCode.value = pwdParam.value;
-    } else {
-      // 显示提取码输入页面
-      pageState.value = 'verify';
-    }
+    // 私密分享：显示提取码输入页面（pwd 参数自动填入输入框）
+    pageState.value = 'verify';
   } else {
     // 公开分享：直接显示文件列表
     pageState.value = 'list';
@@ -114,6 +107,7 @@ onMounted(() => {
         v-else-if="pageState === 'verify'"
         :short-id="shortId"
         :share-info="shareInfo"
+        :prefill-code="pwdParam"
         @verify="verifyWithCode"
       />
 
