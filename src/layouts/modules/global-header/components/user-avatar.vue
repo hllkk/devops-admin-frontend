@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, h } from 'vue';
 import { useRouter } from 'vue-router';
 import type { VNode } from 'vue';
 import { useBoolean } from '@sa/hooks';
 import { useAuthStore } from '@/store/modules/auth';
+import { useAppStore } from '@/store/modules/app';
+import { useDiskStore } from '@/store/modules/disk';
 import { useRouterPush, useSharedPageNav } from '@/hooks/common/router';
 import { useSvgIcon } from '@/hooks/common/icon';
 import defaultAvatar from '@/assets/imgs/soybean.jpg';
@@ -15,11 +17,32 @@ defineOptions({
 
 const router = useRouter();
 const authStore = useAuthStore();
+const appStore = useAppStore();
 const { toLogin } = useRouterPush();
 const { SvgIconVNode } = useSvgIcon();
 const { navigateToSharedPage, currentModule } = useSharedPageNav();
 
 const { bool: avatarError, setTrue: setError, setFalse: clearError } = useBoolean(false);
+
+// 移动端存储空间信息
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+const storageInfo = computed(() => {
+  if (!appStore.isMobile) return null;
+  const diskStore = useDiskStore();
+  const quota = diskStore.quotaInfo;
+  const used = formatBytes(quota.usedSpace);
+  const total = quota.unlimited ? '无限制' : formatBytes(quota.quota);
+  const percent = quota.unlimited || quota.quota === 0 ? 0 : Math.min(Math.round((quota.usedSpace / quota.quota) * 100), 100);
+  const color = percent >= 90 ? '#ef4444' : percent >= 80 ? '#f97316' : '#22c55e';
+  return { label: `已使用 ${used} / ${total}`, percent, color };
+});
 
 function loginOrRegister() {
   toLogin();
@@ -33,17 +56,25 @@ function handleAvatarError() {
   setError();
 }
 
-type DropdownKey = 'userCenter' | 'switchRole' | 'toAdmin' | 'toDisk' | 'logout';
+type DropdownKey = 'userCenter' | 'switchRole' | 'toAdmin' | 'toDisk' | 'logout' | 'storage-info';
 
 type DropdownOption =
   | {
       key: DropdownKey;
       label: string;
       icon?: () => VNode;
+      disabled?: boolean;
+      type?: string;
+      render?: () => VNode;
     }
   | {
       type: 'divider';
       key: string;
+    }
+  | {
+      type: 'render';
+      key: string;
+      render: () => VNode;
     };
 
 // 判断当前模块
@@ -68,6 +99,29 @@ const hasAdminPermission = computed(() => {
 
 const options = computed(() => {
   const opts: DropdownOption[] = [];
+
+  // 移动端：显示存储空间信息（含进度条）
+  if (storageInfo.value) {
+    const info = storageInfo.value;
+    opts.push({
+      type: 'render',
+      key: 'storage-info',
+      render: () =>
+        h('div', { class: 'px-12px py-6px' }, [
+          h('div', { class: 'flex items-center gap-6px text-12px mb-6px text-gray-500 dark:text-gray-400' }, [
+            SvgIconVNode({ icon: 'mdi:cloud-outline', fontSize: 16 })?.(),
+            h('span', { class: 'truncate' }, info.label)
+          ]),
+          h('div', { class: 'relative h-4px rd-2px overflow-hidden bg-gray-200 dark:bg-gray-700' }, [
+            h('div', {
+              class: 'absolute left-0 top-0 bottom-0 rd-2px transition-all duration-500',
+              style: { width: `${info.percent}%`, background: info.color }
+            })
+          ])
+        ])
+    });
+    opts.push({ type: 'divider', key: 'divider-storage' });
+  }
 
   // 不在 disk 页面时，显示"我的网盘"
   if (!isDiskPage.value) {

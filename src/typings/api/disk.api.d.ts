@@ -377,6 +377,8 @@ declare namespace Api {
       fileName: string;
       /** 文件MIME类型 */
       contentType: string;
+      /** 文件扩展名 */
+      fileExtension: string;
       /** 是否文件夹 */
       isFolder: boolean;
       /** 创建时间 */

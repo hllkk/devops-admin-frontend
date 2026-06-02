@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import type { DropdownOption } from 'naive-ui';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
+import { useAppStore } from '@/store/modules/app';
 import { useSvgIcon } from '@/hooks/common/icon';
 
 defineOptions({
@@ -39,6 +40,7 @@ interface Emits {
 const emit = defineEmits<Emits>();
 
 const diskStore = useDiskStore();
+const appStore = useAppStore();
 const { SvgIconVNode } = useSvgIcon();
 
 // 是否有选中
@@ -230,8 +232,8 @@ function handleClearAll() {
           </NTooltip>
         </NDropdown>
 
-        <!-- 视图切换 -->
-        <NTooltip trigger="hover">
+        <!-- 视图切换（移动端隐藏） -->
+        <NTooltip v-if="!appStore.isMobile" trigger="hover">
           <template #trigger>
             <NButton @click="toggleViewMode">
               <template #icon>

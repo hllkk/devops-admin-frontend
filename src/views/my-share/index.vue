@@ -68,7 +68,7 @@ const columns = [
       return h('div', { class: 'flex items-center gap-8px' }, [
         h(FileIcon, {
           fileType: contentTypeToFileType(row.contentType, row.isFolder),
-          extension: row.contentType,
+          extension: row.fileExtension,
           size: 'small'
         }),
         h('span', { class: 'truncate' }, row.fileName)
@@ -263,7 +263,7 @@ getData();
                 <div class="flex items-center gap-8px">
                   <FileIcon
                     :file-type="contentTypeToFileType(item.contentType, item.isFolder)"
-                    :extension="item.contentType"
+                    :extension="item.fileExtension"
                     size="small"
                   />
                   <span class="flex-1 truncate text-14px font-medium">{{ item.fileName }}</span>

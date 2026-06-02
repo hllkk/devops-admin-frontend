@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
+import { useAppStore } from '@/store/modules/app';
 import { fetchGetFileList, fetchCreateFolder, fetchCreateFile, fetchRenameFile, mapBackendFileList, fetchGetQuota, fetchAddFavorite, fetchRemoveFavorite } from '@/service/api/disk';
 import { fetchIsAllowDownload, fetchIsAllowPackageDownload } from '@/service/api/disk/file';
 import { fetchGetShareInfo } from '@/service/api/disk/share';
@@ -30,6 +31,7 @@ defineOptions({
 });
 
 const diskStore = useDiskStore();
+const appStore = useAppStore();
 const route = useRoute();
 const router = useRouter();
 const { loading, startLoading, endLoading } = useLoading();
@@ -596,7 +598,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <TableSiderLayout sider-title="文件管理">
+  <TableSiderLayout sider-title="文件管理" :hide-sider="appStore.isMobile">
     <template #header-extra>
       <NTooltip trigger="hover">
         <template #trigger>
@@ -614,7 +616,7 @@ onMounted(async () => {
       />
     </template>
     <div class="h-full flex-col-stretch gap-12px overflow-hidden lt-sm:overflow-auto">
-      <NCard :bordered="false" size="small" class="card-wrapper flex-1-hidden">
+      <NCard :bordered="false" size="small" class="card-wrapper flex-1-hidden" :content-style="{ padding: 0, height: '100%', display: 'flex', flexDirection: 'column' }">
         <!-- Toolbar -->
         <Toolbar
           @search="handleSearch"
@@ -662,6 +664,7 @@ onMounted(async () => {
           :files="fileList"
           :loading="loading"
           page-type="disk"
+          class="flex-1 min-h-0"
           @file-dbl-click="handleFileDblClick"
           @file-created="handleFileCreated"
           @folder-created="handleFolderCreated"

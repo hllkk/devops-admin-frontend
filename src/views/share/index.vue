@@ -27,6 +27,9 @@ const shareInfo = ref<Api.Disk.SharePublicInfo | null>(null);
 // 错误信息
 const errorMessage = ref('');
 
+// 保存已验证的提取码（用于下载时传递）
+const verifiedExtractionCode = ref('');
+
 // 系统名称（从配置读取）
 const systemName = ref('网盘');
 
@@ -54,6 +57,7 @@ async function loadShareInfo() {
     if (pwdParam.value) {
       // 自动验证
       await verifyWithCode(pwdParam.value);
+      verifiedExtractionCode.value = pwdParam.value;
     } else {
       // 显示提取码输入页面
       pageState.value = 'verify';
@@ -80,6 +84,7 @@ async function verifyWithCode(code: string) {
 
   // 验证成功，更新分享信息并显示列表
   shareInfo.value = data;
+  verifiedExtractionCode.value = code;
   pageState.value = 'list';
 }
 
@@ -117,6 +122,7 @@ onMounted(() => {
         v-else-if="pageState === 'list'"
         :short-id="shortId"
         :share-info="shareInfo"
+        :extraction-code="verifiedExtractionCode"
       />
 
       <!-- 403 页面 -->

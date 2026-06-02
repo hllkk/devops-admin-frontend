@@ -310,17 +310,37 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
           ]);
         }
         return h('div', { class: 'flex items-center gap-8px' }, [
-          row.isFavorite ? h('span', { class: 'mr-2px' }, [
-            h(SvgIcon, { icon: 'mdi:star', size: 14, class: 'text-yellow-400' })
-          ]) : null,
-          h(FileIcon, {
-            fileType: row.isFolder ? 'folder' : row.fileType,
-            extension: row.fileExtension,
-            size: 'small',
-            fileId: row.fileId,
-            mediaCover: row.mediaCover
-          }),
-          h('span', { class: 'truncate' }, row.fileName)
+          h('div', { class: 'relative shrink-0' }, [
+            row.isFavorite ? h('div', {
+              class: 'absolute top-0 left-0 z-10 bg-yellow-400 dark:bg-yellow-500 rd-full p-1px shadow-sm'
+            }, [
+              h(SvgIcon, { icon: 'mdi:star', size: 10, class: 'text-white' })
+            ]) : null,
+            h(FileIcon, {
+              fileType: row.isFolder ? 'folder' : row.fileType,
+              extension: row.fileExtension,
+              size: 'small',
+              fileId: row.fileId,
+              mediaCover: row.mediaCover
+            }),
+            row.isShare ? h('div', {
+              class: 'absolute top-0 right-0 z-10 bg-green-500 dark:bg-green-600 rd-full p-1px shadow-sm'
+            }, [
+              h(SvgIcon, { icon: 'mdi:share-variant', size: 10, class: 'text-white' })
+            ]) : null
+          ]),
+          h('div', { class: 'flex flex-col min-w-0' }, [
+            h('span', { class: 'truncate' }, row.fileName),
+            isMobile.value
+              ? h(
+                  'span',
+                  { class: 'text-12px text-gray-400 dark:text-gray-500 truncate mt-1' },
+                  row.isFolder
+                    ? `${$t('page.disk.file.folder')} · ${row.modifyTime}`
+                    : `${formatFileSize(row.fileSize)} · ${row.fileExtension?.toUpperCase() || '-'} · ${row.modifyTime}`
+                )
+              : null
+          ])
         ]);
       }
     }
@@ -489,7 +509,7 @@ function getRowKey(row: Api.Disk.FileItem) {
       :row-key="getRowKey"
       :row-props="getRowProps"
       size="small"
-      :flex-height="!isMobile"
+      :flex-height="true"
       class="flex-1"
       @update:checked-row-keys="handleCheckedRowKeysChange"
     />

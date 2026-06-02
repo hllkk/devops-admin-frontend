@@ -9,11 +9,14 @@ defineOptions({
 interface Props {
   defaultExpanded?: boolean;
   siderTitle?: string;
+  /** 隐藏侧边栏（移动端使用） */
+  hideSider?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   defaultExpanded: false,
-  siderTitle: undefined
+  siderTitle: undefined,
+  hideSider: false
 });
 
 const time = new Date().getTime();
@@ -33,7 +36,7 @@ const desktopCollapsed = ref(!props.defaultExpanded);
     item-responsive
     responsive="screen"
   >
-    <NGridItem span="24 s:24 1034:10 m:8 l:7 xl:6 xxl:5">
+    <NGridItem v-if="!hideSider" span="24 s:24 1034:10 m:8 l:7 xl:6 xxl:5">
       <NCard
         :bordered="false"
         size="small"
@@ -55,12 +58,13 @@ const desktopCollapsed = ref(!props.defaultExpanded);
         </NCollapse>
       </NCard>
     </NGridItem>
-    <NGridItem class="content" span="24 s:24 m:16 l:17 xl:18 xxl:19">
+    <NGridItem class="content" :span="hideSider ? 24 : '24 s:24 m:16 l:17 xl:18 xxl:19'">
       <slot />
     </NGridItem>
   </NGrid>
   <NLayout v-else has-sider>
     <NLayoutSider
+      v-if="!hideSider"
       v-model:collapsed="desktopCollapsed"
       collapse-mode="transform"
       :collapsed-width="0"

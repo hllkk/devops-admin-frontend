@@ -18,17 +18,23 @@ export function fetchVerifyShare(data: { shortId: string; extractionCode: string
 }
 
 /** 下载分享文件 */
-export function fetchDownloadShareFile(shortId: string, fileId: CommonType.IdType) {
+export function fetchDownloadShareFile(
+  shortId: string,
+  fileId: CommonType.IdType,
+  extractionCode?: string
+) {
   return request<{ downloadUrl: string }>({
     url: `/share/download/${shortId}/${fileId}`,
-    method: 'get'
+    method: 'get',
+    headers: extractionCode ? { 'X-Extraction-Code': extractionCode } : undefined
   });
 }
 
 /** 打包下载全部分享文件 */
-export function fetchDownloadSharePackage(shortId: string) {
+export function fetchDownloadSharePackage(shortId: string, extractionCode?: string) {
   return request<{ downloadUrl: string }>({
     url: `/share/package/${shortId}`,
-    method: 'get'
+    method: 'get',
+    headers: extractionCode ? { 'X-Extraction-Code': extractionCode } : undefined
   });
 }

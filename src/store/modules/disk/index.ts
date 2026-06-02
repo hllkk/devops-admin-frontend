@@ -1,5 +1,5 @@
 import { computed, ref, watch } from 'vue';
-import { useDebounceFn } from '@vueuse/core';
+import { useDebounceFn, useBreakpoints } from '@vueuse/core';
 import { defineStore } from 'pinia';
 import { SetupStoreId } from '@/enum';
 import { localStg } from '@/utils/storage';
@@ -46,6 +46,13 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
 
   // 视图模式
   const viewMode = ref<'grid' | 'list'>('grid');
+
+  // 移动端强制列表模式
+  const breakpoints = useBreakpoints({ sm: 640 });
+  const isMobile = breakpoints.smaller('sm');
+  watch(isMobile, mobile => {
+    if (mobile) viewMode.value = 'list';
+  }, { immediate: true });
 
   // 排序设置
   const sortSettings = ref<{

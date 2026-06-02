@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { $t } from '@/locales';
 import { fetchDownloadShareFile, fetchDownloadSharePackage } from '@/service/api/disk/share-public';
+import { getServiceBaseURL } from '@/utils/service';
 import FileIcon from '@/views/disk/modules/file-icon.vue';
 
 defineOptions({
@@ -11,11 +12,28 @@ defineOptions({
 interface Props {
   shortId: string;
   shareInfo: Api.Disk.SharePublicInfo | null;
+  extractionCode?: string;
 }
 
 const props = defineProps<Props>();
 
 const downloadLoading = ref(false);
+
+// 拼接后端完整 URL 并触发浏览器下载
+function triggerBrowserDownload(downloadUrl: string) {
+  const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
+  const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
+  const fullUrl = `${baseURL}${downloadUrl}`;
+
+  const link = document.createElement('a');
+  link.href = fullUrl;
+  link.style.display = 'none';
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 
 // 文件列表
 const fileList = computed(() => props.shareInfo?.files ?? []);
@@ -46,33 +64,22 @@ async function handleDownloadFile(item: Api.Disk.ShareFileItem) {
   }
 
   downloadLoading.value = true;
-  const { data, error } = await fetchDownloadShareFile(props.shortId, item.fileId);
+  const { data, error } = await fetchDownloadShareFile(props.shortId, item.fileId, props.extractionCode);
   downloadLoading.value = false;
 
   if (!error && data?.downloadUrl) {
-    // 触发下载
-    const link = document.createElement('a');
-    link.href = data.downloadUrl;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    triggerBrowserDownload(data.downloadUrl);
   }
 }
 
 // 打包下载全部
 async function handleDownloadPackage() {
   downloadLoading.value = true;
-  const { data, error } = await fetchDownloadSharePackage(props.shortId);
+  const { data, error } = await fetchDownloadSharePackage(props.shortId, props.extractionCode);
   downloadLoading.value = false;
 
   if (!error && data?.downloadUrl) {
-    const link = document.createElement('a');
-    link.href = data.downloadUrl;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    triggerBrowserDownload(data.downloadUrl);
   }
 }
 

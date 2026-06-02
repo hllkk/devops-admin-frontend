@@ -311,7 +311,7 @@ getData();
 
 <template>
   <div class="min-h-500px h-full flex-col-stretch gap-0 overflow-hidden lt-lg:overflow-auto">
-    <NCard :bordered="false" size="small" class="card-wrapper h-full flex-1-hidden">
+    <NCard :bordered="false" size="small" class="card-wrapper h-full flex-1-hidden" :content-style="{ padding: 0, height: '100%', display: 'flex', flexDirection: 'column' }">
       <div class="h-full flex flex-col">
         <SimpleToolbar
           page-type="recent"
@@ -325,7 +325,7 @@ getData();
           @download="handleToolbarDownload"
         />
 
-        <div class="flex-1 overflow-hidden lt-sm:flex-initial lt-sm:overflow-auto">
+        <div class="flex-1 overflow-hidden">
           <FileEmpty v-if="showEmpty" :description="$t('page.disk.recent.empty')" />
 
           <FileGrid

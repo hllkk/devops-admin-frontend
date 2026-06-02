@@ -63,7 +63,7 @@ const fileTypeIconMap: Record<string, string> = {
 };
 
 const iconSizeMap: Record<string, number> = {
-  small: 30,
+  small: 36,
   medium: 40,
   large: 80
 };
@@ -97,6 +97,9 @@ const showThumbnail = computed(() => thumbnailUrl.value !== '');
 
 const showPlayIcon = computed(() => showThumbnail.value && props.fileType === 'video');
 
+const playButtonSize = computed(() => (props.size === 'small' ? 'w-4 h-4' : 'w-7 h-7'));
+const playIconSize = computed(() => (props.size === 'small' ? 12 : 20));
+
 function handleThumbnailError() {
   thumbnailError.value = true;
 }
@@ -120,8 +123,8 @@ function handleThumbnailError() {
       v-if="showPlayIcon"
       class="absolute inset-0 flex items-center justify-center"
     >
-      <div class="w-7 h-7 rd-full flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <icon-mdi-play class="text-white text-5" />
+      <div class="rd-full flex items-center justify-center bg-black/40 backdrop-blur-sm" :class="[playButtonSize]">
+        <icon-mdi-play class="text-white" :style="{ fontSize: `${playIconSize}px` }" />
       </div>
     </div>
   </div>

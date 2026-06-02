@@ -256,7 +256,7 @@ getData();
           @download="handleToolbarDownload"
         />
 
-        <div class="flex-1 overflow-hidden lt-sm:flex-initial lt-sm:overflow-auto">
+        <div class="flex-1 overflow-hidden">
           <FileEmpty v-if="showEmpty" :description="$t('page.disk.favorite.empty')" />
 
           <FileGrid
