@@ -67,35 +67,14 @@ export const generatedRoutes: GeneratedRoute[] = [
   {
     name: 'disk',
     path: '/disk',
-    component: 'layout.base',
+    component: 'layout.disk$view.disk',
     meta: {
       title: 'disk',
       i18nKey: 'route.disk',
       icon: 'mdi:harddisk',
       order: 2,
       module: 'disk'
-    },
-    children: [
-      {
-        name: 'disk_modules',
-        path: '/disk/modules',
-        meta: {
-          title: 'disk_modules',
-          i18nKey: 'route.disk_modules'
-        },
-        children: [
-          {
-            name: 'disk_modules_share-dialog',
-            path: '/disk/modules/share-dialog',
-            component: 'view.disk_modules_share-dialog',
-            meta: {
-              title: 'disk_modules_share-dialog',
-              i18nKey: 'route.disk_modules_share-dialog'
-            }
-          }
-        ]
-      }
-    ]
+    }
   },
   {
     name: 'favorite',
