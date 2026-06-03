@@ -1644,6 +1644,8 @@ const local: App.I18n.Schema = {
         acceptSuccess: '已接受共享',
         saveToDrive: '保存到我的网盘',
         saveToDriveSuccess: '已保存到我的网盘',
+        itemsToSave: '要保存的文件',
+        selectTargetFolder: '选择目标文件夹',
         source: '来源',
         refresh: '刷新',
         needAcceptFirst: '请先接受共享后再预览或打开',

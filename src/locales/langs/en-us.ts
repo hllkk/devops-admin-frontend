@@ -1651,6 +1651,8 @@ const local: App.I18n.Schema = {
         acceptSuccess: 'Share accepted',
         saveToDrive: 'Save to My Drive',
         saveToDriveSuccess: 'Saved to My Drive',
+        itemsToSave: 'Items to save',
+        selectTargetFolder: 'Select target folder',
         source: 'Source',
         refresh: 'Refresh',
         needAcceptFirst: 'Please accept the share first to preview or open',
