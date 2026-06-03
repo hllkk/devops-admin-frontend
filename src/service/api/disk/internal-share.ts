@@ -6,6 +6,7 @@ export function fetchCreateInternalShare(data: {
   shareType: 'user' | 'dept';
   targets: { targetId: number; permissions: string[] }[];
   expireDate?: string;
+  remark?: string;
 }) {
   return request<boolean>({
     url: '/share/internal/create',
