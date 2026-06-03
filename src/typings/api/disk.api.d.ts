@@ -553,18 +553,16 @@ declare namespace Api {
       permissions: string[];
       /** 过期时间 */
       expireDate?: string | null;
-      /** 状态 */
-      status: string;
-      /** 当前用户对此共享的接收状态 */
-      targetStatus: 'pending' | 'active' | 'rejected';
       /** 来源标签 (直接分享 / 部门: XX) */
       sourceLabel?: string;
-      /** 备注 */
-      remark?: string;
       /** 创建时间 */
       createdAt: string;
       /** 是否有媒体封面 */
       mediaCover?: boolean;
+      /** 是否已挂载 */
+      isMounted: boolean;
+      /** 挂载ID */
+      mountId?: number | null;
     };
 
     /** 共享给我的列表响应 */
@@ -583,7 +581,7 @@ declare namespace Api {
       targetId: number;
       targetName: string;
       permissions: string[];
-      status: string;
+      mountName?: string;
     };
   }
 }
