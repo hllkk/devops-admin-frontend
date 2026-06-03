@@ -1690,7 +1690,8 @@ const local: App.I18n.Schema = {
         newFolder: 'New Folder',
         uploadSuccess: 'Upload successful',
         createFolderSuccess: 'Folder created successfully',
-        folderNamePlaceholder: 'Enter folder name'
+        folderNamePlaceholder: 'Enter folder name',
+        shareCancelled: '{user} cancelled the share'
       },
       recent: {
         title: 'Recent',

@@ -110,7 +110,7 @@ onMounted(() => {
         clearable
         @update:value="handleSearch"
       />
-      <NButton @click="handleSearch" :loading="loading">
+      <NButton :loading="loading" @click="handleSearch">
         {{ $t('common.search') }}
       </NButton>
     </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { h, ref, computed, reactive, watch, onMounted } from 'vue';
+import { h, ref, computed, reactive, watch, onMounted, onUnmounted } from 'vue';
 import type { DropdownOption } from 'naive-ui';
 import { NTag } from 'naive-ui';
 import { useRoute, useRouter } from 'vue-router';
@@ -7,6 +7,7 @@ import { useLoading } from '@sa/hooks';
 import { useSvgIcon } from '@/hooks/common/icon';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
+import { onSSEMessage } from '@/hooks/common/sse';
 import {
   fetchGetSharedWithMeList,
   fetchGetSharedFolderContents,
@@ -886,6 +887,18 @@ onMounted(async () => {
   if (route.query.shareId) {
     await restoreFromUrl();
   }
+});
+
+// SSE 订阅：监听新共享事件，自动刷新列表
+const unsubscribe = onSSEMessage('share_created', () => {
+  // 如果当前在共享给我的页面，自动刷新列表
+  if (!isBrowsingFolder.value) {
+    getData();
+  }
+});
+
+onUnmounted(() => {
+  unsubscribe();
 });
 </script>
 

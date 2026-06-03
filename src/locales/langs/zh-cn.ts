@@ -1683,7 +1683,8 @@ const local: App.I18n.Schema = {
         newFolder: '新建文件夹',
         uploadSuccess: '上传成功',
         createFolderSuccess: '文件夹创建成功',
-        folderNamePlaceholder: '请输入文件夹名称'
+        folderNamePlaceholder: '请输入文件夹名称',
+        shareCancelled: '{user} 取消了文件共享'
       },
       recent: {
         title: '最近访问',

@@ -1473,6 +1473,7 @@ declare namespace App {
             uploadSuccess: string;
             createFolderSuccess: string;
             folderNamePlaceholder: string;
+            shareCancelled: string;
           };
           recent: {
             title: string;

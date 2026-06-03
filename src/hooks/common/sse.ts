@@ -19,6 +19,19 @@ interface ShareNotificationData {
   shareUser: string;
 }
 
+interface ShareCreatedData {
+  shareId: number;
+  fileId: number;
+  fileName: string;
+  shareUser: string;
+}
+
+interface ShareCancelledData {
+  shareId: number;
+  fileId: number;
+  shareUser: string;
+}
+
 const RECONNECT_DELAY = 3000;
 const MAX_RECONNECT_DELAY = 30000;
 const HEARTBEAT_TIMEOUT = 45000;
@@ -116,6 +129,30 @@ function handleMessage(event: MessageEvent) {
     const shareData = msg.data as ShareNotificationData;
     if (shareData) {
       showShareNotification(shareData);
+    }
+  }
+
+  if (msg.type === 'share_created') {
+    const noticeStore = useNoticeStore();
+    noticeStore.fetchUnreadCount();
+    noticeStore.fetchMyNotices();
+
+    // 弹窗提醒用户新共享
+    const shareData = msg.data as ShareCreatedData;
+    if (shareData) {
+      showShareNotification(shareData);
+    }
+  }
+
+  if (msg.type === 'share_cancelled') {
+    const noticeStore = useNoticeStore();
+    noticeStore.fetchUnreadCount();
+    noticeStore.fetchMyNotices();
+
+    // 提示用户共享已取消
+    const shareData = msg.data as ShareCancelledData;
+    if (shareData) {
+      window.$message?.info($t('page.disk.sharedWithMe.shareCancelled', { user: shareData.shareUser }));
     }
   }
 
