@@ -49,6 +49,7 @@ const permissionOptions = computed(() => {
 });
 
 function handleStartEdit() {
+  currentPermissions.value = [...props.permissions];
   isEditing.value = true;
 }
 
@@ -109,7 +110,7 @@ function renderTargetIcon() {
     <span class="flex-1 truncate text-13px">{{ targetName }}</span>
 
     <template v-if="isEditing">
-      <NCheckboxGroup :value="currentPermissions" class="flex gap-8px">
+      <div class="flex gap-8px">
         <NCheckbox
           v-for="opt in permissionOptions"
           :key="opt.value"
@@ -118,7 +119,7 @@ function renderTargetIcon() {
         >
           {{ opt.label }}
         </NCheckbox>
-      </NCheckboxGroup>
+      </div>
       <NButton size="tiny" class="ml-12px" @click="handleCancelEdit">
         {{ $t('common.cancel') }}
       </NButton>
