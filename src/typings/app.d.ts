@@ -1434,6 +1434,9 @@ declare namespace App {
             acceptSuccess: string;
             saveToDrive: string;
             saveToDriveSuccess: string;
+            mounted: string;
+            itemsToSave: string;
+            selectTargetFolder: string;
             source: string;
             refresh: string;
             needAcceptFirst: string;

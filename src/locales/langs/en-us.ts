@@ -1652,6 +1652,7 @@ const local: App.I18n.Schema = {
         saveToDrive: 'Save to My Drive',
         saveToDriveSuccess: 'Saved to My Drive',
         itemsToSave: 'Items to save',
+        mounted: 'Saved',
         selectTargetFolder: 'Select target folder',
         source: 'Source',
         refresh: 'Refresh',

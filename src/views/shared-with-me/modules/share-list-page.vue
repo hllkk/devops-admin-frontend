@@ -11,9 +11,7 @@ import {
   fetchGetSharedWithMeList,
   fetchGetSharedFolderContents,
   fetchCancelInternalShare,
-  fetchRejectInternalShare,
-  fetchAcceptInternalShare,
-  fetchSaveToMyDrive,
+  fetchBatchSaveToDrive,
   fetchIsAllowDownload,
   fetchIsAllowPackageDownload,
   fetchRenameFile,
@@ -32,6 +30,7 @@ import FileIcon from '../../disk/modules/file-icon.vue';
 import MoveCopyDialog from '../../disk/modules/move-copy-dialog.vue';
 import ShareDialog from '../../disk/modules/share-dialog.vue';
 import FileEmpty from '@/components/disk/file-empty.vue';
+import SaveToDriveDialog from '../../disk/modules/save-to-drive-dialog.vue';
 
 defineOptions({ name: 'ShareListPage' });
 
@@ -59,16 +58,11 @@ const checkedRowKeys = ref<number[]>([]);
 
 const searchKeyword = ref('');
 const contentTypeFilter = ref<string | null>(null);
-const statusFilter = ref<string | null>(null);
 const contentTypeOptions = [
   { label: $t('page.disk.sharedWithMe.image'), value: 'image/' },
   { label: $t('page.disk.sharedWithMe.video'), value: 'video/' },
   { label: $t('page.disk.sharedWithMe.audio'), value: 'audio/' },
   { label: $t('page.disk.sharedWithMe.document'), value: 'application/' }
-];
-const statusOptions = [
-  { label: $t('page.disk.sharedWithMe.pending'), value: 'pending' },
-  { label: $t('page.disk.sharedWithMe.accepted'), value: 'active' }
 ];
 
 const browsingFolder = ref<Api.Disk.SharedWithMeItem | null>(null);
@@ -88,6 +82,10 @@ const ctxMenuFolderFile = ref<Api.Disk.FileItem | null>(null);
 const imagePreviewRef = ref<InstanceType<typeof ImagePreview>>();
 
 const existingShareInfo = ref<Api.Disk.ShareResult | null>(null);
+
+// --- Save to drive dialog state ---
+const saveToDriveVisible = ref(false);
+const pendingSaveItems = ref<Array<{ shareId: number; fileId: number; fileName: string }>>([]);
 
 // --- Upload state ---
 const uploadFileInputRef = ref<HTMLInputElement>();
@@ -221,7 +219,7 @@ const permissionTagTypeMap: Record<string, 'success' | 'info' | 'warning' | 'err
 
 // --- Cancel share (unified by shareType) ---
 async function cancelShare(id: number) {
-  return isUserShare.value ? await fetchRejectInternalShare(id) : await fetchCancelInternalShare(id);
+  return isUserShare.value ? await fetchCancelInternalShare(id) : await fetchCancelInternalShare(id);
 }
 
 // --- Data fetching ---
@@ -232,7 +230,6 @@ async function getData() {
   if (props.showFilter) {
     if (searchKeyword.value) params.keyword = searchKeyword.value;
     if (contentTypeFilter.value) params.contentType = contentTypeFilter.value;
-    if (statusFilter.value) params.targetStatus = statusFilter.value;
   }
   const { data, error } = await fetchGetSharedWithMeList(params as Parameters<typeof fetchGetSharedWithMeList>[0]);
   endLoading();
@@ -484,7 +481,7 @@ function handleCtxMenuSelect(key: string) {
   switch (key) {
     case 'open': handleShareFileDblClick(item); break;
     case 'download': handleDownload([file]); break;
-    case 'saveToDrive': if (isUserShare.value) handleSaveToMyDrive(item.fileShareId); break;
+    case 'saveToDrive': if (isUserShare.value) handleSaveToMyDrive(item); break;
     case 'rename':
       diskStore.startRenaming(item.fileId, item.fileName);
       renamingFile.value = file;
@@ -498,11 +495,6 @@ function handleCtxMenuSelect(key: string) {
 
 // --- File double-click ---
 async function handleShareFileDblClick(item: Api.Disk.SharedWithMeItem) {
-  if (isUserShare.value && item.targetStatus === 'pending') {
-    window.$notification?.warning({ content: $t('page.disk.sharedWithMe.needAcceptFirst'), duration: 3000 });
-    return;
-  }
-
   if (item.isFolder) {
     enterSharedFolder(item);
     return;
@@ -628,18 +620,21 @@ async function handleShareFile(file: Api.Disk.FileItem) {
   diskStore.openShareDialog(file);
 }
 
-async function handleAcceptShare(id: number) {
-  const { error } = await fetchAcceptInternalShare(id);
-  if (!error) {
-    window.$message?.success($t('page.disk.sharedWithMe.acceptSuccess'));
-    getData();
-  }
+async function handleSaveToMyDrive(item: Api.Disk.SharedWithMeItem) {
+  pendingSaveItems.value = [{
+    shareId: item.fileShareId,
+    fileId: item.fileId,
+    fileName: item.fileName
+  }];
+  saveToDriveVisible.value = true;
 }
 
-async function handleSaveToMyDrive(id: number) {
-  const { error } = await fetchSaveToMyDrive(id);
+async function handleSaveToDriveConfirm(targetFolderId: CommonType.IdType) {
+  const { error } = await fetchBatchSaveToDrive(pendingSaveItems.value, Number(targetFolderId));
   if (!error) {
     window.$message?.success($t('page.disk.sharedWithMe.saveToDriveSuccess'));
+    saveToDriveVisible.value = false;
+    getData();
   }
 }
 
@@ -723,16 +718,10 @@ const shareColumns = computed(() => {
           h('span', { class: 'flex-1 truncate', style: 'min-width:0' }, row.fileName)
         ];
 
-        if (isUserShare.value && row.targetStatus === 'pending') {
+        // Show mounted status or exit button
+        if (isUserShare.value && row.isMounted) {
           children.push(
-            h('button', {
-              class: 'text-12px px-6px py-2px rd-4px bg-success text-white border-none cursor-pointer',
-              onClick: (e: MouseEvent) => { e.stopPropagation(); handleAcceptShare(row.fileShareId); }
-            }, $t('page.disk.sharedWithMe.accept')),
-            h('button', {
-              class: 'text-12px px-6px py-2px rd-4px bg-error text-white border-none cursor-pointer',
-              onClick: (e: MouseEvent) => { e.stopPropagation(); handleCancelSingle(row.fileShareId, row.fileName); }
-            }, $t('page.disk.sharedWithMe.reject'))
+            h(NTag, { size: 'small', type: 'success' }, () => $t('page.disk.sharedWithMe.mounted'))
           );
         } else {
           children.push(
@@ -922,14 +911,6 @@ onMounted(async () => {
             class="w-120px lt-sm:w-full"
             @update:value="getData"
           />
-          <NSelect
-            v-model:value="statusFilter"
-            :options="statusOptions"
-            clearable
-            :placeholder="$t('page.disk.sharedWithMe.receiveStatus')"
-            class="w-120px lt-sm:w-full"
-            @update:value="getData"
-          />
           <NButton size="small" quaternary @click="getData">
             <template #icon><icon-mdi-refresh class="text-16px" /></template>
             {{ $t('page.disk.sharedWithMe.refresh') }}
@@ -1030,6 +1011,9 @@ onMounted(async () => {
 
                 <div class="flex items-center justify-end gap-8px pt-4px">
                   <NButton size="tiny" quaternary @click.stop="handleDownload([convertToFileItem(item)])">{{ $t('page.disk.sharedWithMe.permDownload') }}</NButton>
+                  <NButton v-if="isUserShare" size="tiny" quaternary :disabled="item.isMounted" @click.stop="handleSaveToMyDrive(item)">
+                    {{ item.isMounted ? $t('page.disk.sharedWithMe.mounted') : $t('page.disk.sharedWithMe.saveToDrive') }}
+                  </NButton>
                   <NButton size="tiny" quaternary @click.stop="handleShareFile(convertToFileItem(item))">{{ $t('page.disk.sharedWithMe.permShare') }}</NButton>
                   <NButton size="tiny" type="error" quaternary @click.stop="handleCancelSingle(item.fileShareId, item.fileName)">{{ $t('page.disk.sharedWithMe.exitShare') }}</NButton>
                 </div>
@@ -1082,6 +1066,11 @@ onMounted(async () => {
 
     <MoveCopyDialog @success="getData" />
     <ShareDialog :existing-share="existingShareInfo" @success="getData" />
+    <SaveToDriveDialog
+      v-model:visible="saveToDriveVisible"
+      :items="pendingSaveItems"
+      @confirm="handleSaveToDriveConfirm"
+    />
     <ImagePreview ref="imagePreviewRef" />
     <FilePreviewOverlays
       :video-preview-file="preview.videoPreviewFile"

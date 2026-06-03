@@ -1645,6 +1645,7 @@ const local: App.I18n.Schema = {
         saveToDrive: '保存到我的网盘',
         saveToDriveSuccess: '已保存到我的网盘',
         itemsToSave: '要保存的文件',
+        mounted: '已保存',
         selectTargetFolder: '选择目标文件夹',
         source: '来源',
         refresh: '刷新',
