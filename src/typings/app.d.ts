@@ -1376,6 +1376,8 @@ declare namespace App {
             dept: string;
             sharedUsers: string;
             sharedDepts: string;
+            noSharedUsers: string;
+            noSharedDepts: string;
             addUser: string;
             shareManagement: string;
             copyLink: string;
