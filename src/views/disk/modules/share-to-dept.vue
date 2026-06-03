@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { $t } from '@/locales';
 import { useLoading } from '@sa/hooks';
 import {
@@ -8,9 +8,8 @@ import {
   fetchUpdateTargetPermissions,
   fetchRemoveShareTarget
 } from '@/service/api/disk/internal-share';
-import SharePermissionChecker from './share-permission-checker.vue';
+import { fetchGetDeptSelect } from '@/service/api/system/dept';
 import ShareTargetItem from './share-target-item.vue';
-import DeptTree from '@/components/custom/dept-tree.vue';
 
 defineOptions({
   name: 'ShareToDept'
@@ -22,11 +21,27 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const { loading, startLoading, endLoading } = useLoading();
-const selectedPermissions = ref<string[]>(['DOWNLOAD']);
+interface DeptOption {
+  label: string;
+  value: number;
+}
+
+const { startLoading, endLoading } = useLoading();
+
 const selectedDeptIds = ref<number[]>([]);
+const selectedPermissions = ref<string[]>(['DOWNLOAD']);
 const existingTargets = ref<Api.Disk.FileShareTargetItem[]>([]);
-const deptOptions = ref<any[]>([]);
+const deptOptions = ref<DeptOption[]>([]);
+const deptLoading = ref(false);
+
+const permissionOptions = computed(() => [
+  { label: $t('page.disk.sharedWithMe.permDownload'), value: 'DOWNLOAD' },
+  { label: $t('page.disk.sharedWithMe.permUpload'), value: 'UPLOAD' },
+  { label: $t('page.disk.sharedWithMe.permEdit'), value: 'PUT' },
+  { label: $t('page.disk.sharedWithMe.permDelete'), value: 'DELETE' }
+]);
+
+const canSubmit = computed(() => selectedDeptIds.value.length > 0 && selectedPermissions.value.length > 0);
 
 async function loadExistingTargets() {
   const { data } = await fetchGetFileShareTargets(props.fileId);
@@ -35,16 +50,26 @@ async function loadExistingTargets() {
   }
 }
 
-async function handleConfirmShare() {
-  if (selectedDeptIds.value.length === 0) {
-    window.$message?.warning($t('page.disk.share.selectDept'));
-    return;
+async function loadDeptOptions() {
+  if (deptOptions.value.length > 0) return;
+  deptLoading.value = true;
+  const { data } = await fetchGetDeptSelect();
+  if (data) {
+    deptOptions.value = data.map(d => ({
+      label: d.deptName || '',
+      value: d.deptId as number
+    }));
   }
+  deptLoading.value = false;
+}
+
+async function handleSubmit() {
+  if (!canSubmit.value) return;
 
   startLoading();
-  const targets = selectedDeptIds.value.map(deptId => ({
-    targetId: deptId,
-    permissions: selectedPermissions.value
+  const targets = selectedDeptIds.value.map(id => ({
+    targetId: id,
+    permissions: [...selectedPermissions.value]
   }));
 
   const { error } = await fetchCreateInternalShare({
@@ -61,9 +86,9 @@ async function handleConfirmShare() {
   }
 }
 
-async function handleUpdateTargetPermissions(targetId: number, permissions: string[]) {
+async function handleUpdateTargetPermissions(id: number, permissions: string[]) {
   startLoading();
-  const { error } = await fetchUpdateTargetPermissions(targetId, permissions);
+  const { error } = await fetchUpdateTargetPermissions(id, permissions);
   endLoading();
   if (!error) {
     window.$message?.success($t('page.disk.share.updateSuccess'));
@@ -71,13 +96,17 @@ async function handleUpdateTargetPermissions(targetId: number, permissions: stri
   }
 }
 
-async function handleRemoveTarget(targetId: number) {
+async function handleRemoveTarget(id: number) {
+  const idx = existingTargets.value.findIndex(t => t.id === id);
+  if (idx < 0) return;
+  const removed = existingTargets.value.splice(idx, 1)[0];
   startLoading();
-  const { error } = await fetchRemoveShareTarget(targetId);
+  const { error } = await fetchRemoveShareTarget(id);
   endLoading();
-  if (!error) {
+  if (error) {
+    existingTargets.value.splice(idx, 0, removed);
+  } else {
     window.$message?.success($t('page.disk.myShare.cancelSuccess'));
-    await loadExistingTargets();
   }
 }
 
@@ -88,11 +117,39 @@ onMounted(() => {
 
 <template>
   <div class="flex flex-col gap-16px">
+    <div class="flex items-center gap-8px">
+      <NSelect
+        v-model:value="selectedDeptIds"
+        multiple
+        filterable
+        :placeholder="$t('page.disk.share.selectDept')"
+        :options="deptOptions"
+        :loading="deptLoading"
+        class="flex-1"
+        @focus="loadDeptOptions"
+      />
+      <NSelect
+        v-model:value="selectedPermissions"
+        multiple
+        :options="permissionOptions"
+        :placeholder="$t('page.disk.share.permissions')"
+        class="w-200px"
+      />
+      <NButton
+        type="primary"
+        :disabled="!canSubmit"
+        @click="handleSubmit"
+      >
+        {{ $t('common.confirm') }}
+      </NButton>
+    </div>
+
     <div v-if="existingTargets.length > 0" class="flex flex-col gap-8px">
       <div class="text-12px opacity-50">{{ $t('page.disk.share.sharedDepts') }}</div>
       <ShareTargetItem
         v-for="target in existingTargets"
-        :key="target.targetId"
+        :id="target.id"
+        :key="target.id"
         :target-id="target.targetId"
         :target-name="target.targetName"
         target-type="dept"
@@ -101,27 +158,8 @@ onMounted(() => {
         @remove="handleRemoveTarget"
       />
     </div>
-
-    <div class="flex flex-col gap-12px p-12px rounded bg-gray-50 dark:bg-gray-800">
-      <div class="text-13px opacity-70 mb-8px">{{ $t('page.disk.share.selectDept') }}</div>
-
-      <DeptTree v-model:value="selectedDeptIds" v-model:options="deptOptions" :immediate="true" />
-
-      <div>
-        <div class="text-12px opacity-70 mb-8px">{{ $t('page.disk.share.permissions') }}</div>
-        <SharePermissionChecker
-          v-model:permissions="selectedPermissions"
-        />
-      </div>
-
-      <NButton
-        type="primary"
-        :disabled="selectedDeptIds.length === 0"
-        :loading="loading"
-        @click="handleConfirmShare"
-      >
-        {{ $t('page.disk.share.shareToDept') }}
-      </NButton>
+    <div v-else class="py-24px text-center text-13px opacity-40">
+      {{ $t('page.disk.share.noSharedDepts') }}
     </div>
   </div>
 </template>

@@ -575,6 +575,7 @@ declare namespace Api {
 
     /** 文件共享目标项（回显用） */
     type FileShareTargetItem = {
+      id: number;
       fileShareId: number;
       shareType: string;
       targetType: string;

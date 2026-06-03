@@ -1594,6 +1594,8 @@ const local: App.I18n.Schema = {
         dept: 'Dept',
         sharedUsers: 'Shared Users',
         sharedDepts: 'Shared Departments',
+        noSharedUsers: 'No shared users',
+        noSharedDepts: 'No shared departments',
         addUser: 'Add Users',
         shareManagement: 'Share Management',
         copyLink: 'Copy Link',

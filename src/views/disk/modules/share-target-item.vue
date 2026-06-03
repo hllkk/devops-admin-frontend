@@ -7,6 +7,7 @@ defineOptions({
 });
 
 interface Props {
+  id: number;
   targetId: number;
   targetName: string;
   targetType: 'user' | 'dept';
@@ -21,8 +22,8 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 interface Emits {
-  (e: 'update', targetId: number, permissions: string[]): void;
-  (e: 'remove', targetId: number): void;
+  (e: 'update', id: number, permissions: string[]): void;
+  (e: 'remove', id: number): void;
 }
 
 const emit = defineEmits<Emits>();
@@ -57,7 +58,7 @@ function handleCancelEdit() {
 }
 
 function handleSaveEdit() {
-  emit('update', props.targetId, currentPermissions.value);
+  emit('update', props.id, currentPermissions.value);
   isEditing.value = false;
 }
 
@@ -77,7 +78,7 @@ function handleRemove() {
     positiveText: $t('common.confirm'),
     negativeText: $t('common.cancel'),
     onPositiveClick: () => {
-      emit('remove', props.targetId);
+      emit('remove', props.id);
     }
   });
 }
@@ -118,7 +119,7 @@ function renderTargetIcon() {
           {{ opt.label }}
         </NCheckbox>
       </NCheckboxGroup>
-      <NButton size="tiny" @click="handleCancelEdit">
+      <NButton size="tiny" class="ml-12px" @click="handleCancelEdit">
         {{ $t('common.cancel') }}
       </NButton>
       <NButton size="tiny" type="primary" @click="handleSaveEdit">
@@ -138,7 +139,7 @@ function renderTargetIcon() {
           {{ permLabelMap[perm] || perm }}
         </NTag>
       </div>
-      <NButton size="tiny" @click="handleStartEdit">
+      <NButton size="tiny" class="ml-12px" @click="handleStartEdit">
         {{ $t('common.modify') }}
       </NButton>
       <NButton size="tiny" type="error" @click="handleRemove">
