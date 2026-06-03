@@ -557,7 +557,16 @@ async function handleLinkShare() {
   loading.value = false;
   if (!error && data) {
     emit('success', data);
-    diskStore.closeShareDialog();
+    currentShare.value = { ...data, operationPermissionList: data.operationPermissionList ? [...data.operationPermissionList] : [] };
+    editShareType.value = data.isPrivate ? 'private' : 'public';
+    editPermissions.value = data.operationPermissionList ? [...data.operationPermissionList] : [];
+    editExpireTimestamp.value = data.expireDate ? new Date(data.expireDate).getTime() : null;
+    try {
+      const fullUrl = window.location.origin + data.link;
+      qrCodeDataUrl.value = await QRCode.toDataURL(fullUrl, { width: 120, margin: 2 });
+    } catch {
+      qrCodeDataUrl.value = '';
+    }
   }
 }
 
@@ -687,25 +696,25 @@ const permLabelMap: Record<string, string> = {
 
             <!-- 第三行：分享链接输入组 + 二维码 -->
             <div class="bg-gray-100 dark:bg-gray-800 rounded">
-            <NInputGroup>
-              <NInput
-                :value="existingShareLink"
-                readonly
-                size="small"
-                style="width:90%"
-              />
-              <NPopover trigger="hover" placement="right">
-                <template #trigger>
-                  <NButton size="small" style="width:10%">
-                    <template #icon><SvgIcon icon="mdi:qrcode" :size="18" /></template>
-                  </NButton>
-                </template>
-                <div v-if="qrCodeDataUrl" class="p-8px bg-white rounded">
-                  <img :src="qrCodeDataUrl" alt="QR Code" class="w-128px h-128px block" />
-                </div>
-                <span v-else class="text-13px opacity-50">{{ $t('page.disk.share.qrCode') }}</span>
-              </NPopover>
-            </NInputGroup>
+              <NInputGroup>
+                <NInput
+                  :value="existingShareLink"
+                  readonly
+                  size="small"
+                  style="width:90%"
+                />
+                <NPopover trigger="hover" placement="right">
+                  <template #trigger>
+                    <NButton size="small" style="width:10%">
+                      <template #icon><SvgIcon icon="mdi:qrcode" :size="18" /></template>
+                    </NButton>
+                  </template>
+                  <div v-if="qrCodeDataUrl" class="p-8px bg-white rounded">
+                    <img :src="qrCodeDataUrl" alt="QR Code" class="w-128px h-128px block" />
+                  </div>
+                  <span v-else class="text-13px opacity-50">{{ $t('page.disk.share.qrCode') }}</span>
+                </NPopover>
+              </NInputGroup>
             </div>
 
             <!-- 第四行（仅私密）：提取码 -->

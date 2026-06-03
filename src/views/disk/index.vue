@@ -21,7 +21,6 @@ import FileList from './modules/file-list.vue';
 import TransferPanel from './modules/transfer-panel.vue';
 import MoveCopyDialog from './modules/move-copy-dialog.vue';
 import ShareDialog from './modules/share-dialog.vue';
-import ShareResultDialog from './modules/share-result-dialog.vue';
 import FileDetailModal from './modules/file-detail-modal.vue';
 import ArchiveActionDialog from '@/components/disk/archive-action-dialog.vue';
 import ArchivePreview from '@/components/preview/archive-preview.vue';
@@ -53,11 +52,6 @@ const detailFile = ref<Api.Disk.FileItem | null>(null);
 
 // 已有链接分享信息（传入 share-dialog 供展示）
 const existingShareInfo = ref<Api.Disk.ShareResult | null>(null);
-
-// 分享结果相关
-const shareResult = ref<Api.Disk.ShareResult | null>(null);
-const shareResultVisible = ref(false);
-const lastSharedFileId = ref<CommonType.IdType | null>(null);
 
 // 显示容量开关
 const showCapacity = ref(true);
@@ -280,7 +274,7 @@ function handleToolbarBatchShare() {
 }
 
 /** 分享成功处理 - 乐观更新文件的 isShare 状态 */
-function handleShareSuccess(result: Api.Disk.ShareResult) {
+function handleShareSuccess(_result: Api.Disk.ShareResult) {
   // 乐观更新：立即更新文件的分享状态
   const shareFileId = diskStore.shareFile?.fileId;
   if (shareFileId) {
@@ -288,23 +282,7 @@ function handleShareSuccess(result: Api.Disk.ShareResult) {
     if (fileIndex !== -1) {
       fileList.value[fileIndex].isShare = true;
     }
-    lastSharedFileId.value = shareFileId;
   }
-  shareResult.value = result;
-  shareResultVisible.value = true;
-}
-
-/** 分享取消处理 - 乐观更新文件的 isShare 状态 */
-function handleShareCancelled() {
-  const shareFileId = diskStore.shareFile?.fileId ?? lastSharedFileId.value;
-  if (shareFileId) {
-    const fileIndex = fileList.value.findIndex(f => f.fileId === shareFileId);
-    if (fileIndex !== -1) {
-      fileList.value[fileIndex].isShare = false;
-    }
-  }
-  shareResult.value = null;
-  lastSharedFileId.value = null;
 }
 
 /** 取消分享处理（从 share-dialog 触发） - 乐观更新 */
@@ -690,12 +668,6 @@ onMounted(async () => {
     <MoveCopyDialog @success="getFileList" />
     <!-- Share Dialog -->
     <ShareDialog :existing-share="existingShareInfo" @success="handleShareSuccess" @cancel-share="handleCancelShare" />
-    <!-- Share Result Dialog -->
-    <ShareResultDialog
-      v-model:visible="shareResultVisible"
-      :result="shareResult"
-      @cancelled="handleShareCancelled"
-    />
     <!-- File Detail Modal -->
     <FileDetailModal
       v-model:visible="detailVisible"

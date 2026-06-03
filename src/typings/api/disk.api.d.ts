@@ -51,8 +51,12 @@ declare namespace Api {
       contentType?: string;
       /** 是否已收藏 */
       isFavorite?: boolean;
-      /** 是否已分享 */
+      /** 是否已分享（外链） */
       isShare?: boolean;
+      /** 已共享给用户数 */
+      sharedUserCount?: number;
+      /** 已共享给部门数 */
+      sharedDeptCount?: number;
     }> & {
       /** 兼容属性: 文件ID别名 */
       id?: CommonType.IdType;
@@ -452,7 +456,7 @@ declare namespace Api {
       hasMediaCover?: boolean;
       /** 是否已收藏 */
       isFavorite?: boolean;
-      /** 是否已分享 */
+      /** 是否已分享（外链） */
       isShare?: boolean;
     };
 

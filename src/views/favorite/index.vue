@@ -15,7 +15,6 @@ import FileList from '../disk/modules/file-list.vue';
 import FileEmpty from '@/components/disk/file-empty.vue';
 import MoveCopyDialog from '../disk/modules/move-copy-dialog.vue';
 import ShareDialog from '../disk/modules/share-dialog.vue';
-import ShareResultDialog from '../disk/modules/share-result-dialog.vue';
 import FileDetailModal from '../disk/modules/file-detail-modal.vue';
 
 defineOptions({
@@ -41,8 +40,6 @@ const renamingFile = ref<Api.Disk.FileItem | null>(null);
 
 // 分享状态
 const existingShareInfo = ref<Api.Disk.ShareResult | null>(null);
-const shareResult = ref<Api.Disk.ShareResult | null>(null);
-const shareResultVisible = ref(false);
 
 // 文件详情
 const detailVisible = ref(false);
@@ -117,9 +114,7 @@ async function handleShareFile(file: Api.Disk.FileItem) {
   diskStore.openShareDialog(file);
 }
 
-function handleShareSuccess(result: Api.Disk.ShareResult) {
-  shareResult.value = result;
-  shareResultVisible.value = true;
+function handleShareSuccess(_result: Api.Disk.ShareResult) {
   getData();
 }
 
@@ -308,7 +303,6 @@ getData();
 
     <MoveCopyDialog @success="getData" />
     <ShareDialog :existing-share="existingShareInfo" @success="handleShareSuccess" />
-    <ShareResultDialog v-model:visible="shareResultVisible" :result="shareResult" />
     <FileDetailModal v-model:visible="detailVisible" :file="detailFile" />
   </div>
 </template>

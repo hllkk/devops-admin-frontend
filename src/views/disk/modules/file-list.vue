@@ -327,6 +327,16 @@ const columns = computed<DataTableColumns<Api.Disk.FileItem>>(() => {
               class: 'absolute top-0 right-0 z-10 bg-green-500 dark:bg-green-600 rd-full p-1px shadow-sm'
             }, [
               h(SvgIcon, { icon: 'mdi:share-variant', size: 10, class: 'text-white' })
+            ]) : null,
+            row.sharedUserCount ? h('div', {
+              class: 'absolute bottom-0 left-0 z-10 bg-blue-500 dark:bg-blue-600 rd-full p-1px shadow-sm'
+            }, [
+              h(SvgIcon, { icon: 'mdi:account', size: 10, class: 'text-white' })
+            ]) : null,
+            row.sharedDeptCount ? h('div', {
+              class: 'absolute bottom-0 right-0 z-10 bg-purple-500 dark:bg-purple-600 rd-full p-1px shadow-sm'
+            }, [
+              h(SvgIcon, { icon: 'mdi:office-building', size: 10, class: 'text-white' })
             ]) : null
           ]),
           h('div', { class: 'flex flex-col min-w-0' }, [
