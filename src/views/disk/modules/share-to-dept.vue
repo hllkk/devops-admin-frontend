@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, onMounted } from 'vue';
 import { $t } from '@/locales';
 import { useLoading } from '@sa/hooks';
 import {
@@ -8,13 +8,12 @@ import {
   fetchUpdateTargetPermissions,
   fetchRemoveShareTarget
 } from '@/service/api/disk/internal-share';
-import { fetchGetUserSelect } from '@/service/api/system/user';
-import ShareUserSearch from './share-user-search.vue';
 import SharePermissionChecker from './share-permission-checker.vue';
 import ShareTargetItem from './share-target-item.vue';
+import DeptTree from '@/components/custom/dept-tree.vue';
 
 defineOptions({
-  name: 'ShareToUser'
+  name: 'ShareToDept'
 });
 
 interface Props {
@@ -23,69 +22,41 @@ interface Props {
 
 const props = defineProps<Props>();
 
-interface UserOption {
-  label: string;
-  value: number;
-  avatar?: string;
-}
-
 const { loading, startLoading, endLoading } = useLoading();
 const selectedPermissions = ref<string[]>(['DOWNLOAD']);
+const selectedDeptIds = ref<number[]>([]);
 const existingTargets = ref<Api.Disk.FileShareTargetItem[]>([]);
-const userOptions = ref<UserOption[]>([]);
-const showUserSearch = ref(false);
-
-const permLabelMap: Record<string, string> = {
-  DOWNLOAD: $t('page.disk.sharedWithMe.permDownload'),
-  UPLOAD: $t('page.disk.sharedWithMe.permUpload'),
-  PUT: $t('page.disk.sharedWithMe.permEdit'),
-  DELETE: $t('page.disk.sharedWithMe.permDelete')
-};
-
-const permissionOptions = computed(() => [
-  { label: permLabelMap.DOWNLOAD, value: 'DOWNLOAD' },
-  { label: permLabelMap.UPLOAD, value: 'UPLOAD' },
-  { label: permLabelMap.PUT, value: 'PUT' },
-  { label: permLabelMap.DELETE, value: 'DELETE' }
-]);
+const deptOptions = ref<any[]>([]);
 
 async function loadExistingTargets() {
   const { data } = await fetchGetFileShareTargets(props.fileId);
   if (data) {
-    existingTargets.value = data.filter(t => t.targetType === 'user');
+    existingTargets.value = data.filter(t => t.targetType === 'dept');
   }
 }
 
-async function loadUserOptions() {
-  if (userOptions.value.length > 0) return;
-  const { data } = await fetchGetUserSelect();
-  if (data) {
-    userOptions.value = data.map(u => ({
-      label: u.nickName ? `${u.nickName}（${u.userName}）` : u.userName,
-      value: u.userId as number,
-      avatar: u.avatar
-    }));
+async function handleConfirmShare() {
+  if (selectedDeptIds.value.length === 0) {
+    window.$message?.warning($t('page.disk.share.selectDept'));
+    return;
   }
-}
-
-async function handleUserSelect(users: UserOption[]) {
-  if (users.length === 0) return;
 
   startLoading();
-  const targets = users.map(u => ({
-    targetId: u.value,
+  const targets = selectedDeptIds.value.map(deptId => ({
+    targetId: deptId,
     permissions: selectedPermissions.value
   }));
 
   const { error } = await fetchCreateInternalShare({
     fileId: props.fileId,
-    shareType: 'user',
+    shareType: 'dept',
     targets
   });
 
   endLoading();
   if (!error) {
     window.$message?.success($t('page.disk.share.shareSuccess'));
+    selectedDeptIds.value = [];
     await loadExistingTargets();
   }
 }
@@ -110,41 +81,31 @@ async function handleRemoveTarget(targetId: number) {
   }
 }
 
-function getUserAvatar(userId: number) {
-  const user = userOptions.value.find(u => u.value === userId);
-  return user?.avatar;
-}
-
-function getUserName(userId: number) {
-  const user = userOptions.value.find(u => u.value === userId);
-  return user?.label || String(userId);
-}
-
 onMounted(() => {
   loadExistingTargets();
-  loadUserOptions();
 });
 </script>
 
 <template>
   <div class="flex flex-col gap-16px">
     <div v-if="existingTargets.length > 0" class="flex flex-col gap-8px">
-      <div class="text-12px opacity-50">{{ $t('page.disk.share.sharedUsers') }}</div>
+      <div class="text-12px opacity-50">{{ $t('page.disk.share.sharedDepts') }}</div>
       <ShareTargetItem
         v-for="target in existingTargets"
         :key="target.targetId"
         :target-id="target.targetId"
         :target-name="target.targetName"
-        target-type="user"
+        target-type="dept"
         :permissions="target.permissions"
-        :avatar="getUserAvatar(target.targetId)"
         @update="handleUpdateTargetPermissions"
         @remove="handleRemoveTarget"
       />
     </div>
 
     <div class="flex flex-col gap-12px p-12px rounded bg-gray-50 dark:bg-gray-800">
-      <div class="text-13px opacity-70 mb-8px">{{ $t('page.disk.share.addUser') }}</div>
+      <div class="text-13px opacity-70 mb-8px">{{ $t('page.disk.share.selectDept') }}</div>
+
+      <DeptTree v-model:value="selectedDeptIds" v-model:options="deptOptions" :immediate="true" />
 
       <div>
         <div class="text-12px opacity-70 mb-8px">{{ $t('page.disk.share.permissions') }}</div>
@@ -153,14 +114,14 @@ onMounted(() => {
         />
       </div>
 
-      <NButton @click="showUserSearch = !showUserSearch">
-        {{ showUserSearch ? $t('common.cancel') : $t('page.disk.share.selectUser') }}
+      <NButton
+        type="primary"
+        :disabled="selectedDeptIds.length === 0"
+        :loading="loading"
+        @click="handleConfirmShare"
+      >
+        {{ $t('page.disk.share.shareToDept') }}
       </NButton>
-
-      <ShareUserSearch
-        v-if="showUserSearch"
-        @select="handleUserSelect"
-      />
     </div>
   </div>
 </template>

@@ -248,6 +248,9 @@ async function initEditor() {
   }
 }
 
+// ========== Module-level observers ==========
+let uiInjectionObserver: MutationObserver | null = null;
+
 function destroyEditor() {
   if (docEditor.value) {
     docEditor.value.destroyEditor();
@@ -286,8 +289,6 @@ function reloadDocument(key?: string) {
 }
 
 // ========== OnlyOffice onDocumentReady：注入自定义 UI ==========
-
-let uiInjectionObserver: MutationObserver | null = null;
 
 function onDocumentReady() {
   nextTick(() => {

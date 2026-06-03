@@ -6,8 +6,8 @@ import { fetchCreateShare, fetchCancelShare, fetchUpdateShare } from '@/service/
 import { formatFileSize } from '@/utils/format';
 import { handleCopy } from '@/utils/copy';
 import FileIcon from './file-icon.vue';
-import ShareToUser from './share-dialog/share-to-user.vue';
-import ShareToDept from './share-dialog/share-to-dept.vue';
+import ShareToUser from './share-to-user.vue';
+import ShareToDept from './share-to-dept.vue';
 import QRCode from 'qrcode';
 
 defineOptions({
