@@ -21,17 +21,12 @@ interface Props {
 
 const props = defineProps<Props>();
 
-interface DeptOption {
-  label: string;
-  value: number;
-}
-
 const { startLoading, endLoading } = useLoading();
 
 const selectedDeptIds = ref<number[]>([]);
 const selectedPermissions = ref<string[]>(['DOWNLOAD']);
 const existingTargets = ref<Api.Disk.FileShareTargetItem[]>([]);
-const deptOptions = ref<DeptOption[]>([]);
+const deptTreeOptions = ref<any[]>([]);
 const deptLoading = ref(false);
 
 const permissionOptions = computed(() => [
@@ -51,14 +46,11 @@ async function loadExistingTargets() {
 }
 
 async function loadDeptOptions() {
-  if (deptOptions.value.length > 0) return;
+  if (deptTreeOptions.value.length > 0) return;
   deptLoading.value = true;
   const { data } = await fetchGetDeptSelect();
   if (data) {
-    deptOptions.value = data.map(d => ({
-      label: d.deptName || '',
-      value: d.deptId as number
-    }));
+    deptTreeOptions.value = data as any[];
   }
   deptLoading.value = false;
 }
@@ -118,12 +110,14 @@ onMounted(() => {
 <template>
   <div class="flex flex-col gap-16px">
     <div class="flex items-center gap-8px">
-      <NSelect
+      <NTreeSelect
         v-model:value="selectedDeptIds"
         multiple
         filterable
+        key-field="id"
+        label-field="label"
         :placeholder="$t('page.disk.share.selectDept')"
-        :options="deptOptions"
+        :options="deptTreeOptions"
         :loading="deptLoading"
         class="flex-1"
         @focus="loadDeptOptions"
