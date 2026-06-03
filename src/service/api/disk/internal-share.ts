@@ -6,7 +6,6 @@ export function fetchCreateInternalShare(data: {
   shareType: 'user' | 'dept';
   targets: { targetId: number; permissions: string[] }[];
   expireDate?: string;
-  remark?: string;
 }) {
   return request<boolean>({
     url: '/share/internal/create',
@@ -24,30 +23,15 @@ export function fetchCancelInternalShare(fileShareId: number) {
   });
 }
 
-/** 拒绝共享 */
-export function fetchRejectInternalShare(fileShareId: number) {
-  return request<boolean>({
-    url: '/share/internal/reject',
-    method: 'put',
-    data: { fileShareId }
-  });
-}
-
-/** 接受共享 */
-export function fetchAcceptInternalShare(fileShareId: number) {
-  return request<boolean>({
-    url: '/share/internal/accept',
-    method: 'put',
-    data: { fileShareId }
-  });
-}
-
-/** 保存到我的网盘 */
-export function fetchSaveToMyDrive(fileShareId: number, targetPath?: string) {
+/** 批量保存到我的网盘 */
+export function fetchBatchSaveToDrive(
+  items: Array<{ shareId: number; fileId: number }>,
+  targetFolderId: number
+) {
   return request<boolean>({
     url: '/share/internal/save-to-drive',
     method: 'post',
-    data: { fileShareId, targetPath: targetPath || '/' }
+    data: { items, targetFolderId }
   });
 }
 
@@ -76,7 +60,6 @@ export function fetchGetSharedWithMeList(params: {
   shareType?: string;
   keyword?: string;
   contentType?: string;
-  targetStatus?: string;
 }) {
   return request<Api.Disk.SharedWithMeList>({
     url: '/share/internal/shared-with-me',
@@ -184,5 +167,26 @@ export function fetchCreateShareFolder(data: {
     url: '/share/internal/create-folder',
     method: 'post',
     data
+  });
+}
+
+/** 更新共享目标权限 */
+export function fetchUpdateTargetPermissions(
+  targetId: number,
+  permissions: string[]
+) {
+  return request<boolean>({
+    url: '/share/internal/target/permissions',
+    method: 'put',
+    data: { targetId, permissions }
+  });
+}
+
+/** 移除共享目标 */
+export function fetchRemoveShareTarget(targetId: number) {
+  return request<boolean>({
+    url: '/share/internal/target',
+    method: 'delete',
+    data: { targetId }
   });
 }
