@@ -264,11 +264,7 @@ async function handleRestoreUser() {
   if (!pendingUserData.value) return;
 
   const { error } = await fetchRestoreDeletedUser(pendingUserData.value);
-  if (error) {
-    const errMsg = (error as any)?.response?.data?.msg || error?.message || '恢复失败';
-    window.$message?.error(errMsg);
-    return;
-  }
+  if (error) return;
 
   window.$message?.success('用户恢复成功');
   showRestoreConfirm.value = false;
@@ -297,11 +293,7 @@ async function handleForceCreateUser() {
     postIds,
     forceCreate: true
   });
-  if (error) {
-    const errMsg = (error as any)?.response?.data?.msg || error?.message || '创建失败';
-    window.$message?.error(errMsg);
-    return;
-  }
+  if (error) return;
 
   window.$message?.success('用户创建成功');
   showRestoreConfirm.value = false;

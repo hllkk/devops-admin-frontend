@@ -125,7 +125,10 @@ export const request = createFlatRequest(
         return;
       }
 
-      showErrorMsg(request.state, message);
+      // 跳过组件自行处理的特殊错误（如用户名冲突弹窗）
+      if (!message.startsWith('USER_DELETED_CONFLICT:')) {
+        showErrorMsg(request.state, message);
+      }
     }
   }
 );
