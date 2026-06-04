@@ -128,21 +128,19 @@ export function useRouterPush(inSetup = true) {
  * Shared page navigation composable
  *
  * Provides navigation helpers for cross-module shared pages (e.g. user-center, notice-user).
- * Uses the route store's currentModule to resolve the correct module-prefixed path.
+ * Shared pages use root paths with auto layout that adapts to the current module.
  */
 export function useSharedPageNav() {
   const router = useRouter();
   const routeStore = useRouteStore();
   const { currentModule } = storeToRefs(routeStore);
 
-  function navigateToSharedPage(pageName: string, module?: RouteModule) {
-    const targetModule = module ?? currentModule.value;
-    return router.push(`/${targetModule}/${pageName}`);
+  function navigateToSharedPage(pageName: string) {
+    return router.push(`/${pageName}`);
   }
 
-  function getSharedPath(pageName: string, module?: RouteModule): string {
-    const targetModule = module ?? currentModule.value;
-    return `/${targetModule}/${pageName}`;
+  function getSharedPath(pageName: string): string {
+    return `/${pageName}`;
   }
 
   return { navigateToSharedPage, getSharedPath, currentModule };

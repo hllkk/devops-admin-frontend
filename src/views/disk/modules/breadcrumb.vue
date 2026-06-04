@@ -63,7 +63,7 @@ function handleBreadcrumbClick(index: number) {
     <!-- 面包屑 -->
     <NBreadcrumb>
       <!-- 全部文件（根目录） -->
-      <NBreadcrumbItem @click="handleBreadcrumbClick(0)">
+      <NBreadcrumbItem class="ml-4" @click="handleBreadcrumbClick(0)">
         {{ $t('page.disk.breadcrumb.allFiles') }}
       </NBreadcrumbItem>
       <!-- 子文件夹路径 -->
@@ -77,7 +77,7 @@ function handleBreadcrumbClick(index: number) {
     </NBreadcrumb>
 
     <!-- 文件数量统计 -->
-    <div class="breadcrumb-count">
+    <div class="breadcrumb-count mr-4">
       {{ $t('page.disk.breadcrumb.loaded') }}，
       {{ $t('page.disk.breadcrumb.total', { count: props.totalCount }) }}
     </div>

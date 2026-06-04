@@ -77,8 +77,9 @@ export function createStaticRoutes() {
 
   // 转换路由 layout 和 module
   const transformedRoutes = transformRouteLayout(generatedRoutes).map(route => {
-    // 隐藏原始 user-center/notice-user 路由（通过模块前缀路径访问）
+    // 将 user-center/notice-user 改为 auto layout，根据当前模块动态切换布局
     if (route.name === 'user-center' || route.name === 'notice-user') {
+      route.component = `layout.auto$view.${route.name}` as ElegantConstRoute['component'];
       route.meta = {
         ...route.meta,
         hideInMenu: true,

@@ -85,45 +85,25 @@ export function expandAutoLayoutRoutes(routes: ElegantConstRoute[]): ElegantCons
 function expandAutoLayoutRoute(route: ElegantConstRoute): ElegantConstRoute[] {
   const component = route.component as string | undefined;
 
+  // layout.auto$view.xxx 路由不需要展开，auto layout 会根据当前模块动态切换
   if (component && component.startsWith('layout.auto$view.')) {
-    const viewName = component.replace('layout.auto$view.', '');
-    const modules = (route.meta?.modules as string[]) ?? ALL_MODULES;
-    // Extract common meta, remove the array 'modules', replace with per-route 'module'
-    const { modules: _modules, ...baseMeta } = route.meta ?? {};
-
-    return modules.map(module => ({
-      ...route,
-      name: `${module}${toPascalRouteName(viewName)}`,
-      path: `/${module}/${viewName}`,
-      component: `layout.${MODULE_LAYOUT_MAP[module as RouteModule]}$view.${viewName}` as ElegantConstRoute['component'],
-      meta: {
-        title: viewName,
-        ...baseMeta,
-        module: module as RouteModule
-      }
-    })) as ElegantConstRoute[];
+    return [route];
   }
 
   // Non-auto routes: recurse into children
   if (route.children?.length) {
-    return [
-      {
-        ...route,
-        children: route.children.flatMap(child => expandAutoLayoutRoute(child))
-      }
-    ];
+    return [{ ...route, children: route.children.flatMap(child => expandAutoLayoutRoute(child)) }];
   }
 
   return [route];
 }
 
 /**
- * Build a module-qualified path for a shared page.
- * Derives current module from the router path if not specified.
+ * Build a path for a shared page.
+ * Shared pages use root paths (e.g. /user-center) with auto layout that adapts to current module.
  */
-export function getSharedPagePath(pageName: string, module?: RouteModule): string {
-  const targetModule = module ?? inferCurrentModule();
-  return `/${targetModule}/${pageName}`;
+export function getSharedPagePath(pageName: string): string {
+  return `/${pageName}`;
 }
 
 let _router: any = null;
