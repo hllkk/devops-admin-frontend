@@ -73,7 +73,19 @@ export function initProactiveRefresh() {
 
       cachedExpiresAt = storedExpiresAt;
       const remaining = storedExpiresAt - Date.now();
-      if (remaining > 0 && remaining < 5 * 60 * 1000) {
+
+      if (remaining <= 0) {
+        // Token 可能已在后台期间过期，主动尝试刷新
+        import('@/service/api').then(({ fetchRefreshToken }) => {
+          fetchRefreshToken().then(({ error, data }) => {
+            if (!error && data?.expiresAt) {
+              localStg.set('tokenExpiresAt', data.expiresAt);
+              scheduleProactiveRefresh(data.expiresAt);
+            }
+          }).catch(() => {});
+        });
+      } else {
+        // Token 仍在有效期内，同步定时器
         scheduleProactiveRefresh(storedExpiresAt);
       }
     });

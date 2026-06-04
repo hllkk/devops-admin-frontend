@@ -58,6 +58,14 @@ export function fetchCustomBackendError(code: string, msg: string) {
   return request({ url: "/auth/error", params: { code, msg } });
 }
 
+/** Logout - invalidate tokens on server side */
+export function fetchLogout() {
+  return request({
+    url: "/auth/logout",
+    method: "post"
+  });
+}
+
 /** Fetch WeChat Work login QR code info (returns OAuth URL + sceneId) */
 export function fetchWecomQrCode() {
   return request<Api.Auth.WecomQrCodeInfo>({

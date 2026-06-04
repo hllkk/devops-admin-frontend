@@ -76,6 +76,13 @@ async function handleRefreshToken() {
     localStg.remove('isAuthenticated');
     localStg.remove('token');
     localStg.remove('refreshToken');
+    localStg.remove('tokenExpiresAt');
+    window.$notification?.error({
+      title: '会话已过期',
+      content: '请重新登录以继续使用',
+      duration: 3000
+    });
+    window.location.href = '/login';
   }
 
   return false;

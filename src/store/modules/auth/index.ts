@@ -2,7 +2,7 @@ import { computed, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 import { defineStore } from "pinia";
 import { useLoading } from "@sa/hooks";
-import { fetchGetUserInfo, fetchLoginWithInfo } from "@/service/api";
+import { fetchGetUserInfo, fetchLoginWithInfo, fetchLogout } from "@/service/api";
 import { useRouterPush } from "@/hooks/common/router";
 import { localStg } from "@/utils/storage";
 import { SetupStoreId } from "@/enum";
@@ -65,6 +65,13 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
 
     clearProactiveRefreshTimer();
     localStg.remove('tokenExpiresAt');
+
+    try {
+      await fetchLogout();
+    } catch {
+      // Ignore errors - tokens may already be expired
+    }
+
     clearAuthStorage();
 
     // Reset state manually (Pinia setup style)
