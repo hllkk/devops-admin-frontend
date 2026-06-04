@@ -510,6 +510,13 @@ function handleToolbarDelete() {
   });
 }
 
+// 共享对话框关闭后刷新文件列表（更新 sharedUserCount/sharedDeptCount）
+watch(() => diskStore.shareDialogVisible, (visible, prev) => {
+  if (prev && !visible) {
+    getFileList();
+  }
+});
+
 // Watch file type changes
 watch(() => diskStore.currentFileType, () => {
   getFileList();

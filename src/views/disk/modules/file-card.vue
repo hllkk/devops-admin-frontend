@@ -334,6 +334,20 @@ function handleMoreSelect(key: string) {
       >
         <SvgIcon icon="mdi:share-variant" :size="12" class="text-white" />
       </div>
+      <!-- 共享给用户角标（左下角） -->
+      <div
+        v-if="file.sharedUserCount"
+        class="absolute bottom-0 left-0 z-10 bg-blue-500 dark:bg-blue-600 rd-full p-2px shadow-sm"
+      >
+        <SvgIcon icon="mdi:account" :size="12" class="text-white" />
+      </div>
+      <!-- 共享给群组角标（右下角） -->
+      <div
+        v-if="file.sharedDeptCount"
+        class="absolute bottom-0 right-0 z-10 bg-purple-500 dark:bg-purple-600 rd-full p-2px shadow-sm"
+      >
+        <SvgIcon icon="mdi:office-building" :size="12" class="text-white" />
+      </div>
     </div>
 
     <!-- 名称：内联重命名模式 -->

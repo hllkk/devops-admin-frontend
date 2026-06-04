@@ -70,7 +70,9 @@ export function mapBackendFileList(backendData: { list: any[]; total: number }) 
       music: item.music,
       video: item.video,
       isFavorite: item.isFavorite || false,
-      isShare: item.isShare || false
+      isShare: item.isShare || false,
+      sharedUserCount: item.sharedUserCount || 0,
+      sharedDeptCount: item.sharedDeptCount || 0
     };
   });
 
