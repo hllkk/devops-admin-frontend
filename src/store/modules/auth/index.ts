@@ -210,7 +210,7 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
     }
   }
 
-  async function wecomLogin(loginToken: Api.Auth.LoginToken, redirect = true) {
+  async function wecomLogin(expiresAt: number, redirect = true) {
     startLoading();
 
     // Cookie-based auth: tokens set as HttpOnly cookies by backend
@@ -221,7 +221,7 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
     if (pass) {
       token.value = "authenticated";
 
-      storeTokenExpiry(loginToken.expiresAt);
+      storeTokenExpiry(expiresAt);
 
       await routeStore.initAuthRoute();
 

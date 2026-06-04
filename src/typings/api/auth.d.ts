@@ -6,8 +6,8 @@ declare namespace Api {
    */
   namespace Auth {
     interface LoginToken {
-      token: string;
-      refreshToken: string;
+      token?: string;
+      refreshToken?: string;
       expiresAt: number;
     }
 
@@ -27,8 +27,8 @@ declare namespace Api {
 
     /** Combined login + user info response */
     interface LoginWithInfoResponse {
-      token: string;
-      refreshToken: string;
+      token?: string;
+      refreshToken?: string;
       expiresAt: number;
       userInfo: UserInfo;
     }

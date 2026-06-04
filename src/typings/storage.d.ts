@@ -1,23 +1,10 @@
 /** The storage namespace */
 declare namespace StorageType {
-  interface Session {
-    /** The theme color */
-    themeColor: string;
-    // /**
-    //  * the theme settings
-    //  */
-    // themeSettings: App.Theme.ThemeSetting;
-  }
-
   interface Local {
     /** The i18n language */
     lang: App.I18n.LangType;
-    /** The token */
-    token: string;
     /** Fixed sider with mix-menu */
     mixSiderFixed: CommonType.YesOrNo;
-    /** The refresh token */
-    refreshToken: string;
     /** Cookie-based auth flag */
     isAuthenticated: boolean;
     /** Token expiration timestamp (ms since epoch) for proactive refresh */
@@ -47,6 +34,8 @@ declare namespace StorageType {
     login_remember_me: boolean;
     /** The remembered username */
     remembered_user: string;
+    /** The remembered password (XOR+base64 encoded) */
+    remembered_pwd: string;
     /** The check db result cache */
     check_db_result: {
       needInit: boolean;

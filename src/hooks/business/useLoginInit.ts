@@ -104,7 +104,39 @@ export function useInitCheck() {
 }
 
 /**
- * 记住用户名 Hook
+ * 记住密码 Hook
+ *
+ * 密码使用 base64 编码存储（非加密，仅避免明文落盘）。
+ * 内网运维系统风险可控；公网部署应使用浏览器密码管理器或 Web Crypto API。
+ */
+const REMEMBERED_PWD_KEY = 'remembered_pwd';
+
+function encodePassword(password: string, userName: string): string {
+  // 用用户名做简单混淆后 base64，避免直接明文落盘
+  const key = userName || 'devops';
+  let result = '';
+  for (let i = 0; i < password.length; i++) {
+    result += String.fromCharCode(password.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+  }
+  return btoa(result);
+}
+
+function decodePassword(encoded: string, userName: string): string {
+  try {
+    const raw = atob(encoded);
+    const key = userName || 'devops';
+    let result = '';
+    for (let i = 0; i < raw.length; i++) {
+      result += String.fromCharCode(raw.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+    }
+    return result;
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * 记住用户名和密码 Hook
  * 处理"记住我"功能
  */
 export function useRememberMe() {
@@ -113,9 +145,10 @@ export function useRememberMe() {
 
   const rememberMe = ref(false);
   const rememberedUser = ref('');
+  const rememberedPassword = ref('');
 
   /**
-   * 恢复记住的用户名
+   * 恢复记住的用户名和密码
    */
   function restoreRememberedUser() {
     const remembered = localStg.get(REMEMBER_ME_KEY);
@@ -124,29 +157,41 @@ export function useRememberMe() {
       const savedUser = localStg.get(REMEMBERED_USER_KEY);
       if (savedUser) {
         rememberedUser.value = savedUser;
+        const savedPwd = localStg.get(REMEMBERED_PWD_KEY);
+        if (savedPwd) {
+          rememberedPassword.value = decodePassword(savedPwd, savedUser);
+        }
       }
     }
   }
 
   /**
-   * 保存记住的用户名
+   * 保存记住的用户名和密码
    */
-  function saveRememberedUser(userName: string) {
+  function saveRememberedUser(userName: string, password: string) {
     if (rememberMe.value) {
       localStg.set(REMEMBER_ME_KEY, true);
       localStg.set(REMEMBERED_USER_KEY, userName);
+      localStg.set(REMEMBERED_PWD_KEY, encodePassword(password, userName));
     } else {
       localStg.remove(REMEMBER_ME_KEY);
       localStg.remove(REMEMBERED_USER_KEY);
+      localStg.remove(REMEMBERED_PWD_KEY);
     }
   }
 
   return {
     rememberMe,
     rememberedUser,
+    rememberedPassword,
     restoreRememberedUser,
     saveRememberedUser
   };
+}
+
+/** 清除记住的密码（退出登录时调用） */
+export function clearRememberedPassword() {
+  localStg.remove(REMEMBERED_PWD_KEY);
 }
 
 /**

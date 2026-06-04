@@ -9,6 +9,4 @@ export function getToken(): string {
 /** Clear auth storage */
 export function clearAuthStorage() {
   localStg.remove('isAuthenticated');
-  localStg.remove('token');
-  localStg.remove('refreshToken');
 }

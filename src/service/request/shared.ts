@@ -74,8 +74,6 @@ async function handleRefreshToken() {
     await resetStore('session_expired');
   } catch {
     localStg.remove('isAuthenticated');
-    localStg.remove('token');
-    localStg.remove('refreshToken');
     localStg.remove('tokenExpiresAt');
     window.$notification?.error({
       title: '会话已过期',

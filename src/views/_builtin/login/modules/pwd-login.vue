@@ -39,15 +39,23 @@ const {
   showCaptcha,
   rememberMe,
   rememberedUser,
+  rememberedPassword,
   showInitButton,
   openCaptcha,
   saveRememberedUser
 } = useLoginInit();
 
-// 监听 rememberedUser 变化，更新 model.userName
+// 恢复记住的用户名
 watch(rememberedUser, (value) => {
   if (value) {
     model.userName = value;
+  }
+});
+
+// 恢复记住的密码
+watch(rememberedPassword, (value) => {
+  if (value) {
+    model.password = value;
   }
 });
 
@@ -75,7 +83,7 @@ function onCaptchaSuccess(captchaToken: string) {
 }
 
 function doLogin(captchaToken: string) {
-  saveRememberedUser(model.userName);
+  saveRememberedUser(model.userName, model.password);
   authStore.loginWithInfo(model.userName, model.password, captchaToken);
 }
 
@@ -102,13 +110,14 @@ function goToInit() {
   <div>
     <NForm ref="formRef" :model="model" :rules="rules" size="large" :show-label="false" @keyup.enter="handleSubmit">
       <NFormItem path="userName">
-        <NInput v-model:value="model.userName" :placeholder="$t('page.login.common.userNamePlaceholder')" />
+        <NInput v-model:value="model.userName" :placeholder="$t('page.login.common.userNamePlaceholder')" :input-props="{ autocomplete: 'username' }" />
       </NFormItem>
       <NFormItem path="password">
         <NInput
           v-model:value="model.password"
           type="password"
           show-password-on="click"
+          :input-props="{ autocomplete: 'current-password' }"
           :placeholder="$t('page.login.common.passwordPlaceholder')"
         />
       </NFormItem>

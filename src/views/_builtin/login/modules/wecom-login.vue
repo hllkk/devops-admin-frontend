@@ -77,9 +77,9 @@ function scheduleNextPoll() {
       }
       lastStatus.value = data.status;
 
-      if (data.status === 'confirmed' && data.token && data.refreshToken) {
+      if (data.status === 'confirmed' && data.expiresAt) {
         stopCountdown();
-        await handleLoginSuccess(data.token, data.refreshToken, data.expiresAt);
+        await authStore.wecomLogin(data.expiresAt);
         return;
       }
       if (data.status === 'expired') {
@@ -120,14 +120,6 @@ function stopCountdown() {
     clearInterval(countdownTimer);
     countdownTimer = null;
   }
-}
-
-async function handleLoginSuccess(token: string, refreshToken: string, expiresAt?: number) {
-  await authStore.wecomLogin({
-    token,
-    refreshToken,
-    expiresAt: expiresAt || 0
-  });
 }
 
 function goBack() {
