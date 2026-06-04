@@ -76,18 +76,7 @@ export function createStaticRoutes() {
   const sharedRoutes = generateSharedRoutes(SHARED_PAGE_CONFIGS);
 
   // 转换路由 layout 和 module
-  const transformedRoutes = transformRouteLayout(generatedRoutes).map(route => {
-    // 将 user-center/notice-user 改为 auto layout，根据当前模块动态切换布局
-    if (route.name === 'user-center' || route.name === 'notice-user') {
-      route.component = `layout.auto$view.${route.name}` as ElegantConstRoute['component'];
-      route.meta = {
-        ...route.meta,
-        hideInMenu: true,
-        constant: true
-      } as ElegantConstRoute['meta'];
-    }
-    return route;
-  });
+  const transformedRoutes = transformRouteLayout(generatedRoutes);
 
   [...sharedRoutes, ...transformedRoutes].forEach(item => {
     if (item.meta?.constant) {

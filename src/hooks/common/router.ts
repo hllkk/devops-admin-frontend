@@ -4,7 +4,6 @@ import type { RouteKey } from '@elegant-router/types';
 import { storeToRefs } from 'pinia';
 import { router as globalRouter } from '@/router';
 import { useRouteStore } from '@/store/modules/route';
-import type { RouteModule } from '@/typings/router.d.ts';
 
 /**
  * Router push
@@ -127,20 +126,30 @@ export function useRouterPush(inSetup = true) {
 /**
  * Shared page navigation composable
  *
- * Provides navigation helpers for cross-module shared pages (e.g. user-center, notice-user).
- * Shared pages use root paths with auto layout that adapts to the current module.
+ * 共享页面（个人中心、全部公告）导航，根据当前路径前缀自动拼接模块路径：
+ * - 当前在 /disk/* → 导航到 /disk/{pageName}（网盘布局）
+ * - 其他情况 → 导航到 /admin/{pageName}（后台管理布局）
  */
 export function useSharedPageNav() {
   const router = useRouter();
   const routeStore = useRouteStore();
   const { currentModule } = storeToRefs(routeStore);
 
+  /** 根据当前路径推断所在模块 */
+  function inferModuleFromPath(): string {
+    const path = router.currentRoute.value.path;
+    if (path.startsWith('/disk')) return 'disk';
+    return 'admin';
+  }
+
   function navigateToSharedPage(pageName: string) {
-    return router.push(`/${pageName}`);
+    const module = inferModuleFromPath();
+    return router.push(`/${module}/${pageName}`);
   }
 
   function getSharedPath(pageName: string): string {
-    return `/${pageName}`;
+    const module = inferModuleFromPath();
+    return `/${module}/${pageName}`;
   }
 
   return { navigateToSharedPage, getSharedPath, currentModule };

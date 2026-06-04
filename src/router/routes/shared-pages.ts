@@ -113,11 +113,3 @@ export function setRouterForSharedPages(routerInstance: any) {
   _router = routerInstance;
 }
 
-/** Infer current module from the current route path */
-function inferCurrentModule(): RouteModule {
-  if (_router) {
-    const path = _router.currentRoute.value.path;
-    if (path.startsWith('/disk')) return 'disk';
-  }
-  return 'admin';
-}
