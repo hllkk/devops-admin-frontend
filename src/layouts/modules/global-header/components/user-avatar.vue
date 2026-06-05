@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import type { VNode } from 'vue';
 import { useBoolean } from '@sa/hooks';
 import { useAuthStore } from '@/store/modules/auth';
+import { useRouteStore } from '@/store/modules/route';
 import { useAppStore } from '@/store/modules/app';
 import { useDiskStore } from '@/store/modules/disk';
 import { useRouterPush, useSharedPageNav } from '@/hooks/common/router';
@@ -17,6 +18,7 @@ defineOptions({
 
 const router = useRouter();
 const authStore = useAuthStore();
+const routeStore = useRouteStore();
 const appStore = useAppStore();
 const { toLogin } = useRouterPush();
 const { SvgIconVNode } = useSvgIcon();
@@ -81,20 +83,19 @@ type DropdownOption =
 const isDiskPage = computed(() => currentModule.value === 'disk');
 const isAdminPage = computed(() => currentModule.value === 'admin');
 
-// 判断用户是否有 admin 权限
+// 判断用户是否有 admin 模块的路由（排除共享页面 user-center/notice-user）
 const hasAdminPermission = computed(() => {
-  // 方式1：检查 isStaticSuper（基于角色名称）
-  if (authStore.isStaticSuper) return true;
-
-  // 方式2：检查角色代码
-  const roleCode = authStore.userInfo.role?.toLowerCase() || '';
-  if (['r_super', 'r_admin', 'superadmin', 'admin'].includes(roleCode)) return true;
-
-  // 方式3：检查角色名称数组
-  const roleNames = authStore.userInfo.roles.map(r => r.toLowerCase());
-  if (roleNames.some(r => r.includes('superadmin') || r.includes('admin'))) return true;
-
-  return false;
+  const routes = routeStore.authRoutes;
+  if (!routes || routes.length === 0) return false;
+  return routes.some(route => {
+    const meta = route.meta as Record<string, unknown> | undefined;
+    if (!meta) return false;
+    // 共享页面属于所有模块但 hideInMenu=true，不应作为 admin 权限依据
+    if (meta.hideInMenu) return false;
+    const mod = meta.module as string | undefined;
+    const mods = meta.modules as string[] | undefined;
+    return mod === 'admin' || (mods && mods.includes('admin'));
+  });
 });
 
 const options = computed(() => {
