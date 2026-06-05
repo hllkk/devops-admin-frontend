@@ -3,6 +3,7 @@ import { fetchCheckQuota } from '@/service/api/disk/quota';
 import { useDiskStore } from '@/store/modules/disk';
 import { getFileExtension, getMaxUploadSize } from './chunk-manager';
 import { UploaderEngine } from './uploader-engine';
+import { getUploadFile, deleteUploadFile } from './upload-persistence';
 
 let engineInstance: UploaderEngine | null = null;
 let folderIdCounter = 0;
@@ -170,10 +171,18 @@ export function useUploader() {
   }
 
   function pause(taskId: string) {
-    if (engine.getTask(taskId)) engine.pause(taskId);
+    if (engine.getTask(taskId)) {
+      engine.pause(taskId);
+    } else {
+      window.$message?.warning('页面刷新后无法暂停，请重新上传');
+    }
   }
   function resume(taskId: string) {
-    if (engine.getTask(taskId)) engine.resume(taskId);
+    if (engine.getTask(taskId)) {
+      engine.resume(taskId);
+    } else {
+      window.$message?.warning('页面刷新后无法继续，请重新上传');
+    }
   }
   function cancel(taskId: string) {
     if (engine.getTask(taskId)) {
@@ -186,8 +195,31 @@ export function useUploader() {
     if (engine.getTask(taskId)) {
       engine.retry(taskId);
     } else {
-      window.$message?.warning('刷新后无法重试，请新建上传任务');
+      reupload(taskId);
     }
+  }
+  function reupload(taskId: string) {
+    const transferItem = diskStore.transferList.find(item => item.transferId === taskId);
+    if (!transferItem) return;
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    if (transferItem.fileType) {
+      const mimeMap: Record<string, string> = {
+        image: 'image/*', video: 'video/*', audio: 'audio/*'
+      };
+      const mimeType = mimeMap[transferItem.fileType];
+      if (mimeType) input.accept = mimeType;
+    }
+    input.addEventListener('change', (e) => {
+      const files = (e.target as HTMLInputElement).files;
+      if (files && files.length > 0) {
+        diskStore.removeTransferItem(taskId);
+        upload([files[0]]);
+      }
+      input.remove();
+    });
+    input.click();
   }
   function pauseAll() { engine.pauseAll(); }
   function resumeAll() {
@@ -199,5 +231,79 @@ export function useUploader() {
     }
   }
 
-  return { upload, triggerFile, triggerFolder, pause, resume, cancel, retry, pauseAll, resumeAll };
+  /**
+   * Recover interrupted uploads from IndexedDB after page refresh.
+   * Small files (< 500MB) are reconstructed from stored blobs and auto-resumed.
+   * Large files (≥ 500MB) prompt the user to re-select the file (backend
+   * chunk dedup will skip already-uploaded chunks).
+   */
+  async function recoverUploads() {
+    const interruptedItems = diskStore.transferList.filter(
+      item => item.transferType === 'upload' && item.status === 'pending' && item.error === '__recoverable__'
+    );
+
+    if (interruptedItems.length === 0) return;
+
+    let recoveredCount = 0;
+    let largeFileCount = 0;
+
+    for (const item of interruptedItems) {
+      const persisted = await getUploadFile(item.transferId);
+      if (!persisted) {
+        diskStore.updateTransferItem(item.transferId, {
+          status: 'failed',
+          error: '无法恢复上传，请重新选择文件'
+        });
+        continue;
+      }
+
+      // Large file: metadata only, user must re-select the file
+      if (persisted.largeFile || persisted.blob.byteLength === 0) {
+        largeFileCount += 1;
+        // Mark as failed so the retry/reupload button appears, then auto-open file picker
+        diskStore.updateTransferItem(item.transferId, {
+          status: 'failed',
+          error: '文件较大无法自动恢复，请重新选择文件后继续上传'
+        });
+        // Auto-trigger reupload to open file picker with correct type filter
+        reupload(item.transferId);
+        continue;
+      }
+
+      const file = new File([persisted.blob], persisted.meta.fileName, {
+        type: persisted.meta.fileType || undefined
+      });
+
+      // Remove the old transfer item before re-adding
+      diskStore.removeTransferItem(item.transferId);
+
+      const folderInfo = persisted.meta.folderId
+        ? { id: persisted.meta.folderId, name: persisted.meta.folderName || '文件夹' }
+        : undefined;
+
+      engine.addFiles(
+        [{
+          file,
+          relativePath: persisted.meta.relativePath,
+          override: persisted.meta.override
+        }],
+        persisted.meta.parentId,
+        folderInfo
+      );
+
+      // Clean up old IndexedDB entry (engine will save a new one with the new taskId)
+      await deleteUploadFile(item.transferId);
+
+      recoveredCount += 1;
+    }
+
+    if (recoveredCount > 0) {
+      window.$message?.success(`已恢复 ${recoveredCount} 个上传任务`);
+    }
+    if (largeFileCount > 0) {
+      window.$message?.info(`${largeFileCount} 个文件较大需重新选择，上传进度将自动恢复`);
+    }
+  }
+
+  return { upload, triggerFile, triggerFolder, pause, resume, cancel, retry, reupload, recoverUploads, pauseAll, resumeAll };
 }

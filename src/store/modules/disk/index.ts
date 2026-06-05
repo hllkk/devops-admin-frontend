@@ -8,9 +8,9 @@ import { fetchResolvePath } from '@/service/api/disk/file';
 
 const STORAGE_KEY = 'diskTransferList' as const;
 
-/** Active statuses that cannot survive a page refresh */
-const ACTIVE_STATUSES: Api.Disk.TransferItem['status'][] = [
-  'pending', 'hashing', 'checking', 'uploading', 'transferring', 'merging'
+/** Statuses that cannot survive a page refresh — restored as failed */
+const NON_RECOVERABLE_STATUSES: Api.Disk.TransferItem['status'][] = [
+  'pending', 'hashing', 'checking', 'uploading', 'transferring', 'merging', 'paused'
 ];
 
 function restoreTransferList(): Api.Disk.TransferItem[] {
@@ -18,12 +18,21 @@ function restoreTransferList(): Api.Disk.TransferItem[] {
   if (!saved || !Array.isArray(saved)) return [];
 
   return saved.map(item => {
-    // Mark active items as interrupted on restore
-    if (ACTIVE_STATUSES.includes(item.status)) {
+    // Mark active/paused upload items as pending with recovery marker
+    if (NON_RECOVERABLE_STATUSES.includes(item.status)) {
+      if (item.transferType === 'upload') {
+        return {
+          ...item,
+          status: 'pending' as const,
+          progress: item.progress || 0,
+          transferredSize: item.transferredSize || 0,
+          error: '__recoverable__'
+        };
+      }
       return {
         ...item,
         status: 'failed' as const,
-        error: '页面刷新导致上传中断，请重试'
+        error: '页面刷新导致传输中断'
       };
     }
     return item;
@@ -367,6 +376,26 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
     persistTransferList(list);
   }, 500);
   watch(transferList, list => debouncedPersist(list), { deep: true });
+
+  // beforeunload：有活跃传输时阻止用户误刷新/关闭页面
+  function handleBeforeUnload(e: BeforeUnloadEvent) {
+    const hasActive = transferList.value.some(
+      item => item.status !== 'completed' && item.status !== 'failed' && item.status !== 'paused'
+    );
+    if (hasActive) {
+      e.preventDefault();
+    }
+  }
+  watch(transferList, list => {
+    const hasActive = list.some(
+      item => item.status !== 'completed' && item.status !== 'failed' && item.status !== 'paused'
+    );
+    if (hasActive) {
+      window.addEventListener('beforeunload', handleBeforeUnload);
+    } else {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    }
+  }, { deep: true, immediate: true });
 
   return {
     // state

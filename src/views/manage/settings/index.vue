@@ -68,18 +68,18 @@ const config = ref<SettingConfig>({
     conflictStrategy: 'skip'
   },
   disk: {
-    maxUploadSize: 100,
-    allowedFileTypes: '',  // 空=允许全部
-    blockedFileTypes: '',  // 禁止的文件类型
+    maxUploadSize: 5120,
+    allowedFileTypes: '',
+    blockedFileTypes: '',
     storageQuota: 10,
     diskName: '',
     diskLogo: '',
     shareLinkPasswordRequired: false,
-    shareLinkPasswordMinLength: 6,
+    shareLinkPasswordMinLength: 4,
     uploadLinkPasswordRequired: false,
-    uploadLinkPasswordMinLength: 6,
+    uploadLinkPasswordMinLength: 4,
     syncEnabled: false,
-    onlyOfficeEnabled: false,
+    onlyOfficeEnabled: true,
     onlyOfficeUrl: '',
     onlyOfficeSecret: '',
     onlyOfficeCallbackUrl: '',
@@ -162,22 +162,22 @@ async function loadConfig() {
     }
     if (settings?.disk) {
       config.value.disk = {
-        maxUploadSize: settings.disk.maxUploadSize || 100,
+        maxUploadSize: settings.disk.maxUploadSize || 5120,
         allowedFileTypes: (settings.disk.allowedExtensions || []).join(','),
         blockedFileTypes: (settings.disk.blockedExtensions || []).join(','),
         storageQuota: settings.disk.storageQuota || 10,
         diskName: settings.disk.diskName || '',
-        diskLogo: '',
-        shareLinkPasswordRequired: false,
-        shareLinkPasswordMinLength: 6,
-        uploadLinkPasswordRequired: false,
-        uploadLinkPasswordMinLength: 6,
-        syncEnabled: false,
-        onlyOfficeEnabled: settings.disk.onlyOffice?.enable || false,
+        diskLogo: settings.disk.diskLogo || '',
+        shareLinkPasswordRequired: settings.disk.shareLinkPasswordRequired ?? false,
+        shareLinkPasswordMinLength: settings.disk.shareLinkPasswordMinLength || 4,
+        uploadLinkPasswordRequired: settings.disk.uploadLinkPasswordRequired ?? false,
+        uploadLinkPasswordMinLength: settings.disk.uploadLinkPasswordMinLength || 4,
+        syncEnabled: settings.disk.syncEnabled ?? false,
+        onlyOfficeEnabled: settings.disk.onlyOffice?.enable ?? true,
         onlyOfficeUrl: settings.disk.onlyOffice?.serverUrl || '',
         onlyOfficeSecret: settings.disk.onlyOffice?.tokenSecret || '',
         onlyOfficeCallbackUrl: settings.disk.onlyOffice?.callbackUrl || '',
-        videoTranscodeEnabled: settings.disk.videoTranscode?.enable || false,
+        videoTranscodeEnabled: settings.disk.videoTranscode?.enable ?? false,
         ffmpegPath: settings.disk.videoTranscode?.ffmpegPath || '',
         transcodeThreads: settings.disk.videoTranscode?.threads || 4,
         transcodePreset: settings.disk.videoTranscode?.preset || 'medium'
@@ -255,6 +255,7 @@ async function handleSave() {
       },
       disk: {
         diskName: disk.diskName,
+        diskLogo: disk.diskLogo,
         maxUploadSize: disk.maxUploadSize,
         allowedExtensions: disk.allowedFileTypes
           ? disk.allowedFileTypes.split(',').map(s => s.trim()).filter(Boolean)
@@ -263,6 +264,11 @@ async function handleSave() {
           ? disk.blockedFileTypes.split(',').map(s => s.trim()).filter(Boolean)
           : [],
         storageQuota: disk.storageQuota,
+        syncEnabled: disk.syncEnabled,
+        shareLinkPasswordRequired: disk.shareLinkPasswordRequired,
+        shareLinkPasswordMinLength: disk.shareLinkPasswordMinLength,
+        uploadLinkPasswordRequired: disk.uploadLinkPasswordRequired,
+        uploadLinkPasswordMinLength: disk.uploadLinkPasswordMinLength,
         onlyOffice: {
           enable: disk.onlyOfficeEnabled,
           serverUrl: disk.onlyOfficeUrl,

@@ -27,7 +27,10 @@ defineOptions({
 
 const diskStore = useDiskStore();
 const appStore = useAppStore();
-const { pause, resume, cancel, retry, pauseAll, resumeAll } = useUploader();
+const { pause, resume, cancel, reupload, recoverUploads, pauseAll, resumeAll } = useUploader();
+
+/** Recovery marker flag set by restoreTransferList in disk store */
+const RECOVERY_MARKER = '__recoverable__';
 
 const isVisible = ref(false);
 // PC端默认list，手机端默认sphere
@@ -215,12 +218,13 @@ function getStatusColor(status: Api.Disk.TransferItem['status']) {
 }
 
 function getStatusText(item: Api.Disk.TransferItem): string {
+  if (item.error === RECOVERY_MARKER) return '恢复中...';
   if (item.status === 'hashing') return '计算文件特征中...';
   if (item.status === 'checking') return '检测秒传...';
   if (item.status === 'merging') return '合并分片中...';
   if (item.status === 'paused') return '已暂停';
   if (item.status === 'pending') return '等待中';
-  if (item.status === 'failed') return item.error || '上传失败';
+  if (item.status === 'failed') return item.error || '上传失败，点击重新上传';
   return '';
 }
 
@@ -372,6 +376,15 @@ onMounted(() => {
     // PC端默认list，手机端默认sphere
     viewMode.value = appStore.isMobile ? 'sphere' : 'list';
   }
+
+  // Recover interrupted uploads from IndexedDB
+  const hasRecoverableItems = diskStore.transferList.some(
+    item => item.transferType === 'upload' && item.error === RECOVERY_MARKER
+  );
+  if (hasRecoverableItems) {
+    recoverUploads();
+  }
+
   // 延迟初始化，确保DOM渲染完成
   nextTick(() => {
     setTimeout(() => {
@@ -512,8 +525,8 @@ onMounted(() => {
                     <button
                       v-if="item.status === 'failed'"
                       class="w-28px h-28px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--n-warning-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
-                      title="重试"
-                      @click="retry(item.transferId)"
+                      title="重新上传"
+                      @click="reupload(item.transferId)"
                     >
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
                         <polyline points="1,4 1,10 7,10" />
@@ -618,8 +631,8 @@ onMounted(() => {
                 <button
                   v-if="item.status === 'failed'"
                   class="w-28px h-28px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--n-warning-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
-                  title="重试"
-                  @click="retry(item.transferId)"
+                  title="重新上传"
+                  @click="reupload(item.transferId)"
                 >
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
                     <polyline points="1,4 1,10 7,10" />
