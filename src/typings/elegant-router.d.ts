@@ -9,7 +9,7 @@ declare module "@elegant-router/types" {
   /**
    * route layout
    */
-  export type RouteLayout = "base" | "blank" | "disk";
+  export type RouteLayout = "base" | "blank" | "disk" | "auto";
 
   /**
    * route map
