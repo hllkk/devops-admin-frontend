@@ -9,13 +9,11 @@ import type { LastLevelRouteKey, RouteLayout } from "@elegant-router/types";
 import BaseLayout from "@/layouts/base-layout/index.vue";
 import BlankLayout from "@/layouts/blank-layout/index.vue";
 import DiskLayout from "@/layouts/disk-layout/index.vue";
-import AutoLayout from "@/layouts/auto-layout/index.vue";
 
 export const layouts: Record<RouteLayout, RouteComponent | (() => Promise<RouteComponent>)> = {
   base: BaseLayout,
   blank: BlankLayout,
   disk: DiskLayout,
-  auto: AutoLayout,
 };
 
 export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<RouteComponent>)> = {

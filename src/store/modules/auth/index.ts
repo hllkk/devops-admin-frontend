@@ -1,5 +1,4 @@
 import { computed, reactive, ref } from "vue";
-import { useRoute } from "vue-router";
 import { defineStore } from "pinia";
 import { useLoading } from "@sa/hooks";
 import { fetchGetUserInfo, fetchLoginWithInfo, fetchLogout } from "@/service/api";
@@ -22,7 +21,6 @@ function storeTokenExpiry(expiresAt: number | undefined) {
 }
 
 export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
-  const route = useRoute();
   const routeStore = useRouteStore();
   const tabStore = useTabStore();
   const { toLogin, redirectFromLogin } = useRouterPush(false);
@@ -100,9 +98,8 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
       });
     }
 
-    if (!route.meta.constant) {
-      await toLogin();
-    }
+    // Always redirect to login on logout (clear redirect to avoid returning to an auth-only page)
+    await toLogin(undefined, '/');
 
     tabStore.cacheTabs();
     routeStore.resetStore();
