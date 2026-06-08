@@ -1489,7 +1489,7 @@ const local: App.I18n.Schema = {
         reload: 'Reload Page',
         addFavorite: 'Add to Favorites',
         removeFavorite: 'Remove from Favorites',
-        previewArchive: 'Preview Archive',
+        previewArchive: 'Preview',
         extractHere: 'Extract Here',
         extractTo: 'Extract to...',
         extracting: 'Extracting...',

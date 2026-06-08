@@ -9,11 +9,18 @@ export interface ArchiveEntry {
   children?: ArchiveEntry[];
 }
 
+/** 大体积归档文件（ISO等）列出内容可能耗时较长 */
+const ARCHIVE_LIST_TIMEOUT = 2 * 60 * 1000;
+
+/** 解压大归档文件耗时更长 */
+const ARCHIVE_EXTRACT_TIMEOUT = 10 * 60 * 1000;
+
 /** 列出归档文件顶层内容 */
 export function fetchListArchive(fileId: string) {
   return request<ArchiveEntry[]>({
     url: `/archive/list/${fileId}`,
-    method: 'get'
+    method: 'get',
+    timeout: ARCHIVE_LIST_TIMEOUT
   });
 }
 
@@ -22,7 +29,8 @@ export function fetchListSubArchive(fileId: string, path: string) {
   return request<ArchiveEntry[]>({
     url: '/archive/list-sub',
     method: 'get',
-    params: { fileId, path }
+    params: { fileId, path },
+    timeout: ARCHIVE_LIST_TIMEOUT
   });
 }
 
@@ -31,6 +39,7 @@ export function fetchExtractArchive(fileId: string, destFolderId: string) {
   return request<void>({
     url: '/archive/extract',
     method: 'post',
-    data: { fileId, destFolderId }
+    data: { fileId, destFolderId },
+    timeout: ARCHIVE_EXTRACT_TIMEOUT
   });
 }

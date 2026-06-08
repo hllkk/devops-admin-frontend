@@ -25,8 +25,11 @@ const MERGE_MAX_RETRIES = 2;
 /** Retry base delay in ms (exponential backoff: 1s, 2s, 4s) */
 const RETRY_BASE_DELAY = 1000;
 
-/** Speed tracking window in ms */
-const SPEED_WINDOW = 1000;
+/** Speed tracking window in ms — longer window gives smoother results */
+const SPEED_WINDOW = 3000;
+
+/** EMA smoothing factor for speed — lower = smoother, higher = more responsive */
+const SPEED_EMA_ALPHA = 0.25;
 
 /** Unique ID counter */
 let idCounter = 0;
@@ -105,6 +108,8 @@ export class UploaderEngine {
     {
       lastTime: number;
       lastTransferred: number;
+      /** EMA-smoothed speed (bytes/sec) for stable display */
+      emaSpeed: number;
       samples: { time: number; bytes: number }[];
     }
   > = new Map();
@@ -778,11 +783,12 @@ export class UploaderEngine {
     this.speedTrackers.set(taskId, {
       lastTime: Date.now(),
       lastTransferred: 0,
+      emaSpeed: 0,
       samples: []
     });
   }
 
-  /** Update speed and remaining time for a task */
+  /** Update speed and remaining time for a task using EMA smoothing */
   private updateSpeed(task: Api.Disk.UploadTask, currentTransferred: number): void {
     const tracker = this.speedTrackers.get(task.taskId);
     if (!tracker) return;
@@ -794,7 +800,7 @@ export class UploaderEngine {
       const bytesDelta = currentTransferred - tracker.lastTransferred;
       tracker.samples.push({ time: elapsed, bytes: bytesDelta });
 
-      // Keep only the last few samples within the speed window
+      // Keep only samples within the speed window
       let windowTotal = 0;
       const recentSamples: { time: number; bytes: number }[] = [];
       for (let i = tracker.samples.length - 1; i >= 0; i -= 1) {
@@ -804,14 +810,23 @@ export class UploaderEngine {
       }
       tracker.samples = recentSamples;
 
-      // Calculate average speed from samples
+      // Windowed instant speed
       const totalBytes = tracker.samples.reduce((sum, s) => sum + s.bytes, 0);
       const totalTime = tracker.samples.reduce((sum, s) => sum + s.time, 0);
 
       if (totalTime > 0) {
-        task.speed = Math.round((totalBytes / totalTime) * 1000); // bytes/sec
+        const instantSpeed = (totalBytes / totalTime) * 1000;
+
+        // EMA: smooth out jitter — first sample seeds the value
+        if (tracker.emaSpeed === 0) {
+          tracker.emaSpeed = instantSpeed;
+        } else {
+          tracker.emaSpeed = SPEED_EMA_ALPHA * instantSpeed + (1 - SPEED_EMA_ALPHA) * tracker.emaSpeed;
+        }
+
+        task.speed = Math.round(tracker.emaSpeed);
         const remaining = task.fileSize - currentTransferred;
-        task.remainingTime = task.speed > 0 ? Math.round(remaining / task.speed) : 0;
+        task.remainingTime = task.speed > 0 ? Math.round(remaining / tracker.emaSpeed) : 0;
       }
     }
 

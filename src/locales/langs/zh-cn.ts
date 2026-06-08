@@ -1481,7 +1481,7 @@ const local: App.I18n.Schema = {
         reload: '重新加载页面',
         addFavorite: '添加收藏',
         removeFavorite: '取消收藏',
-        previewArchive: '预览压缩包',
+        previewArchive: '预览',
         extractHere: '解压到当前目录',
         extractTo: '解压到...',
         extracting: '正在解压...',

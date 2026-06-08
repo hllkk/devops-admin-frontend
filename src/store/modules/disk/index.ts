@@ -8,35 +8,14 @@ import { fetchResolvePath } from '@/service/api/disk/file';
 
 const STORAGE_KEY = 'diskTransferList' as const;
 
-/** Statuses that cannot survive a page refresh — restored as failed */
-const NON_RECOVERABLE_STATUSES: Api.Disk.TransferItem['status'][] = [
-  'pending', 'hashing', 'checking', 'uploading', 'transferring', 'merging', 'paused'
-];
-
 function restoreTransferList(): Api.Disk.TransferItem[] {
   const saved = localStg.get(STORAGE_KEY);
   if (!saved || !Array.isArray(saved)) return [];
 
-  return saved.map(item => {
-    // Mark active/paused upload items as pending with recovery marker
-    if (NON_RECOVERABLE_STATUSES.includes(item.status)) {
-      if (item.transferType === 'upload') {
-        return {
-          ...item,
-          status: 'pending' as const,
-          progress: item.progress || 0,
-          transferredSize: item.transferredSize || 0,
-          error: '__recoverable__'
-        };
-      }
-      return {
-        ...item,
-        status: 'failed' as const,
-        error: '页面刷新导致传输中断'
-      };
-    }
-    return item;
-  });
+  // Page refresh discards all in-progress transfers.
+  // Only completed items survive. When the user re-drags the same file,
+  // the backend's CheckFileBeforeUpload detects existing chunks and resumes.
+  return saved.filter(item => item.status === 'completed');
 }
 
 function persistTransferList(list: Api.Disk.TransferItem[]) {
@@ -380,7 +359,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   // beforeunload：有活跃传输时阻止用户误刷新/关闭页面
   function handleBeforeUnload(e: BeforeUnloadEvent) {
     const hasActive = transferList.value.some(
-      item => item.status !== 'completed' && item.status !== 'failed' && item.status !== 'paused'
+      item => item.status !== 'completed' && item.status !== 'failed'
     );
     if (hasActive) {
       e.preventDefault();
@@ -388,7 +367,7 @@ export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
   }
   watch(transferList, list => {
     const hasActive = list.some(
-      item => item.status !== 'completed' && item.status !== 'failed' && item.status !== 'paused'
+      item => item.status !== 'completed' && item.status !== 'failed'
     );
     if (hasActive) {
       window.addEventListener('beforeunload', handleBeforeUnload);

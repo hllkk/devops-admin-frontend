@@ -76,7 +76,10 @@ async function loadData() {
     treeData.value = entries.map(buildTreeNode);
   } catch (e: any) {
     hasError.value = true;
-    errorMsg.value = e?.message || '加载失败';
+    const rawMsg = e?.message || '';
+    errorMsg.value = /timeout|超时/i.test(rawMsg)
+      ? '文件较大，加载超时，请稍后重试'
+      : rawMsg || '加载失败';
     treeData.value = [];
   } finally {
     loading.value = false;
@@ -105,7 +108,7 @@ function renderLabel({ option }: { option: TreeOption }) {
   const fileType = isFolder ? 'folder' : mapSuffixToFileType(suffix);
 
   return (
-    <div class="flex items-center gap-2 py-1 w-full min-w-0">
+    <div class="flex items-center gap-2 w-full min-w-0">
       <div class="flex-shrink-0">
         {h(FileIcon, { fileType, extension: suffix, size: 'small' })}
       </div>
@@ -141,7 +144,6 @@ watch(() => props.visible, val => {
     suffixMap.clear();
     isEmpty.value = false;
     hasError.value = false;
-    loadData();
   }
 });
 </script>
@@ -187,3 +189,9 @@ watch(() => props.visible, val => {
     </NSpin>
   </NModal>
 </template>
+
+<style scoped>
+:deep(.n-tree-node) {
+  align-items: center;
+}
+</style>

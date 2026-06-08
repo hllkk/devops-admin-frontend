@@ -27,10 +27,7 @@ defineOptions({
 
 const diskStore = useDiskStore();
 const appStore = useAppStore();
-const { pause, resume, cancel, reupload, recoverUploads, pauseAll, resumeAll } = useUploader();
-
-/** Recovery marker flag set by restoreTransferList in disk store */
-const RECOVERY_MARKER = '__recoverable__';
+const { pause, resume, cancel, reupload, pauseAll, resumeAll } = useUploader();
 
 const isVisible = ref(false);
 // PC端默认list，手机端默认sphere
@@ -218,10 +215,9 @@ function getStatusColor(status: Api.Disk.TransferItem['status']) {
 }
 
 function getStatusText(item: Api.Disk.TransferItem): string {
-  if (item.error === RECOVERY_MARKER) return '恢复中...';
   if (item.status === 'hashing') return '计算文件特征中...';
   if (item.status === 'checking') return '检测秒传...';
-  if (item.status === 'merging') return '合并分片中...';
+  if (item.status === 'merging') return '合并文件中...';
   if (item.status === 'paused') return '已暂停';
   if (item.status === 'pending') return '等待中';
   if (item.status === 'failed') return item.error || '上传失败，点击重新上传';
@@ -229,7 +225,7 @@ function getStatusText(item: Api.Disk.TransferItem): string {
 }
 
 function isActiveStatus(status: Api.Disk.TransferItem['status']): boolean {
-  return ['uploading', 'hashing', 'checking', 'merging', 'transferring'].includes(status);
+  return ['uploading', 'hashing', 'checking', 'transferring'].includes(status);
 }
 
 function isPreparingStatus(status: Api.Disk.TransferItem['status']): boolean {
@@ -376,15 +372,6 @@ onMounted(() => {
     // PC端默认list，手机端默认sphere
     viewMode.value = appStore.isMobile ? 'sphere' : 'list';
   }
-
-  // Recover interrupted uploads from IndexedDB
-  const hasRecoverableItems = diskStore.transferList.some(
-    item => item.transferType === 'upload' && item.error === RECOVERY_MARKER
-  );
-  if (hasRecoverableItems) {
-    recoverUploads();
-  }
-
   // 延迟初始化，确保DOM渲染完成
   nextTick(() => {
     setTimeout(() => {
@@ -498,7 +485,7 @@ onMounted(() => {
                     <span class="text-13px dark:text-white/80 text-gray-700 whitespace-nowrap truncate max-w-300px">{{ item.fileName }}</span>
                   </div>
                   <div class="flex items-center gap-6px">
-                    <span class="text-13px font-600 tabular-nums" :style="{ color: getStatusColor(item.status) }">
+                    <span class="ml-auto text-13px font-600 tabular-nums" :style="{ color: getStatusColor(item.status) }">
                       {{ isPreparingStatus(item.status) ? getStatusText(item) : item.status === 'failed' ? getStatusText(item) : `${item.progress}%` }}
                     </span>
                     <button
@@ -602,7 +589,7 @@ onMounted(() => {
               </div>
               <div class="flex items-center gap-8px">
                 <span class="text-14px font-600 tabular-nums" :style="{ color: getStatusColor(item.status) }">
-                  {{ item.status === 'failed' ? getStatusText(item) : `${item.progress}%` }}
+                  {{ item.status === 'failed' || item.status === 'merging' ? getStatusText(item) : `${item.progress}%` }}
                 </span>
                 <!-- Pause button: active statuses -->
                 <button
