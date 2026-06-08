@@ -31,6 +31,7 @@
 - Sisyphus: plan.md 所有 [ ] 完成才能停
 - Reflexion: 每个 Task 完成后自我反思
 - 4级 Quality Gate: PASS / CONCERNS / REWORK / FAIL
+- **类型安全: 禁止使用 any 替代类型，前后端 API 类型必须一一对应，删除多余/冗余类型定义**
 
 ## 框架地图
 | 类别 | 文件 | 数量 |

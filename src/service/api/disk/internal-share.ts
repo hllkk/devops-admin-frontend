@@ -29,7 +29,11 @@ export function fetchBatchSaveToDrive(
   items: Array<{ shareId: number; fileId: number }>,
   targetFolderId: number
 ) {
-  return request<boolean>({
+  return request<{
+    results: Array<{ shareId: number; fileId: number; originalName: string; savedName: string; isRenamed: boolean }>;
+    renamedCount: number;
+    totalCount: number;
+  }>({
     url: '/share/internal/save-to-drive',
     method: 'post',
     data: { items, targetFolderId }
@@ -180,6 +184,15 @@ export function fetchUpdateTargetPermissions(
     url: '/share/internal/target/permissions',
     method: 'put',
     data: { targetId, permissions }
+  });
+}
+
+/** 从网盘移除保存的文件 */
+export function fetchRemoveSaveMount(sourceFileId: number) {
+  return request<boolean>({
+    url: '/share/internal/save-mount',
+    method: 'delete',
+    data: { sourceFileId }
   });
 }
 

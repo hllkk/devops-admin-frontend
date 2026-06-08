@@ -1436,6 +1436,7 @@ declare namespace App {
             acceptSuccess: string;
             saveToDrive: string;
             saveToDriveSuccess: string;
+            saveSuccessRenamed: string;
             mounted: string;
             itemsToSave: string;
             selectTargetFolder: string;
@@ -1475,6 +1476,10 @@ declare namespace App {
             uploadSuccess: string;
             createFolderSuccess: string;
             folderNamePlaceholder: string;
+            batchSaveToDrive: string;
+            removeFromDrive: string;
+            removeFromDriveConfirm: string;
+            removeFromDriveSuccess: string;
             shareCancelled: string;
           };
           recent: {

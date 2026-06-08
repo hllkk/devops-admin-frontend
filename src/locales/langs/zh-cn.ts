@@ -1646,6 +1646,7 @@ const local: App.I18n.Schema = {
         acceptSuccess: '已接受共享',
         saveToDrive: '保存到我的网盘',
         saveToDriveSuccess: '已保存到我的网盘',
+        saveSuccessRenamed: '因名称冲突，以下文件已自动重命名：{list}',
         itemsToSave: '要保存的文件',
         mounted: '已保存',
         selectTargetFolder: '选择目标文件夹',
@@ -1686,6 +1687,10 @@ const local: App.I18n.Schema = {
         uploadSuccess: '上传成功',
         createFolderSuccess: '文件夹创建成功',
         folderNamePlaceholder: '请输入文件夹名称',
+        batchSaveToDrive: '批量保存到网盘',
+        removeFromDrive: '从网盘移除',
+        removeFromDriveConfirm: '确定从网盘移除 "{name}"？移除后仍可通过共享链接重新保存',
+        removeFromDriveSuccess: '已从网盘移除',
         shareCancelled: '{user} 取消了文件共享'
       },
       recent: {

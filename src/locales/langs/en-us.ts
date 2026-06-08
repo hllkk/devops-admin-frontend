@@ -1653,6 +1653,7 @@ const local: App.I18n.Schema = {
         acceptSuccess: 'Share accepted',
         saveToDrive: 'Save to My Drive',
         saveToDriveSuccess: 'Saved to My Drive',
+        saveSuccessRenamed: 'Auto-renamed due to name conflict: {list}',
         itemsToSave: 'Items to save',
         mounted: 'Saved',
         selectTargetFolder: 'Select target folder',
@@ -1693,6 +1694,10 @@ const local: App.I18n.Schema = {
         uploadSuccess: 'Upload successful',
         createFolderSuccess: 'Folder created successfully',
         folderNamePlaceholder: 'Enter folder name',
+        batchSaveToDrive: 'Batch save to Drive',
+        removeFromDrive: 'Remove from Drive',
+        removeFromDriveConfirm: 'Remove "{name}" from drive? You can still re-save via the share link',
+        removeFromDriveSuccess: 'Removed from drive',
         shareCancelled: '{user} cancelled the share'
       },
       recent: {

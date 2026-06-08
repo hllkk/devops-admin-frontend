@@ -13,6 +13,7 @@ import {
   fetchGetSharedFolderContents,
   fetchCancelInternalShare,
   fetchBatchSaveToDrive,
+  fetchRemoveSaveMount,
   fetchIsAllowDownload,
   fetchIsAllowPackageDownload,
   fetchRenameFile,
@@ -32,6 +33,8 @@ import MoveCopyDialog from '../../disk/modules/move-copy-dialog.vue';
 import ShareDialog from '../../disk/modules/share-dialog.vue';
 import FileEmpty from '@/components/disk/file-empty.vue';
 import SaveToDriveDialog from '../../disk/modules/save-to-drive-dialog.vue';
+import ArchiveActionDialog from '@/components/disk/archive-action-dialog.vue';
+import ArchivePreview from '@/components/preview/archive-preview.vue';
 
 defineOptions({ name: 'ShareListPage' });
 
@@ -98,27 +101,15 @@ const newFolderName = ref('');
 const checkedCount = computed(() => checkedRowKeys.value.length);
 const isBrowsingFolder = computed(() => browsingFolder.value !== null);
 
+// 响应式表格最大高度
+const windowHeight = ref(window.innerHeight);
+function updateWindowHeight() { windowHeight.value = window.innerHeight; }
+const tableMaxHeight = computed(() => Math.max(300, windowHeight.value - 220));
+
 // 检查当前浏览的共享文件夹是否有上传权限
 const hasUploadPermission = computed(() => {
   if (!browsingFolder.value) return false;
   return browsingFolder.value.permissions.includes('UPLOAD');
-});
-
-// 检查是否有编辑权限（PUT）
-const _hasPutPermission = computed(() => {
-  if (!browsingFolder.value) return false;
-  return browsingFolder.value.permissions.includes('PUT');
-});
-
-// 检查是否有删除权限（DELETE）
-const _hasDeletePermission = computed(() => {
-  if (!browsingFolder.value) return false;
-  return browsingFolder.value.permissions.includes('DELETE');
-});
-
-const _currentList = computed(() => {
-  if (isBrowsingFolder.value) return folderContents.value;
-  return shareList.value.map(convertToFileItem);
 });
 
 const fileList = computed(() => shareList.value.map(convertToFileItem));
@@ -165,11 +156,12 @@ function getFileExtension(fileName: string): string | undefined {
 }
 
 function convertToFileItem(item: Api.Disk.SharedWithMeItem): Api.Disk.FileItem {
+  const ext = getFileExtension(item.fileName);
   return {
     fileId: item.fileId,
     fileName: item.fileName,
     fileType: contentTypeToFileType(item.contentType, item.isFolder),
-    fileExtension: getFileExtension(item.fileName),
+    fileExtension: ext,
     fileSize: item.size,
     filePath: '',
     parentId: null,
@@ -179,7 +171,14 @@ function convertToFileItem(item: Api.Disk.SharedWithMeItem): Api.Disk.FileItem {
     updateTime: item.createdAt,
     createBy: '',
     updateBy: '',
-    mediaCover: item.mediaCover || false
+    mediaCover: item.mediaCover || false,
+    // 兼容性别名
+    id: item.fileId,
+    name: item.fileName,
+    size: item.size,
+    isDir: item.isFolder,
+    extendName: ext,
+    contentType: item.contentType
   };
 }
 
@@ -397,14 +396,19 @@ async function handleCreateFolderConfirm() {
 }
 
 // --- Context menu ---
-function getShareCtxMenu(permissions: string[]): DropdownOption[] {
+function getShareCtxMenu(item: Api.Disk.SharedWithMeItem): DropdownOption[] {
+  const permissions = item.permissions;
   const options: DropdownOption[] = [
     { label: $t('page.disk.contextMenu.open'), key: 'open', icon: SvgIconVNode({ icon: 'mdi:open-in-new', fontSize: 18 }) }
   ];
   if (permissions.includes('DOWNLOAD')) {
     options.push({ label: $t('page.disk.contextMenu.download'), key: 'download', icon: SvgIconVNode({ icon: 'mdi:download-outline', fontSize: 18 }) });
     if (isUserShare.value) {
-      options.push({ label: $t('page.disk.sharedWithMe.saveToDrive'), key: 'saveToDrive', icon: SvgIconVNode({ icon: 'mdi:content-save-outline', fontSize: 18 }) });
+      if (item.isMounted) {
+        options.push({ label: $t('page.disk.sharedWithMe.removeFromDrive'), key: 'removeFromDrive', icon: SvgIconVNode({ icon: 'mdi:link-off', fontSize: 18 }) });
+      } else {
+        options.push({ label: $t('page.disk.sharedWithMe.saveToDrive'), key: 'saveToDrive', icon: SvgIconVNode({ icon: 'mdi:content-save-outline', fontSize: 18 }) });
+      }
     }
   }
   if (permissions.includes('PUT')) {
@@ -483,6 +487,7 @@ function handleCtxMenuSelect(key: string) {
     case 'open': handleShareFileDblClick(item); break;
     case 'download': handleDownload([file]); break;
     case 'saveToDrive': if (isUserShare.value) handleSaveToMyDrive(item); break;
+    case 'removeFromDrive': if (isUserShare.value) handleRemoveFromDrive(item); break;
     case 'rename':
       diskStore.startRenaming(item.fileId, item.fileName);
       renamingFile.value = file;
@@ -621,6 +626,33 @@ async function handleShareFile(file: Api.Disk.FileItem) {
   diskStore.openShareDialog(file);
 }
 
+function handleBatchSaveToDrive() {
+  const selectedItems = shareList.value.filter(item => checkedRowKeys.value.includes(item.fileShareId));
+  if (selectedItems.length === 0) return;
+  pendingSaveItems.value = selectedItems.map(item => ({
+    shareId: item.fileShareId,
+    fileId: item.fileId,
+    fileName: item.fileName
+  }));
+  saveToDriveVisible.value = true;
+}
+
+async function handleRemoveFromDrive(item: Api.Disk.SharedWithMeItem) {
+  window.$dialog?.warning({
+    title: $t('page.disk.sharedWithMe.removeFromDrive'),
+    content: $t('page.disk.sharedWithMe.removeFromDriveConfirm', { name: item.fileName }),
+    positiveText: $t('common.confirm'),
+    negativeText: $t('common.cancel'),
+    onPositiveClick: async () => {
+      const { error } = await fetchRemoveSaveMount(item.fileId);
+      if (!error) {
+        window.$message?.success($t('page.disk.sharedWithMe.removeFromDriveSuccess'));
+        getData();
+      }
+    }
+  });
+}
+
 async function handleSaveToMyDrive(item: Api.Disk.SharedWithMeItem) {
   pendingSaveItems.value = [{
     shareId: item.fileShareId,
@@ -631,9 +663,14 @@ async function handleSaveToMyDrive(item: Api.Disk.SharedWithMeItem) {
 }
 
 async function handleSaveToDriveConfirm(targetFolderId: CommonType.IdType) {
-  const { error } = await fetchBatchSaveToDrive(pendingSaveItems.value, Number(targetFolderId));
-  if (!error) {
-    window.$message?.success($t('page.disk.sharedWithMe.saveToDriveSuccess'));
+  const { data, error } = await fetchBatchSaveToDrive(pendingSaveItems.value, Number(targetFolderId));
+  if (!error && data) {
+    if (data.renamedCount > 0) {
+      const renamedList = data.results.filter(r => r.isRenamed).map(r => `"${r.originalName}" → "${r.savedName}"`).join(', ');
+      window.$message?.warning($t('page.disk.sharedWithMe.saveSuccessRenamed', { list: renamedList }));
+    } else {
+      window.$message?.success($t('page.disk.sharedWithMe.saveToDriveSuccess'));
+    }
     saveToDriveVisible.value = false;
     getData();
   }
@@ -882,28 +919,29 @@ function handlePageChange(page: number) {
 }
 
 // --- Init ---
+// SSE 订阅：监听新共享事件，自动刷新列表
+const unsubscribe = onSSEMessage('share_created', () => {
+  if (!isBrowsingFolder.value) {
+    getData();
+  }
+});
+
 onMounted(async () => {
+  window.addEventListener('resize', updateWindowHeight);
   await getData();
   if (route.query.shareId) {
     await restoreFromUrl();
   }
 });
 
-// SSE 订阅：监听新共享事件，自动刷新列表
-const unsubscribe = onSSEMessage('share_created', () => {
-  // 如果当前在共享给我的页面，自动刷新列表
-  if (!isBrowsingFolder.value) {
-    getData();
-  }
-});
-
 onUnmounted(() => {
+  window.removeEventListener('resize', updateWindowHeight);
   unsubscribe();
 });
 </script>
 
 <template>
-  <div class="min-h-500px h-full flex-col-stretch gap-0 overflow-hidden lt-lg:overflow-auto">
+  <div class="h-full flex-col-stretch gap-0 overflow-hidden lt-lg:overflow-auto">
     <NCard :bordered="false" size="small" class="card-wrapper h-full flex-1-hidden">
       <div class="h-full flex flex-col">
         <!-- Search & filter bar (user share only) -->
@@ -960,6 +998,7 @@ onUnmounted(() => {
         <!-- Selection action bar -->
         <div v-if="!isBrowsingFolder && checkedCount > 0" class="flex items-center gap-12px px-4px py-8px">
           <span class="text-13px opacity-70">{{ $t('page.disk.sharedWithMe.selectedCount', { count: checkedCount }) }}</span>
+          <NButton v-if="isUserShare" size="small" type="primary" @click="handleBatchSaveToDrive">{{ $t('page.disk.sharedWithMe.batchSaveToDrive') }}</NButton>
           <NButton size="small" type="error" @click="handleBatchCancel">{{ $t('page.disk.sharedWithMe.exitShare') }}</NButton>
         </div>
 
@@ -978,7 +1017,7 @@ onUnmounted(() => {
               :row-props="getShareRowProps"
               :loading="loading"
               :checked-row-keys="checkedRowKeys"
-              :max-height="500"
+              :max-height="tableMaxHeight"
               :scroll-x="1000"
               @update:checked-row-keys="checkedRowKeys = $event as number[]"
             />
@@ -990,7 +1029,7 @@ onUnmounted(() => {
               :row-key="folderRowKey"
               :row-props="getFolderRowProps"
               :loading="loading"
-              :max-height="500"
+              :max-height="tableMaxHeight"
               :scroll-x="600"
             />
           </template>
@@ -1024,8 +1063,11 @@ onUnmounted(() => {
 
                 <div class="flex items-center justify-end gap-8px pt-4px">
                   <NButton size="tiny" quaternary @click.stop="handleDownload([convertToFileItem(item)])">{{ $t('page.disk.sharedWithMe.permDownload') }}</NButton>
-                  <NButton v-if="isUserShare" size="tiny" quaternary :disabled="item.isMounted" @click.stop="handleSaveToMyDrive(item)">
-                    {{ item.isMounted ? $t('page.disk.sharedWithMe.mounted') : $t('page.disk.sharedWithMe.saveToDrive') }}
+                  <NButton v-if="isUserShare && item.isMounted" size="tiny" quaternary type="warning" @click.stop="handleRemoveFromDrive(item)">
+                    {{ $t('page.disk.sharedWithMe.removeFromDrive') }}
+                  </NButton>
+                  <NButton v-else-if="isUserShare && !item.isMounted" size="tiny" quaternary @click.stop="handleSaveToMyDrive(item)">
+                    {{ $t('page.disk.sharedWithMe.saveToDrive') }}
                   </NButton>
                   <NButton size="tiny" quaternary @click.stop="handleShareFile(convertToFileItem(item))">{{ $t('page.disk.sharedWithMe.permShare') }}</NButton>
                   <NButton size="tiny" type="error" quaternary @click.stop="handleCancelSingle(item.fileShareId, item.fileName)">{{ $t('page.disk.sharedWithMe.exitShare') }}</NButton>
@@ -1071,7 +1113,7 @@ onUnmounted(() => {
       trigger="manual"
       :x="ctxMenuX"
       :y="ctxMenuY"
-      :options="isBrowsingFolder ? getFolderCtxMenu(browsingFolder?.permissions || []) : (ctxMenuFile ? getShareCtxMenu(ctxMenuFile.permissions) : [])"
+      :options="isBrowsingFolder ? getFolderCtxMenu(browsingFolder?.permissions || []) : (ctxMenuFile ? getShareCtxMenu(ctxMenuFile) : [])"
       :menu-props="() => ({ class: 'disk-ctx-glass' })"
       @clickoutside="ctxMenuVisible = false"
       @select="handleCtxMenuSelect"
@@ -1103,6 +1145,18 @@ onUnmounted(() => {
       @audio-overlay-click="preview.handleAudioOverlayClick"
       @update:is-audio-compact="preview.isAudioCompact = $event"
       @update:preview-visible="preview.previewVisible = $event"
+    />
+    <ArchiveActionDialog
+      v-model:visible="preview.showArchiveAction"
+      :file-name="preview.archiveFile?.fileName || preview.archiveFile?.name || ''"
+      @preview="preview.showArchivePreview = true; preview.showArchiveAction = false"
+      @extract-here="preview.showArchiveAction = false"
+      @extract-to="preview.showArchiveAction = false"
+    />
+    <ArchivePreview
+      v-model:visible="preview.showArchivePreview"
+      :file-id="preview.archiveFile?.fileId || ''"
+      :file-name="preview.archiveFile?.fileName || preview.archiveFile?.name || ''"
     />
     <!-- Create folder dialog -->
     <NModal v-model:show="createFolderDialogVisible" preset="dialog" :title="$t('page.disk.sharedWithMe.newFolder')">

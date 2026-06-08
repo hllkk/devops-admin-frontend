@@ -111,15 +111,11 @@ async function handleUpdateTargetPermissions(id: number, permissions: string[]) 
 }
 
 async function handleRemoveTarget(id: number) {
-  const idx = existingTargets.value.findIndex(t => t.id === id);
-  if (idx < 0) return;
-  const removed = existingTargets.value.splice(idx, 1)[0];
   startLoading();
   const { error } = await fetchRemoveShareTarget(id);
   endLoading();
-  if (error) {
-    existingTargets.value.splice(idx, 0, removed);
-  } else {
+  if (!error) {
+    existingTargets.value = existingTargets.value.filter(t => t.id !== id);
     window.$message?.success($t('page.disk.myShare.cancelSuccess'));
   }
 }
