@@ -15,15 +15,6 @@ export function fetchCreateInternalShare(data: {
   });
 }
 
-/** 取消内部共享 */
-export function fetchCancelInternalShare(fileShareId: number) {
-  return request<boolean>({
-    url: '/share/internal/cancel',
-    method: 'post',
-    data: { fileShareId }
-  });
-}
-
 /** 批量保存到我的网盘 */
 export function fetchBatchSaveToDrive(
   items: Array<{ shareId: number; fileId: number }>,
@@ -202,5 +193,14 @@ export function fetchRemoveShareTarget(targetId: number) {
     url: '/share/internal/target',
     method: 'delete',
     data: { targetId }
+  });
+}
+
+/** 根据共享ID获取单条共享详情 */
+export function fetchGetShareById(fileShareId: number) {
+  return request<Api.Disk.SharedWithMeItem>({
+    url: '/share/internal/detail',
+    method: 'post',
+    data: { fileShareId }
   });
 }

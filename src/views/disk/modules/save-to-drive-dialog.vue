@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { h, ref, computed, watch } from 'vue';
 import { $t } from '@/locales';
 import { useLoading } from '@sa/hooks';
+import { useSvgIcon } from '@/hooks/common/icon';
 import { fetchGetFolderList } from '@/service/api/disk/file';
+import FileIcon from './file-icon.vue';
 
 defineOptions({
   name: 'SaveToDriveDialog'
@@ -14,7 +16,20 @@ interface Props {
     shareId: number;
     fileId: number;
     fileName: string;
+    contentType: string;
+    isFolder: boolean;
+    mediaCover?: boolean;
   }>;
+}
+
+function contentTypeToFileType(contentType: string, isFolder: boolean): string {
+  if (isFolder) return 'folder';
+  return contentType || 'unknown';
+}
+
+function getFileExtension(fileName: string): string | undefined {
+  const idx = fileName.lastIndexOf('.');
+  return idx > 0 ? fileName.slice(idx + 1) : undefined;
 }
 
 interface Emits {
@@ -26,6 +41,7 @@ const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const { loading, startLoading, endLoading } = useLoading();
+const { SvgIconVNode } = useSvgIcon();
 
 const folderTree = ref<Api.Disk.FolderItem[]>([]);
 const selectedFolderId = ref<CommonType.IdType | null>(null);
@@ -71,6 +87,7 @@ const filteredTree = computed(() => {
         result.push({
           key: node.id,
           label: node.name,
+          prefix: () => SvgIconVNode({ icon: 'mdi:folder-outline', fontSize: 18 }),
           children: childResults
         });
       }
@@ -84,6 +101,7 @@ const filteredTree = computed(() => {
       return nodes.map(node => ({
         key: node.id,
         label: node.name,
+        prefix: () => SvgIconVNode({ icon: 'mdi:folder-outline', fontSize: 18 }),
         children: buildTree(folderTree.value.filter(f => f.parentId === node.id))
       }));
     }
@@ -92,19 +110,38 @@ const filteredTree = computed(() => {
   return filterNodes(roots);
 });
 
+const ROOT_DIR_ID = 0 as CommonType.IdType;
+
 async function loadFolders() {
   startLoading();
   try {
     const { data } = await fetchGetFolderList('/');
     if (data) {
-      folderTree.value = data.list;
-      expandedKeys.value = data.list
-        .filter(folder => folder.parentId === null)
-        .map(folder => folder.id);
+      // 始终在最前面插入虚拟根目录节点
+      folderTree.value = [
+        {
+          id: ROOT_DIR_ID,
+          name: $t('page.disk.sharedWithMe.rootDirectory'),
+          path: '/',
+          parentId: null,
+          depth: 0
+        },
+        ...data.list
+      ];
+    } else {
+      folderTree.value = [{
+        id: ROOT_DIR_ID,
+        name: $t('page.disk.sharedWithMe.rootDirectory'),
+        path: '/',
+        parentId: null,
+        depth: 0
+      }];
     }
   } finally {
     endLoading();
   }
+  selectedFolderId.value = ROOT_DIR_ID;
+  expandedKeys.value = [ROOT_DIR_ID];
 }
 
 function handleSelectFolder(keys: any[]) {
@@ -140,8 +177,6 @@ function handleBreadcrumbClick(id: CommonType.IdType) {
 watch(() => props.visible, visible => {
   if (visible) {
     loadFolders();
-    selectedFolderId.value = null;
-    expandedKeys.value = [];
     searchKeyword.value = '';
   }
 });
@@ -166,7 +201,7 @@ watch(() => props.visible, visible => {
             :key="item.shareId"
             class="flex items-center gap-8px px-12px py-8px rounded bg-gray-50 dark:bg-gray-800 text-13px"
           >
-            <SvgIcon icon="material-symbols:description" :size="18" class="opacity-60 shrink-0" />
+            <FileIcon :file-type="contentTypeToFileType(item.contentType, item.isFolder)" :extension="getFileExtension(item.fileName)" size="medium" :file-id="item.fileId" :media-cover="item.mediaCover" />
             <span class="truncate">{{ item.fileName }}</span>
           </div>
         </div>
@@ -181,7 +216,7 @@ watch(() => props.visible, visible => {
         <!-- Search input -->
         <NInput
           v-model:value="searchKeyword"
-          :placeholder="$t('page.disk.sharedWithMe.searchPlaceholder')"
+          :placeholder="$t('page.disk.sharedWithMe.searchFolderPlaceholder')"
           size="small"
           clearable
         />
@@ -196,7 +231,7 @@ watch(() => props.visible, visible => {
               :disabled="index === selectedPath.length - 1"
               @click="handleBreadcrumbClick(folder.id)"
             >
-              {{ folder.name }}
+              {{ folder.id === ROOT_DIR_ID ? '/' : folder.name }}
             </NButton>
           </template>
         </div>

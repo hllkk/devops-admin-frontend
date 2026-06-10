@@ -1418,10 +1418,7 @@ declare namespace App {
           };
           sharedWithMe: {
             empty: string;
-            exitShare: string;
-            exitSuccess: string;
-            exitConfirm: string;
-            batchExitConfirm: string;
+            rootDirectory: string;
             sharedBy: string;
             permissions: string;
             size: string;
@@ -1446,6 +1443,7 @@ declare namespace App {
             noPreviewPermission: string;
             noUploadPermission: string;
             searchPlaceholder: string;
+            searchFolderPlaceholder: string;
             from: string;
             folderEmpty: string;
             previewNotSupported: string;
@@ -1466,7 +1464,6 @@ declare namespace App {
             modifyTime: string;
             unknownArtist: string;
             closeCurrentVideo: string;
-            exitFailCount: string;
             backToShareList: string;
             newShareTitle: string;
             newShareContent: string;

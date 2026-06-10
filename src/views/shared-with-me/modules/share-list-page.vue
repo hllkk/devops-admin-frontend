@@ -11,7 +11,6 @@ import { onSSEMessage } from '@/hooks/common/sse';
 import {
   fetchGetSharedWithMeList,
   fetchGetSharedFolderContents,
-  fetchCancelInternalShare,
   fetchBatchSaveToDrive,
   fetchRemoveSaveMount,
   fetchIsAllowDownload,
@@ -21,7 +20,8 @@ import {
   fetchGetShareInfo,
   fetchAddRecent,
   fetchUploadToShareFolder,
-  fetchCreateShareFolder
+  fetchCreateShareFolder,
+  fetchGetShareById
 } from '@/service/api/disk';
 import { formatFileSize } from '@/utils/format';
 import { getServiceBaseURL } from '@/utils/service';
@@ -89,7 +89,7 @@ const existingShareInfo = ref<Api.Disk.ShareResult | null>(null);
 
 // --- Save to drive dialog state ---
 const saveToDriveVisible = ref(false);
-const pendingSaveItems = ref<Array<{ shareId: number; fileId: number; fileName: string }>>([]);
+const pendingSaveItems = ref<Array<{ shareId: number; fileId: number; fileName: string; contentType: string; isFolder: boolean; mediaCover?: boolean }>>([]);
 
 // --- Upload state ---
 const uploadFileInputRef = ref<HTMLInputElement>();
@@ -217,11 +217,6 @@ const permissionTagTypeMap: Record<string, 'success' | 'info' | 'warning' | 'err
   SHARE: 'info'
 };
 
-// --- Cancel share (unified by shareType) ---
-async function cancelShare(id: number) {
-  return isUserShare.value ? await fetchCancelInternalShare(id) : await fetchCancelInternalShare(id);
-}
-
 // --- Data fetching ---
 async function getData() {
   startLoading();
@@ -295,14 +290,10 @@ async function restoreFromUrl() {
   const shareId = route.query.shareId as string;
   if (!shareId) return;
 
-  const params: Record<string, unknown> = { pageNum: 1, pageSize: 200, shareType: props.shareType };
-  const { data } = await fetchGetSharedWithMeList(params as Parameters<typeof fetchGetSharedWithMeList>[0]);
-  if (!data?.rows) return;
+  const { data } = await fetchGetShareById(Number(shareId));
+  if (!data) return;
 
-  const item = data.rows.find((r: Api.Disk.SharedWithMeItem) => String(r.fileShareId) === shareId);
-  if (!item) return;
-
-  browsingFolder.value = item;
+  browsingFolder.value = data;
   const urlPath = (route.query.path as string) || '';
   folderPath.value = urlPath;
   folderPagination.value.pageNum = 1;
@@ -316,7 +307,6 @@ async function restoreFromUrl() {
 // Watch for browser back/forward
 watch(() => route.query.shareId, async (newShareId, oldShareId) => {
   if (newShareId === oldShareId) return;
-  // Skip during initial mount (handled by onMounted)
   if (!oldShareId && newShareId) return;
 
   if (!newShareId) {
@@ -326,15 +316,11 @@ watch(() => route.query.shareId, async (newShareId, oldShareId) => {
   } else {
     const shareId = newShareId as string;
     const path = (route.query.path as string) || '';
-    const params: Record<string, unknown> = { pageNum: 1, pageSize: 200, shareType: props.shareType };
-    const { data } = await fetchGetSharedWithMeList(params as Parameters<typeof fetchGetSharedWithMeList>[0]);
-    if (data?.rows) {
-      const item = data.rows.find((r: Api.Disk.SharedWithMeItem) => String(r.fileShareId) === shareId);
-      if (item) {
-        browsingFolder.value = item;
-        folderPath.value = path;
-        getFolderContents(path || undefined);
-      }
+    const { data } = await fetchGetShareById(Number(shareId));
+    if (data) {
+      browsingFolder.value = data;
+      folderPath.value = path;
+      getFolderContents(path || undefined);
     }
   }
 });
@@ -419,8 +405,6 @@ function getShareCtxMenu(item: Api.Disk.SharedWithMeItem): DropdownOption[] {
   if (permissions.includes('SHARE')) {
     options.push({ label: $t('page.disk.contextMenu.share'), key: 'share', icon: SvgIconVNode({ icon: 'mdi:share-outline', fontSize: 18 }) });
   }
-  options.push({ type: 'divider', key: 'd1' });
-  options.push({ label: $t('page.disk.sharedWithMe.exitShare'), key: 'exitShare', icon: SvgIconVNode({ icon: 'mdi:link-off', fontSize: 18 }) });
   return options;
 }
 
@@ -495,7 +479,6 @@ function handleCtxMenuSelect(key: string) {
     case 'copy': diskStore.openMoveCopyDialog('copy', [file]); break;
     case 'move': diskStore.openMoveCopyDialog('move', [file]); break;
     case 'share': handleShareFile(file); break;
-    case 'exitShare': handleCancelSingle(item.fileShareId, item.fileName); break;
   }
 }
 
@@ -540,6 +523,10 @@ async function handleFolderFileDblClick(file: Api.Disk.FileItem) {
 
 // --- Download ---
 function triggerBrowserDownload(downloadUrl: string) {
+  if (!downloadUrl.startsWith('/') || downloadUrl.includes('//')) {
+    window.$message?.error('Invalid download URL');
+    return;
+  }
   const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
   const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
   const link = document.createElement('a');
@@ -632,7 +619,10 @@ function handleBatchSaveToDrive() {
   pendingSaveItems.value = selectedItems.map(item => ({
     shareId: item.fileShareId,
     fileId: item.fileId,
-    fileName: item.fileName
+    fileName: item.fileName,
+    contentType: item.contentType,
+    isFolder: item.isFolder,
+    mediaCover: item.mediaCover
   }));
   saveToDriveVisible.value = true;
 }
@@ -657,7 +647,10 @@ async function handleSaveToMyDrive(item: Api.Disk.SharedWithMeItem) {
   pendingSaveItems.value = [{
     shareId: item.fileShareId,
     fileId: item.fileId,
-    fileName: item.fileName
+    fileName: item.fileName,
+    contentType: item.contentType,
+    isFolder: item.isFolder,
+    mediaCover: item.mediaCover
   }];
   saveToDriveVisible.value = true;
 }
@@ -674,47 +667,6 @@ async function handleSaveToDriveConfirm(targetFolderId: CommonType.IdType) {
     saveToDriveVisible.value = false;
     getData();
   }
-}
-
-async function handleBatchCancel() {
-  if (checkedRowKeys.value.length === 0) return;
-  window.$dialog?.warning({
-    title: $t('page.disk.sharedWithMe.exitShare'),
-    content: $t('page.disk.sharedWithMe.batchExitConfirm', { count: checkedRowKeys.value.length }),
-    positiveText: $t('common.confirm'),
-    negativeText: $t('common.cancel'),
-    onPositiveClick: async () => {
-      startLoading();
-      let failCount = 0;
-      for (const id of checkedRowKeys.value) {
-        const { error } = await cancelShare(id);
-        if (error) failCount++;
-      }
-      endLoading();
-      if (failCount === 0) {
-        window.$message?.success($t('page.disk.sharedWithMe.exitSuccess'));
-      } else {
-        window.$message?.warning($t('page.disk.sharedWithMe.exitFailCount', { count: failCount }));
-      }
-      getData();
-    }
-  });
-}
-
-async function handleCancelSingle(id: number, fileName: string) {
-  window.$dialog?.warning({
-    title: $t('page.disk.sharedWithMe.exitShare'),
-    content: $t('page.disk.sharedWithMe.exitConfirm', { name: fileName }),
-    positiveText: $t('common.confirm'),
-    negativeText: $t('common.cancel'),
-    onPositiveClick: async () => {
-      const { error } = await cancelShare(id);
-      if (!error) {
-        window.$message?.success($t('page.disk.sharedWithMe.exitSuccess'));
-        getData();
-      }
-    }
-  });
 }
 
 // --- Table columns ---
@@ -756,20 +708,10 @@ const shareColumns = computed(() => {
           h('span', { class: 'flex-1 truncate', style: 'min-width:0' }, row.fileName)
         ];
 
-        // Show mounted status or exit button
+        // Show mounted status
         if (isUserShare.value && row.isMounted) {
           children.push(
             h(NTag, { size: 'small', type: 'success' }, () => $t('page.disk.sharedWithMe.mounted'))
-          );
-        } else {
-          children.push(
-            h('button', {
-              class: 'opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:opacity-80 p-0 bg-transparent border-none shrink-0',
-              title: $t('page.disk.sharedWithMe.exitShare'),
-              onClick: (e: MouseEvent) => { e.stopPropagation(); handleCancelSingle(row.fileShareId, row.fileName); }
-            }, h('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', width: '16', height: '16', class: 'text-error' }, [
-              h('path', { d: 'M6.5 6.5L17.5 17.5M17.5 6.5L6.5 17.5', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', fill: 'none' })
-            ]))
           );
         }
 
@@ -941,8 +883,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="h-full flex-col-stretch gap-0 overflow-hidden lt-lg:overflow-auto">
-    <NCard :bordered="false" size="small" class="card-wrapper h-full flex-1-hidden">
+  <div class="h-full lt-sm:h-[calc(100dvh-56px)] flex flex-col overflow-hidden">
+    <NCard :bordered="false" size="small" class="card-wrapper flex-1 min-h-0">
       <div class="h-full flex flex-col">
         <!-- Search & filter bar (user share only) -->
         <div v-if="showFilter && !isBrowsingFolder" class="flex items-center gap-8px px-4px py-8px lt-sm:flex-wrap">
@@ -999,7 +941,6 @@ onUnmounted(() => {
         <div v-if="!isBrowsingFolder && checkedCount > 0" class="flex items-center gap-12px px-4px py-8px">
           <span class="text-13px opacity-70">{{ $t('page.disk.sharedWithMe.selectedCount', { count: checkedCount }) }}</span>
           <NButton v-if="isUserShare" size="small" type="primary" @click="handleBatchSaveToDrive">{{ $t('page.disk.sharedWithMe.batchSaveToDrive') }}</NButton>
-          <NButton size="small" type="error" @click="handleBatchCancel">{{ $t('page.disk.sharedWithMe.exitShare') }}</NButton>
         </div>
 
         <!-- Content area -->
@@ -1070,7 +1011,6 @@ onUnmounted(() => {
                     {{ $t('page.disk.sharedWithMe.saveToDrive') }}
                   </NButton>
                   <NButton size="tiny" quaternary @click.stop="handleShareFile(convertToFileItem(item))">{{ $t('page.disk.sharedWithMe.permShare') }}</NButton>
-                  <NButton size="tiny" type="error" quaternary @click.stop="handleCancelSingle(item.fileShareId, item.fileName)">{{ $t('page.disk.sharedWithMe.exitShare') }}</NButton>
                 </div>
               </div>
             </div>
