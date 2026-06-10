@@ -48,10 +48,11 @@ export function fetchLogout() {
 }
 
 /** Fetch WeChat Work login QR code info (returns OAuth URL + sceneId) */
-export function fetchWecomQrCode() {
+export function fetchWecomQrCode(source: string = 'pc') {
   return request<Api.Auth.WecomQrCodeInfo>({
     url: "/auth/wecomLogin",
-    method: "get"
+    method: "get",
+    params: { source }
   });
 }
 

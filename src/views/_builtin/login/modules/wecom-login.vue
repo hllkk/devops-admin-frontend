@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onUnmounted, ref } from 'vue';
-import QRCode from 'qrcode';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { $t } from '@/locales';
@@ -13,7 +12,7 @@ defineOptions({
 const router = useRouter();
 const authStore = useAuthStore();
 
-const qrCodeDataUrl = ref('');
+const iframeSrc = ref('');
 const sceneId = ref('');
 const loading = ref(false);
 const expired = ref(false);
@@ -21,7 +20,7 @@ const countdown = ref(120);
 const errorMessage = ref('');
 const pollInterval = ref(3000);
 const lastStatus = ref('');
-const scanned = ref(false); // 用户已扫码状态
+const scanned = ref(false);
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null;
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
@@ -38,7 +37,7 @@ async function loadQrCode() {
   stopCountdown();
 
   try {
-    const { data, error } = await fetchWecomQrCode();
+    const { data, error } = await fetchWecomQrCode('pc');
     if (error || !data) {
       errorMessage.value = $t('page.login.wecomLogin.qrCodeLoadFailed');
       return;
@@ -46,13 +45,7 @@ async function loadQrCode() {
 
     sceneId.value = data.sceneId;
     countdown.value = data.countdown || 120;
-
-    // 客户端生成 QR 码
-    qrCodeDataUrl.value = await QRCode.toDataURL(data.oauthUrl, {
-      width: 220,
-      margin: 2,
-      color: { dark: '#000000', light: '#ffffff' }
-    });
+    iframeSrc.value = data.oauthUrl;
 
     startCountdown();
     scheduleNextPoll();
@@ -70,10 +63,9 @@ function scheduleNextPoll() {
 
     const { data, error } = await fetchQrCodeStatus(sceneId.value);
     if (!error && data) {
-      // 已扫描但未确认，加速轮询并显示提示
       if (data.status === 'scanned' && lastStatus.value !== 'scanned') {
         pollInterval.value = 1000;
-        scanned.value = true; // 显示"已扫码"提示
+        scanned.value = true;
       }
       lastStatus.value = data.status;
 
@@ -140,12 +132,12 @@ loadQrCode();
 
 <template>
   <div class="flex-col-center gap-24px">
-    <div v-if="loading" class="flex-col-center h-280px">
+    <div v-if="loading" class="flex-col-center h-400px">
       <NSpin size="large" />
       <p class="mt-12px text-14px text-gray-400">{{ $t('page.login.wecomLogin.loading') }}</p>
     </div>
 
-    <div v-else-if="errorMessage" class="flex-col-center h-280px">
+    <div v-else-if="errorMessage" class="flex-col-center h-400px">
       <div class="text-48px text-red-400">
         <SvgIcon icon="mdi:alert-circle-outline" />
       </div>
@@ -157,7 +149,13 @@ loadQrCode();
 
     <div v-else class="flex-col-center">
       <div class="qr-code-wrapper relative" :class="{ expired }">
-        <img v-if="qrCodeDataUrl" :src="qrCodeDataUrl" alt="WeChat Work QR Code" class="qr-code-img" />
+        <iframe
+          v-if="iframeSrc && !expired"
+          :src="iframeSrc"
+          class="qr-code-iframe"
+          frameborder="0"
+          sandbox="allow-scripts allow-same-origin allow-popups"
+        />
         <div v-if="expired" class="qr-code-overlay">
           <div class="flex-col-center gap-8px">
             <SvgIcon icon="mdi:refresh" class="text-32px text-white" />
@@ -169,7 +167,6 @@ loadQrCode();
       </div>
 
       <div class="mt-16px flex-col-center gap-8px">
-        <!-- 已扫码提示 -->
         <div v-if="scanned && !expired" class="scanned-tip">
           <NSpin size="small" />
           <span class="ml-8px">{{ $t('page.login.wecomLogin.scanned') }}</span>
@@ -197,8 +194,8 @@ loadQrCode();
 
 <style scoped>
 .qr-code-wrapper {
-  width: 220px;
-  height: 220px;
+  width: 300px;
+  height: 400px;
   border-radius: 8px;
   overflow: hidden;
   position: relative;
@@ -209,10 +206,10 @@ loadQrCode();
   border-color: #374151;
 }
 
-.qr-code-img {
+.qr-code-iframe {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  border: none;
 }
 
 .qr-code-overlay {
