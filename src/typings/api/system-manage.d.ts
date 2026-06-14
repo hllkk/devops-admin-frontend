@@ -204,6 +204,10 @@ declare namespace Api {
 
     interface WecomSettings {
       enableWecom?: boolean;
+      corpId?: string;
+      agentId?: number;
+      agentSecret?: string;
+      redirectUri?: string;
       validateDomainFileName?: string;
       validateDomainFileContent?: string;
     }

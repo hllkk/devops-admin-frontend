@@ -105,6 +105,10 @@ export interface NotifySettingConfig {
 export interface AuthSettingConfig {
   // 企业微信
   weworkEnabled: boolean;
+  weworkCorpId: string;
+  weworkAgentId: number;
+  weworkAgentSecret: string;
+  weworkRedirectUri: string;
   weworkDomainFileName: string;
   weworkDomainFileContent: string;
   // 微信

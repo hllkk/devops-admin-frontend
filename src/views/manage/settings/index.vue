@@ -102,6 +102,10 @@ const config = ref<SettingConfig>({
   },
   auth: {
     weworkEnabled: false,
+    weworkCorpId: '',
+    weworkAgentId: 0,
+    weworkAgentSecret: '',
+    weworkRedirectUri: '',
     weworkDomainFileName: '',
     weworkDomainFileContent: '',
     wechatEnabled: false,
@@ -188,6 +192,10 @@ async function loadConfig() {
       const auth = settings.authentication;
       config.value.auth = {
         weworkEnabled: auth.wecom?.enableWecom || false,
+        weworkCorpId: auth.wecom?.corpId || '',
+        weworkAgentId: auth.wecom?.agentId || 0,
+        weworkAgentSecret: auth.wecom?.agentSecret || '',
+        weworkRedirectUri: auth.wecom?.redirectUri || '',
         weworkDomainFileName: auth.wecom?.validateDomainFileName || '',
         weworkDomainFileContent: auth.wecom?.validateDomainFileContent || '',
         wechatEnabled: auth.wechat?.enableWechat || false,
@@ -240,6 +248,10 @@ async function handleSave() {
       authentication: {
         wecom: {
           enableWecom: auth.weworkEnabled,
+          corpId: auth.weworkCorpId,
+          agentId: auth.weworkAgentId,
+          agentSecret: auth.weworkAgentSecret,
+          redirectUri: auth.weworkRedirectUri,
           validateDomainFileName: auth.weworkDomainFileName,
           validateDomainFileContent: auth.weworkDomainFileContent
         },
