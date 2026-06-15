@@ -297,6 +297,7 @@ const local: App.I18n.Schema = {
     log: 'Log Management',
     log_login: 'Login Log',
     log_operation: 'Operation Log',
+    log_file: 'File Operation Log',
     log_operate: 'Operation Log',
     system: 'System Management',
     system_user: 'User Management',
@@ -1331,6 +1332,51 @@ const local: App.I18n.Schema = {
           force: 'Force Logout',
           genCode: 'Generate Code',
           clean: 'Clean Data'
+        }
+      },
+      fileLog: {
+        pageTitle: 'File Operation Logs',
+        operationType: 'Operation',
+        fileName: 'File Name',
+        filePath: 'File Path',
+        targetFilePath: 'Target Path',
+        fileSize: 'Size',
+        operName: 'Operator',
+        operIp: 'IP',
+        operLocation: 'Location',
+        source: 'Source',
+        status: 'Status',
+        duration: 'Duration',
+        errorMessage: 'Error',
+        createdAt: 'Time',
+        clearConfirm: 'Clear all file operation logs?',
+        clearSuccess: 'Cleared',
+        operationTypeOptions: {
+          upload: 'Upload',
+          download: 'Download',
+          preview: 'Preview',
+          createFolder: 'New Folder',
+          delete: 'Delete',
+          restore: 'Restore',
+          purge: 'Purge',
+          rename: 'Rename',
+          move: 'Move',
+          copy: 'Copy',
+          shareCreate: 'Share',
+          shareRevoke: 'Revoke Share',
+          favorite: 'Favorite',
+          unfavorite: 'Unfavorite',
+          permission: 'Permission'
+        },
+        statusOptions: {
+          success: 'Success',
+          failed: 'Failed',
+          partial: 'Partial'
+        },
+        sourceOptions: {
+          web: 'Web',
+          shareLink: 'Share Link',
+          system: 'System'
         }
       },
       loginLog: {

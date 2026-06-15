@@ -174,6 +174,7 @@ const routeMap: RouteMap = {
   "iframe-page": "/iframe-page/:url",
   "init": "/init",
   "log": "/log",
+  "log_file": "/log/file",
   "log_login": "/log/login",
   "log_operation": "/log/operation",
   "login": "/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat|wecom-login)?",

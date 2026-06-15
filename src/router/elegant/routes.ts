@@ -47,8 +47,7 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: 'about',
       i18nKey: 'route.about',
       icon: 'fluent:book-information-24-regular',
-      order: 99,
-      module: 'admin'
+      order: 99
     }
   },
   {
@@ -88,11 +87,10 @@ export const generatedRoutes: GeneratedRoute[] = [
   {
     name: 'group-share',
     path: '/group-share',
-    component: 'layout.disk$view.group-share',
+    component: 'layout.base$view.group-share',
     meta: {
       title: 'group-share',
-      i18nKey: 'route.group-share',
-      module: 'disk'
+      i18nKey: 'route.group-share'
     }
   },
   {
@@ -126,10 +124,18 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: 'log',
       i18nKey: 'route.log',
       icon: 'carbon-cloud-logging',
-      order: 4,
-      module: 'admin'
+      order: 4
     },
     children: [
+      {
+        name: 'log_file',
+        path: '/log/file',
+        component: 'view.log_file',
+        meta: {
+          title: 'log_file',
+          i18nKey: 'route.log_file'
+        }
+      },
       {
         name: 'log_login',
         path: '/log/login',
@@ -270,11 +276,10 @@ export const generatedRoutes: GeneratedRoute[] = [
   {
     name: 'my-share',
     path: '/my-share',
-    component: 'layout.disk$view.my-share',
+    component: 'layout.base$view.my-share',
     meta: {
       title: 'my-share',
-      i18nKey: 'route.my-share',
-      module: 'disk'
+      i18nKey: 'route.my-share'
     }
   },
   {
@@ -283,8 +288,7 @@ export const generatedRoutes: GeneratedRoute[] = [
     component: 'layout.base$view.notice-user',
     meta: {
       title: 'notice-user',
-      i18nKey: 'route.notice-user',
-      hideInMenu: true
+      i18nKey: 'route.notice-user'
     }
   },
   {
@@ -308,11 +312,10 @@ export const generatedRoutes: GeneratedRoute[] = [
   {
     name: 'shared-with-me',
     path: '/shared-with-me',
-    component: 'layout.disk$view.shared-with-me',
+    component: 'layout.base$view.shared-with-me',
     meta: {
       title: 'shared-with-me',
-      i18nKey: 'route.shared-with-me',
-      module: 'disk'
+      i18nKey: 'route.shared-with-me'
     }
   },
   {
