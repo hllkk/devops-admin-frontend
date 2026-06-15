@@ -293,6 +293,7 @@ const local: App.I18n.Schema = {
     log: '日志中心',
     log_login: '登录日志',
     log_operation: '操作日志',
+    log_file: '文件操作日志',
     log_operate: '操作日志',
     system: '系统管理',
     system_user: '用户管理',
@@ -1323,6 +1324,51 @@ const local: App.I18n.Schema = {
           force: '强退',
           genCode: '生成代码',
           clean: '清空数据'
+        }
+      },
+      fileLog: {
+        pageTitle: '文件操作日志列表',
+        operationType: '操作类型',
+        fileName: '文件名',
+        filePath: '文件路径',
+        targetFilePath: '目标路径',
+        fileSize: '文件大小',
+        operName: '操作人',
+        operIp: '操作IP',
+        operLocation: '操作地点',
+        source: '来源',
+        status: '状态',
+        duration: '耗时',
+        errorMessage: '错误信息',
+        createdAt: '操作时间',
+        clearConfirm: '确定清空所有文件操作日志吗？',
+        clearSuccess: '清空成功',
+        operationTypeOptions: {
+          upload: '上传',
+          download: '下载',
+          preview: '预览',
+          createFolder: '新建文件夹',
+          delete: '删除',
+          restore: '还原',
+          purge: '彻底删除',
+          rename: '重命名',
+          move: '移动',
+          copy: '复制',
+          shareCreate: '创建分享',
+          shareRevoke: '取消分享',
+          favorite: '收藏',
+          unfavorite: '取消收藏',
+          permission: '权限变更'
+        },
+        statusOptions: {
+          success: '成功',
+          failed: '失败',
+          partial: '部分'
+        },
+        sourceOptions: {
+          web: '网页',
+          shareLink: '分享链接',
+          system: '系统'
         }
       },
       loginLog: {

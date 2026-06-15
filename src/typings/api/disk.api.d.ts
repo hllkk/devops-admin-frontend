@@ -637,10 +637,6 @@ declare namespace Api {
 
     /** 文件操作审计查询参数 */
     type FileAuditSearchParams = CommonType.RecordNullable<{
-      /** 页码 */
-      pageNum: number;
-      /** 每页数量 */
-      pageSize: number;
       /** 用户ID */
       userId: number;
       /** 操作者名称 */
@@ -657,7 +653,8 @@ declare namespace Api {
       beginTime: string;
       /** 结束时间 */
       endTime: string;
-    }>;
+    }> &
+      Common.CommonSearchParams;
 
     /** 文件操作审计列表 */
     type FileAuditList = Common.PaginatingQueryRecord<FileAuditLog>;

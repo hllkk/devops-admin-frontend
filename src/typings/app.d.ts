@@ -1118,6 +1118,51 @@ declare namespace App {
               clean: string;
             };
           };
+          fileLog: {
+            pageTitle: string;
+            operationType: string;
+            fileName: string;
+            filePath: string;
+            targetFilePath: string;
+            fileSize: string;
+            operName: string;
+            operIp: string;
+            operLocation: string;
+            source: string;
+            status: string;
+            duration: string;
+            errorMessage: string;
+            createdAt: string;
+            clearConfirm: string;
+            clearSuccess: string;
+            operationTypeOptions: {
+              upload: string;
+              download: string;
+              preview: string;
+              createFolder: string;
+              delete: string;
+              restore: string;
+              purge: string;
+              rename: string;
+              move: string;
+              copy: string;
+              shareCreate: string;
+              shareRevoke: string;
+              favorite: string;
+              unfavorite: string;
+              permission: string;
+            };
+            statusOptions: {
+              success: string;
+              failed: string;
+              partial: string;
+            };
+            sourceOptions: {
+              web: string;
+              shareLink: string;
+              system: string;
+            };
+          };
           loginLog: {
             pageTitle: string;
             userName: string;
