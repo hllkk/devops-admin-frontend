@@ -33,6 +33,14 @@
 - 4级 Quality Gate: PASS / CONCERNS / REWORK / FAIL
 - **类型安全: 禁止使用 any 替代类型，前后端 API 类型必须一一对应，删除多余/冗余类型定义**
 
+## 代码图谱 (codegraph)
+本项目已纳入根目录 `/home/devops-admin/.codegraph/` 统一索引(覆盖 frontend + backend)。探索代码时:
+- **优先用 `codegraph_explore`** 回答"X 如何工作"、追踪调用链,而非 grep/Read
+- `codegraph_search` 定位符号, `codegraph_node` 读单符号源码或整个文件(等同 Read)
+- `codegraph_callers`/`codegraph_callees`/`codegraph_impact` 查调用关系与影响面
+- 索引自动 sync, 仅在图谱未覆盖时回退 Grep/Glob/Read
+- CLI 等价: `codegraph explore "<query>"`, `codegraph node <symbol>`
+
 ## 框架地图
 | 类别 | 文件 | 数量 |
 | Workflows | pace.md, riper-7.md | 2 |
