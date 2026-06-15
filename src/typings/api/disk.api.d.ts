@@ -584,5 +584,82 @@ declare namespace Api {
       permissions: string[];
       mountName?: string;
     };
+
+    /** 文件操作审计日志 */
+    type FileAuditLog = {
+      /** 记录ID */
+      id: number;
+      /** 用户ID */
+      userId: number;
+      /** 操作者名称 */
+      operName: string;
+      /** 操作类型 */
+      operationType: string;
+      /** 文件ID */
+      fileId: number;
+      /** 文件名 */
+      fileName: string;
+      /** 文件路径 */
+      filePath: string;
+      /** 文件大小（字节） */
+      fileSize: number;
+      /** 是否为目录 */
+      isDir: boolean;
+      /** 目标文件ID */
+      targetFileId: number | null;
+      /** 目标文件路径 */
+      targetFilePath: string | null;
+      /** 分享ID */
+      shareId: string | null;
+      /** 操作来源 */
+      source: string;
+      /** IP地址 */
+      ip: string;
+      /** User-Agent */
+      userAgent: string;
+      /** 归属地 */
+      location: string;
+      /** 操作状态 */
+      status: string;
+      /** 状态码 */
+      statusCode: number;
+      /** 下载范围 */
+      range: string | null;
+      /** 已发送字节数 */
+      bytesSent: number;
+      /** 耗时（毫秒） */
+      duration: number;
+      /** 错误信息 */
+      errorMessage: string;
+      /** 创建时间 */
+      createdAt: string;
+    };
+
+    /** 文件操作审计查询参数 */
+    type FileAuditSearchParams = CommonType.RecordNullable<{
+      /** 页码 */
+      pageNum: number;
+      /** 每页数量 */
+      pageSize: number;
+      /** 用户ID */
+      userId: number;
+      /** 操作者名称 */
+      operName: string;
+      /** 操作类型 */
+      operationType: string;
+      /** 文件名 */
+      fileName: string;
+      /** 操作状态 */
+      status: string;
+      /** 操作来源 */
+      source: string;
+      /** 开始时间 */
+      beginTime: string;
+      /** 结束时间 */
+      endTime: string;
+    }>;
+
+    /** 文件操作审计列表 */
+    type FileAuditList = Common.PaginatingQueryRecord<FileAuditLog>;
   }
 }
