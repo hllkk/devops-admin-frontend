@@ -1,6 +1,6 @@
 <script setup lang="tsx">
 import { ref } from 'vue';
-import { fetchGetStorageLibraries } from '@/service/api/disk/storage';
+import { fetchDeleteStorageLibrary, fetchGetStorageLibraries } from '@/service/api/disk/storage';
 import { useAppStore } from '@/store/modules/app';
 import { useAuth } from '@/hooks/business/auth';
 import { useNaivePaginatedTable } from '@/hooks/common/table';
@@ -32,6 +32,13 @@ function quotaPercent(item: Api.Disk.StorageAdmin.LibraryItem): number {
 function openTransfer(item: Api.Disk.StorageAdmin.LibraryItem) {
   currentLibrary.value = item;
   transferVisible.value = true;
+}
+
+async function handleDelete(item: Api.Disk.StorageAdmin.LibraryItem) {
+  const { error } = await fetchDeleteStorageLibrary(item.userId);
+  if (error) return;
+  window.$message?.success('资料库已清空');
+  getData();
 }
 
 type LibRow = Api.Disk.StorageAdmin.LibraryItem;
@@ -130,21 +137,33 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
         }
       },
       {
+        key: 'status' as const,
+        title: '状态',
+        align: 'center' as const,
+        width: 70,
+        render(row: LibRow) {
+          return row.status === '1' ? <n-tag type="success" size="small">正常</n-tag> : <n-tag type="warning" size="small">停用</n-tag>;
+        }
+      },
+      {
         key: 'operate' as const,
         title: $t('common.operate'),
         align: 'center' as const,
-        width: 80,
+        width: 120,
         fixed: 'right' as const,
         render(row: LibRow) {
-          if (!hasAuth('system:storage:transfer')) return null;
           return (
-            <ButtonIcon
-              text
-              type="primary"
-              icon="material-symbols:swap-horiz"
-              tooltipContent="转让"
-              onClick={() => openTransfer(row)}
-            />
+            <div class="flex-center gap-8px">
+              {hasAuth('system:storage:transfer') ? (
+                <ButtonIcon text type="primary" icon="material-symbols:swap-horiz"
+                  tooltipContent="转让" onClick={() => openTransfer(row)} />
+              ) : null}
+              {hasAuth('system:storage:delete') ? (
+                <ButtonIcon text type="error" icon="material-symbols:delete-outline"
+                  tooltipContent="清空" popconfirmContent={`确认清空「${row.nickName}」的全部文件?此操作不可逆。`}
+                  onPositiveClick={() => handleDelete(row)} />
+              ) : null}
+            </div>
           );
         }
       }

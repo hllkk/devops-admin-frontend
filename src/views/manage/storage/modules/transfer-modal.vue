@@ -47,7 +47,7 @@ async function loadUsers() {
     const { data } = await fetchGetUserSelect();
     const users = (data ?? []) as Api.System.User[];
     userOptions.value = users
-      .filter(u => u.status === '1' && (!props.library || u.userId !== props.library.userId))
+      .filter(u => !props.library || u.userId !== props.library.userId)
       .map(u => ({ label: `${u.nickName}(${u.userName})`, value: Number(u.userId) }));
   } catch {
     userOptions.value = [];

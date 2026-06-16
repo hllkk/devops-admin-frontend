@@ -24,6 +24,14 @@ export function fetchTransferStorageLibrary(data: Api.Disk.StorageAdmin.Transfer
   });
 }
 
+/** 删除资料库(清空用户网盘) */
+export function fetchDeleteStorageLibrary(userId: number) {
+  return request<boolean>({
+    url: `/manage/storage/libraries/${userId}`,
+    method: 'delete'
+  });
+}
+
 /** 转移记录列表 */
 export function fetchGetStorageTransferRecords(params: {
   pageNum: number;
