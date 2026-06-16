@@ -2,7 +2,6 @@
 import { computed, ref, watch } from 'vue';
 import { fetchTransferStorageLibrary } from '@/service/api/disk/storage';
 import { fetchGetUserList } from '@/service/api/system/user';
-import { $t } from '@/locales';
 
 defineOptions({ name: 'TransferModal' });
 
