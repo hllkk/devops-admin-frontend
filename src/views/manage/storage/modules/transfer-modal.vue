@@ -21,6 +21,7 @@ const visibleModel = computed({
 });
 
 const targetUserId = ref<number | null>(null);
+const selectedUserOption = ref<{ label: string; value: number } | null>(null);
 const includeTrash = ref(false);
 const inheritShares = ref(true);
 const folderName = ref('');
@@ -34,6 +35,7 @@ watch(
   v => {
     if (v && props.library) {
       targetUserId.value = null;
+      selectedUserOption.value = null;
       includeTrash.value = false;
       inheritShares.value = true;
       folderName.value = `${props.library.nickName}的交接文件`;
@@ -43,23 +45,42 @@ watch(
   }
 );
 
+function buildOptions(rows: { id: number; userName: string; nickName: string; status: string }[]) {
+  return rows
+    .filter(u => u.status === '1' && (!props.library || u.id !== props.library.userId))
+    .map(u => ({ label: `${u.nickName}(${u.userName})`, value: u.id }));
+}
+
 async function handleSearch(query: string) {
-  if (!query) {
-    userOptions.value = [];
-    return;
-  }
   loadingUsers.value = true;
   try {
-    const res = await fetchGetUserList({ userName: query, pageNum: 1, pageSize: 20 });
-    const paginated = res.data as { rows?: { id: number; userName: string; nickName: string; status: string }[] } | null;
-    const rows = paginated?.rows ?? [];
-    userOptions.value = rows
-      .filter(u => u.status === '1' && (!props.library || u.id !== props.library.userId))
-      .map(u => ({ label: `${u.nickName}(${u.userName})`, value: u.id }));
+    let options: { label: string; value: number }[] = [];
+    if (query) {
+      const res = await fetchGetUserList({ userName: query, pageNum: 1, pageSize: 20 });
+      const paginated = res.data as { rows?: { id: number; userName: string; nickName: string; status: string }[] } | null;
+      options = buildOptions(paginated?.rows ?? []);
+    }
+    // 核心: 已选用户必须始终在 options 中(NSelect remote 要求)
+    if (selectedUserOption.value) {
+      const exists = options.some(o => o.value === selectedUserOption.value!.value);
+      if (!exists) {
+        options.push(selectedUserOption.value);
+      }
+    }
+    userOptions.value = options;
   } catch {
     userOptions.value = [];
   } finally {
     loadingUsers.value = false;
+  }
+}
+
+function handleUpdateValue(val: number | null) {
+  targetUserId.value = val;
+  if (val !== null) {
+    selectedUserOption.value = userOptions.value.find(o => o.value === val) ?? null;
+  } else {
+    selectedUserOption.value = null;
   }
 }
 
@@ -98,13 +119,14 @@ async function handleSubmit() {
       <NForm label-placement="left" :label-width="100">
         <NFormItem label="接手人" required>
           <NSelect
-            v-model:value="targetUserId"
+            :value="targetUserId"
             :options="userOptions"
             placeholder="输入用户名搜索"
             filterable
             remote
             :loading="loadingUsers"
             @search="handleSearch"
+            @update:value="handleUpdateValue"
           />
         </NFormItem>
         <NFormItem label="交接文件夹">
