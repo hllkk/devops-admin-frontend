@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { fetchTransferStorageLibrary } from '@/service/api/disk/storage';
-import { fetchGetUserList } from '@/service/api/system/user';
+import { fetchGetUserSelect } from '@/service/api/system/user';
 import { formatFileSize } from '@/utils/file';
 
 defineOptions({ name: 'TransferModal' });
@@ -21,66 +21,36 @@ const visibleModel = computed({
 });
 
 const targetUserId = ref<number | null>(null);
-const selectedUserOption = ref<{ label: string; value: number } | null>(null);
 const includeTrash = ref(false);
 const inheritShares = ref(true);
 const folderName = ref('');
 const submitting = ref(false);
 const lastResult = ref<Api.Disk.StorageAdmin.TransferLibraryResponse | null>(null);
 const userOptions = ref<{ label: string; value: number }[]>([]);
-const loadingUsers = ref(false);
 
 watch(
   () => props.visible,
-  v => {
+  async v => {
     if (v && props.library) {
       targetUserId.value = null;
-      selectedUserOption.value = null;
       includeTrash.value = false;
       inheritShares.value = true;
       folderName.value = `${props.library.nickName}的交接文件`;
       lastResult.value = null;
-      userOptions.value = [];
+      await loadUsers();
     }
   }
 );
 
-function buildOptions(rows: { id: number; userName: string; nickName: string; status: string }[]) {
-  return rows
-    .filter(u => u.status === '1' && (!props.library || u.id !== props.library.userId))
-    .map(u => ({ label: `${u.nickName}(${u.userName})`, value: u.id }));
-}
-
-async function handleSearch(query: string) {
-  loadingUsers.value = true;
+async function loadUsers() {
   try {
-    let options: { label: string; value: number }[] = [];
-    if (query) {
-      const res = await fetchGetUserList({ userName: query, pageNum: 1, pageSize: 20 });
-      const paginated = res.data as { rows?: { id: number; userName: string; nickName: string; status: string }[] } | null;
-      options = buildOptions(paginated?.rows ?? []);
-    }
-    // 核心: 已选用户必须始终在 options 中(NSelect remote 要求)
-    if (selectedUserOption.value) {
-      const exists = options.some(o => o.value === selectedUserOption.value!.value);
-      if (!exists) {
-        options.push(selectedUserOption.value);
-      }
-    }
-    userOptions.value = options;
+    const { data } = await fetchGetUserSelect();
+    const users = (data ?? []) as Api.System.User[];
+    userOptions.value = users
+      .filter(u => u.status === '1' && (!props.library || u.userId !== props.library.userId))
+      .map(u => ({ label: `${u.nickName}(${u.userName})`, value: Number(u.userId) }));
   } catch {
     userOptions.value = [];
-  } finally {
-    loadingUsers.value = false;
-  }
-}
-
-function handleUpdateValue(val: number | null) {
-  targetUserId.value = val;
-  if (val !== null) {
-    selectedUserOption.value = userOptions.value.find(o => o.value === val) ?? null;
-  } else {
-    selectedUserOption.value = null;
   }
 }
 
@@ -119,14 +89,11 @@ async function handleSubmit() {
       <NForm label-placement="left" :label-width="100">
         <NFormItem label="接手人" required>
           <NSelect
-            :value="targetUserId"
+            v-model:value="targetUserId"
             :options="userOptions"
-            placeholder="输入用户名搜索"
+            placeholder="选择接手用户"
             filterable
-            remote
-            :loading="loadingUsers"
-            @search="handleSearch"
-            @update:value="handleUpdateValue"
+            clearable
           />
         </NFormItem>
         <NFormItem label="交接文件夹">
