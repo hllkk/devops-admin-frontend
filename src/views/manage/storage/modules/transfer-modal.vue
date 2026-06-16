@@ -89,13 +89,7 @@ async function handleSubmit() {
 
       <NForm label-placement="left" :label-width="100">
         <NFormItem label="接手人" required>
-          <NSelect
-            v-model:value="targetUserId"
-            :options="userOptions"
-            placeholder="选择接手用户"
-            filterable
-            clearable
-          />
+          <NSelect v-model:value="targetUserId" :options="userOptions" placeholder="选择接手用户" filterable :multiple="false" />
         </NFormItem>
         <NFormItem label="交接文件夹">
           <NInput v-model:value="folderName" placeholder="留空使用默认名" />

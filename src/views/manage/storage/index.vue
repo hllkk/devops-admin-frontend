@@ -154,28 +154,30 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
 
 <template>
   <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
+    <NCard :bordered="false" size="small" class="card-wrapper">
+      <NFlex align="center" :wrap="false" justify="end">
+        <NInput
+          v-model:value="searchParams.keyword"
+          placeholder="用户名/昵称"
+          clearable
+          class="max-w-200px"
+          @keyup.enter="() => getDataByPage()"
+        />
+        <NButton type="primary" @click="() => getDataByPage()">
+          <icon-mdi-magnify class="text-icon" />
+          {{ $t('common.search') }}
+        </NButton>
+      </NFlex>
+    </NCard>
     <NCard title="存储管理" :bordered="false" size="small" class="card-wrapper sm:flex-1-hidden">
       <template #header-extra>
-        <NFlex align="center" :wrap="false" class="mr-12px">
-          <NInput
-            v-model:value="searchParams.keyword"
-            placeholder="用户名/昵称"
-            clearable
-            class="max-w-200px"
-            @keyup.enter="() => getDataByPage()"
-          />
-          <NButton type="primary" @click="() => getDataByPage()">
-            <icon-mdi-magnify class="text-icon" />
-            {{ $t('common.search') }}
-          </NButton>
-          <TableHeaderOperation
-            v-model:columns="columnChecks"
-            :loading="loading"
-            :show-add="false"
-            :show-delete="false"
-            @refresh="getData"
-          />
-        </NFlex>
+        <TableHeaderOperation
+          v-model:columns="columnChecks"
+          :loading="loading"
+          :show-add="false"
+          :show-delete="false"
+          @refresh="getData"
+        />
       </template>
       <NDataTable
         :columns="columns"
