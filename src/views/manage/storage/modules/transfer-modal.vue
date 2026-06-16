@@ -27,24 +27,30 @@ const folderName = ref('');
 const submitting = ref(false);
 const lastResult = ref<Api.Disk.StorageAdmin.TransferLibraryResponse | null>(null);
 const userOptions = ref<{ label: string; value: number }[]>([]);
+const loadingUsers = ref(false);
 
 watch(
   () => props.visible,
-  async v => {
+  v => {
     if (v && props.library) {
       targetUserId.value = null;
       includeTrash.value = false;
       inheritShares.value = true;
       folderName.value = `${props.library.nickName}的交接文件`;
       lastResult.value = null;
-      await loadUsers();
+      userOptions.value = [];
     }
   }
 );
 
-async function loadUsers() {
+async function handleSearch(query: string) {
+  if (!query) {
+    userOptions.value = [];
+    return;
+  }
+  loadingUsers.value = true;
   try {
-    const res = await fetchGetUserList({ pageNum: 1, pageSize: 999 });
+    const res = await fetchGetUserList({ userName: query, pageNum: 1, pageSize: 20 });
     const paginated = res.data as { rows?: { id: number; userName: string; nickName: string; status: string }[] } | null;
     const rows = paginated?.rows ?? [];
     userOptions.value = rows
@@ -52,6 +58,8 @@ async function loadUsers() {
       .map(u => ({ label: `${u.nickName}(${u.userName})`, value: u.id }));
   } catch {
     userOptions.value = [];
+  } finally {
+    loadingUsers.value = false;
   }
 }
 
@@ -89,7 +97,15 @@ async function handleSubmit() {
 
       <NForm label-placement="left" :label-width="100">
         <NFormItem label="接手人" required>
-          <NSelect v-model:value="targetUserId" :options="userOptions" placeholder="选择接手用户" filterable :multiple="false" />
+          <NSelect
+            v-model:value="targetUserId"
+            :options="userOptions"
+            placeholder="输入用户名搜索"
+            filterable
+            remote
+            :loading="loadingUsers"
+            @search="handleSearch"
+          />
         </NFormItem>
         <NFormItem label="交接文件夹">
           <NInput v-model:value="folderName" placeholder="留空使用默认名" />
