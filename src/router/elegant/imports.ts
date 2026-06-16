@@ -40,6 +40,7 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   manage_post: () => import("@/views/manage/post/index.vue"),
   manage_role: () => import("@/views/manage/role/index.vue"),
   manage_settings: () => import("@/views/manage/settings/index.vue"),
+  manage_storage: () => import("@/views/manage/storage/index.vue"),
   manage_user: () => import("@/views/manage/user/index.vue"),
   "my-share": () => import("@/views/my-share/index.vue"),
   recent: () => import("@/views/recent/index.vue"),

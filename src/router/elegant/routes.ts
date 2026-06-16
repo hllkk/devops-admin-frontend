@@ -261,6 +261,15 @@ export const generatedRoutes: GeneratedRoute[] = [
         }
       },
       {
+        name: 'manage_storage',
+        path: '/manage/storage',
+        component: 'view.manage_storage',
+        meta: {
+          title: 'manage_storage',
+          i18nKey: 'route.manage_storage'
+        }
+      },
+      {
         name: 'manage_user',
         path: '/manage/user',
         component: 'view.manage_user',
