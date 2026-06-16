@@ -6,8 +6,7 @@ declare namespace Api {
    */
   namespace Auth {
     interface LoginToken {
-      token?: string;
-      refreshToken?: string;
+      /** 仅用于主动刷新调度；token 本身走 HttpOnly cookie，不下发响应体 */
       expiresAt: number;
     }
 
@@ -20,15 +19,13 @@ declare namespace Api {
     interface QrCodeStatus {
       sceneId: string;
       status: 'waiting' | 'scanned' | 'confirmed' | 'expired' | 'fail';
-      token?: string;
-      refreshToken?: string;
+      /** 确认后返回，token 走 HttpOnly cookie */
       expiresAt?: number;
     }
 
     /** Combined login + user info response */
     interface LoginWithInfoResponse {
-      token?: string;
-      refreshToken?: string;
+      /** token 走 HttpOnly cookie 不下发；expiresAt 用于前端主动刷新调度 */
       expiresAt: number;
       userInfo: UserInfo;
     }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { h, ref, computed, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { $t } from '@/locales';
 import { useLoading } from '@sa/hooks';
 import { useSvgIcon } from '@/hooks/common/icon';
