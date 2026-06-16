@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { fetchTransferStorageLibrary } from '@/service/api/disk/storage';
 import { fetchGetUserList } from '@/service/api/system/user';
+import { formatFileSize } from '@/utils/file';
 
 defineOptions({ name: 'TransferModal' });
 
@@ -83,12 +84,18 @@ async function handleSubmit() {
       <NDescriptions label-placement="left" bordered :column="1" size="small">
         <NDescriptionsItem label="源用户">{{ library.nickName }}({{ library.userName }})</NDescriptionsItem>
         <NDescriptionsItem label="文件数">{{ library.totalFiles }}</NDescriptionsItem>
-        <NDescriptionsItem label="总大小">{{ library.totalSize }} B</NDescriptionsItem>
+        <NDescriptionsItem label="总大小">{{ formatFileSize(library.totalSize) }}</NDescriptionsItem>
       </NDescriptions>
 
       <NForm label-placement="left" :label-width="100">
         <NFormItem label="接手人" required>
-          <NSelect v-model:value="targetUserId" :options="userOptions" placeholder="选择接手用户" filterable />
+          <NSelect
+            v-model:value="targetUserId"
+            :options="userOptions"
+            placeholder="选择接手用户"
+            filterable
+            clearable
+          />
         </NFormItem>
         <NFormItem label="交接文件夹">
           <NInput v-model:value="folderName" placeholder="留空使用默认名" />
