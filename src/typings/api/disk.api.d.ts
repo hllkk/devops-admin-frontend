@@ -658,5 +658,63 @@ declare namespace Api {
 
     /** 文件操作审计列表 */
     type FileAuditList = Common.PaginatingQueryRecord<FileAuditLog>;
+
+    /** 存储管理(管理员视角) */
+    namespace StorageAdmin {
+      interface LibraryItem {
+        userId: number;
+        userName: string;
+        nickName: string;
+        deptName: string;
+        roleCode: string;
+        totalFiles: number;
+        totalSize: number;
+        quotaLimit: number;
+        quotaUnlimited: boolean;
+        quotaSource: 'personal' | 'global' | 'none';
+        shareCount: number;
+        trashCount: number;
+        lastActiveTime: string;
+        status: string;
+      }
+
+      interface LibraryListResponse {
+        total: number;
+        rows: LibraryItem[];
+      }
+
+      interface TransferOptions {
+        includeTrash: boolean;
+        inheritShares: boolean;
+        folderName?: string;
+      }
+
+      interface TransferLibraryRequest {
+        sourceUserId: number;
+        targetUserId: number;
+        options: TransferOptions;
+      }
+
+      interface TransferLibraryResponse {
+        recordId: number;
+        folderName: string;
+        fileCount: number;
+        totalSize: number;
+        quotaExceeded: boolean;
+      }
+
+      interface TransferRecord {
+        id: number;
+        operatorId: number;
+        sourceUserId: number;
+        targetUserId: number;
+        folderName: string;
+        fileCount: number;
+        totalSize: number;
+        quotaExceeded: boolean;
+        status: string;
+        createdAt: string;
+      }
+    }
   }
 }
