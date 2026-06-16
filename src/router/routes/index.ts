@@ -45,6 +45,7 @@ const routeModuleMap: Record<string, RouteModule> = {
   manage_log: 'admin',
   manage_log_operation: 'admin',
   manage_log_login: 'admin',
+  manage_storage: 'admin',
   manage_settings: 'admin'
 };
 

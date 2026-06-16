@@ -40,6 +40,7 @@ declare module "@elegant-router/types" {
     "manage_post": "/manage/post";
     "manage_role": "/manage/role";
     "manage_settings": "/manage/settings";
+    "manage_storage": "/manage/storage";
     "manage_user": "/manage/user";
     "my-share": "/my-share";
     "notice-user": "/notice-user";
@@ -138,6 +139,7 @@ declare module "@elegant-router/types" {
     | "manage_post"
     | "manage_role"
     | "manage_settings"
+    | "manage_storage"
     | "manage_user"
     | "my-share"
     | "recent"
