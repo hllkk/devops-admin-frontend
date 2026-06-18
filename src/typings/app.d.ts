@@ -1350,6 +1350,15 @@ declare namespace App {
             deleteConfirm: string;
             deleteSuccess: string;
           };
+          extract: {
+            title: string;
+            currentDir: string;
+            noFolders: string;
+            targetLabel: string;
+            extracting: string;
+            success: string;
+            failed: string;
+          };
           detail: {
             title: string;
             fileName: string;

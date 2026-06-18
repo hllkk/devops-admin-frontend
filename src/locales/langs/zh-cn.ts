@@ -1562,6 +1562,15 @@ const local: App.I18n.Schema = {
         deleteConfirm: '确认删除',
         deleteSuccess: '删除成功'
       },
+      extract: {
+        title: '解压到',
+        currentDir: '当前目录',
+        noFolders: '暂无子文件夹',
+        targetLabel: '目标路径',
+        extracting: '解压中，请稍候...',
+        success: '解压成功',
+        failed: '解压失败'
+      },
       detail: {
         title: '文件详情',
         fileName: '文件名称',

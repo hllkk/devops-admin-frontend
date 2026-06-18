@@ -1570,6 +1570,15 @@ const local: App.I18n.Schema = {
         deleteConfirm: 'Confirm delete',
         deleteSuccess: 'Deleted successfully'
       },
+      extract: {
+        title: 'Extract to',
+        currentDir: 'Current folder',
+        noFolders: 'No subfolders',
+        targetLabel: 'Target path',
+        extracting: 'Extracting, please wait...',
+        success: 'Extraction succeeded',
+        failed: 'Extraction failed'
+      },
       detail: {
         title: 'File Details',
         fileName: 'File Name',
