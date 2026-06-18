@@ -34,12 +34,19 @@ export function fetchListSubArchive(fileId: string, path: string) {
   });
 }
 
+/** 解压归档参数（与后端 ExtractArchiveRequest 一一对应） */
+export interface ExtractArchiveParams {
+  fileId: CommonType.IdType;
+  destPath: string;
+  intoSubfolder: boolean;
+}
+
 /** 解压归档到目标目录 */
-export function fetchExtractArchive(fileId: string, destFolderId: string) {
+export function fetchExtractArchive(params: ExtractArchiveParams) {
   return request<void>({
     url: '/archive/extract',
     method: 'post',
-    data: { fileId, destFolderId },
+    data: params,
     timeout: ARCHIVE_EXTRACT_TIMEOUT
   });
 }
