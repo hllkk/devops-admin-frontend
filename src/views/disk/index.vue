@@ -24,6 +24,8 @@ import ShareDialog from './modules/share-dialog.vue';
 import FileDetailModal from './modules/file-detail-modal.vue';
 import ArchiveActionDialog from '@/components/disk/archive-action-dialog.vue';
 import ArchivePreview from '@/components/preview/archive-preview.vue';
+import { fetchExtractArchive } from '@/service/api/disk/archive';
+import ExtractToDialog from './modules/extract-to-dialog.vue';
 
 defineOptions({
   name: 'DiskPage'
@@ -42,6 +44,10 @@ const totalCount = ref(0);
 
 // 文件预览 hook
 const preview = reactive(useFilePreview({ fileList, imagePreviewRef, audioFilterMode: 'fileType' }));
+
+// 解压状态
+const extractLoading = ref(false);
+const showExtractTo = ref(false);
 
 // 重命名状态
 const renamingFile = ref<Api.Disk.FileItem | null>(null);
@@ -105,6 +111,44 @@ async function getFileList() {
   }
   endLoading();
   diskStore.currentFileList = fileList.value;
+}
+
+async function runExtract(destPath: string, intoSubfolder: boolean) {
+  const file = preview.archiveFile;
+  if (!file) return;
+  const fileId = file.fileId;
+  if (fileId === undefined || fileId === null || fileId === '') return;
+
+  extractLoading.value = true;
+  window.$message?.loading($t('page.disk.extract.extracting'), { duration: 0 });
+  const { error } = await fetchExtractArchive({ fileId, destPath, intoSubfolder });
+  extractLoading.value = false;
+  window.$message?.destroyAll?.();
+
+  if (!error) {
+    window.$message?.success($t('page.disk.extract.success'));
+    preview.showArchiveAction = false;
+    preview.showArchivePreview = false;
+    showExtractTo.value = false;
+    getFileList();
+  } else {
+    window.$message?.error($t('page.disk.extract.failed'));
+  }
+}
+
+function handleExtractHere() {
+  preview.showArchiveAction = false;
+  runExtract(diskStore.getCurrentPathString(), true);
+}
+
+function handleExtractToOpen() {
+  preview.showArchiveAction = false;
+  showExtractTo.value = true;
+}
+
+function handleExtractToConfirm(destPath: string) {
+  showExtractTo.value = false;
+  runExtract(destPath, false);
 }
 
 async function handleFileCreated(name: string) {
@@ -704,9 +748,15 @@ onMounted(async () => {
     <ArchiveActionDialog
       v-model:visible="preview.showArchiveAction"
       :file-name="preview.archiveFile?.fileName || preview.archiveFile?.name || ''"
+      :extract-loading="extractLoading"
       @preview="preview.showArchivePreview = true; preview.showArchiveAction = false"
-      @extract-here="preview.showArchiveAction = false"
-      @extract-to="preview.showArchiveAction = false"
+      @extract-here="handleExtractHere"
+      @extract-to="handleExtractToOpen"
+    />
+    <ExtractToDialog
+      v-model:visible="showExtractTo"
+      :file-name="preview.archiveFile?.fileName || preview.archiveFile?.name || ''"
+      @confirm="handleExtractToConfirm"
     />
     <ArchivePreview
       v-model:visible="preview.showArchivePreview"

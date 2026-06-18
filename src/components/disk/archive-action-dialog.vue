@@ -8,6 +8,7 @@ defineOptions({
 interface Props {
   visible: boolean;
   fileName: string;
+  extractLoading?: boolean;
 }
 
 defineProps<Props>();
@@ -34,10 +35,10 @@ const emit = defineEmits<{
       <span class="truncate">{{ fileName }}</span>
     </div>
     <div class="flex justify-center gap-3">
-      <NButton @click="emit('extractTo')">
+      <NButton :loading="extractLoading" :disabled="extractLoading" @click="emit('extractTo')">
         {{ $t('page.disk.contextMenu.extractTo') }}
       </NButton>
-      <NButton @click="emit('extractHere')">
+      <NButton :loading="extractLoading" :disabled="extractLoading" @click="emit('extractHere')">
         {{ $t('page.disk.contextMenu.extractHere') }}
       </NButton>
       <NButton type="primary" @click="emit('preview')">
