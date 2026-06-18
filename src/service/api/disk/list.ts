@@ -28,24 +28,7 @@ export function fetchGetFileList(params?: {
 
   const queryType = params?.queryType ?? '';
 
-  return request<{
-    list: Array<{
-      id: number;
-      name: string;
-      size: number;
-      isDir: boolean;
-      extendName?: string;
-      contentType?: string;
-      filePath: string;
-      createTime: string;
-      updateTime: string;
-      mediaCover?: boolean;
-      showCover?: boolean;
-      music?: Api.Disk.MusicInfo;
-      video?: Api.Disk.VideoInfo;
-    }>;
-    total: number;
-  }>({
+  return request<Api.Disk.BackendFileListResponse>({
     url: '/file-meta/list',
     method: 'get',
     params: {

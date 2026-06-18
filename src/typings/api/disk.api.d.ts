@@ -13,6 +13,57 @@ declare namespace Api {
     /** 文件类型枚举 */
     type FileType = 'all' | 'image' | 'document' | 'video' | 'audio' | 'other' | 'shared-with-me' | 'my-shared';
 
+    /**
+     * 后端 FileListResponse 原始字段（/file-meta/list 响应）
+     * 对应 backend model/disk/response FileListResponse，JSON tag 一一对应
+     */
+    type BackendFileItem = {
+      /** 文件ID */
+      id: string;
+      /** 文件名 */
+      name: string;
+      /** 扩展名（可能含前导点号） */
+      extendName: string;
+      /** 是否为文件夹 */
+      isDir: boolean;
+      /** 文件大小（字节） */
+      size: number;
+      /** 更新时间 */
+      updateTime: string;
+      /** 创建时间 */
+      createTime: string;
+      /** MIME 类型 */
+      contentType: string;
+      /** 文件路径 */
+      filePath: string;
+      /** 是否已收藏 */
+      isFavorite: boolean;
+      /** 是否已分享（外链） */
+      isShare: boolean;
+      /** 已共享给用户数 */
+      sharedUserCount: number;
+      /** 已共享给部门数 */
+      sharedDeptCount: number;
+      /** 归属用户ID */
+      userId: number;
+      /** 是否有媒体封面/缩略图 */
+      mediaCover: boolean;
+      /** 是否显示封面 */
+      showCover: boolean;
+      /** 音乐信息 */
+      music?: MusicInfo;
+      /** 视频信息 */
+      video?: VideoInfo;
+    };
+
+    /** 后端文件列表响应（/file-meta/list） */
+    type BackendFileListResponse = {
+      list: BackendFileItem[];
+      total: number;
+      page?: number;
+      size?: number;
+    };
+
     /** 文件项 */
     type FileItem = Common.CommonRecord<{
       /** 文件ID */
@@ -516,9 +567,9 @@ declare namespace Api {
       sortOrder: 'asc' | 'desc' | null;
     };
 
-    /** 收藏列表响应（后端原始格式） */
+    /** 收藏列表响应（后端原始格式，list 为后端 FileListResponse 字段） */
     type FavoriteList = {
-      list: FileItem[];
+      list: BackendFileItem[];
       total: number;
       page: number;
       size: number;

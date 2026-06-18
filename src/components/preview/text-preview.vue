@@ -37,7 +37,7 @@ interface TabItem {
 
 /** 后端返回的文件项格式 */
 interface BackendFileItem {
-  id: number;
+  id: string;
   name: string;
   size: number;
   isDir: boolean;

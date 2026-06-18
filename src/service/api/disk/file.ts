@@ -14,7 +14,7 @@ export function fetchGetFileList(params?: Api.Disk.FileSearchParams) {
 
   const queryType = params?.fileType && params.fileType !== 'all' ? params.fileType : '';
 
-  return request<any>({
+  return request<Api.Disk.BackendFileListResponse>({
     url: '/file-meta/list',
     method: 'get',
     params: {
@@ -44,7 +44,7 @@ function contentTypeToFileType(contentType: string): string {
 }
 
 /** 将后端 FileListResponse 转换为前端 FileItem 格式 */
-export function mapBackendFileList(backendData: { list: any[]; total: number }) {
+export function mapBackendFileList(backendData: Api.Disk.BackendFileListResponse) {
   const list: Api.Disk.FileItem[] = (backendData.list || []).map(item => {
     // 处理扩展名：去掉前导的点号（如 '.md' -> 'md'）
     const cleanExtension = item.extendName ? item.extendName.replace(/^\./, '') : undefined;
