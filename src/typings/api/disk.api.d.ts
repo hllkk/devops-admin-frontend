@@ -660,6 +660,8 @@ declare namespace Api {
       targetFileId: number | null;
       /** 目标文件路径 */
       targetFilePath: string | null;
+      /** 目标用户ID（管理员操作他人文件时记录文件所有者） */
+      targetUserId: number | null;
       /** 分享ID */
       shareId: string | null;
       /** 操作来源 */

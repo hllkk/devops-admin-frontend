@@ -192,10 +192,13 @@ export function fetchDeleteFile(fileIds: CommonType.IdType[], sweep = false) {
   // 后端现在支持两种方式:
   // - sweep=false: 发送 fileIds (移入回收站)
   // - sweep=true: 发送 fileIds (直接彻底删除，后端会先移入回收站再删除)
-  return request<{ success: boolean; message: string }>({
-    url: `/file-meta/delete${sweep ? '?sweep=true' : ''}`,
+  // sweep=true 时使用 async 模式避免大文件夹超时
+  const asyncParam = sweep ? '&async=true' : '';
+  return request<{ success: boolean; message: string; taskId?: string; status?: string }>({
+    url: `/file-meta/delete${sweep ? '?sweep=true' : ''}${asyncParam}`,
     method: 'delete',
-    data: { fileIds: numericIds }
+    data: { fileIds: numericIds },
+    timeout: 5 * 60 * 1000 // 大文件夹操作可能耗时较长
   });
 }
 
@@ -254,20 +257,31 @@ export function fetchRestoreTrash(trashIds: CommonType.IdType[]) {
 export function fetchDeleteTrash(trashIds: CommonType.IdType[]) {
   const userId = Number(useAuthStore().userInfo.userId);
   const numericIds = trashIds.map(id => (typeof id === 'string' ? parseInt(id, 10) : id));
-  return request<{ success: boolean; message: string }>({
-    url: '/file-meta/trash/delete',
+  return request<{ success: boolean; message: string; taskId?: string; status?: string }>({
+    url: '/file-meta/trash/delete?async=true',
     method: 'post',
-    data: { userId, trashIds: numericIds }
+    data: { userId, trashIds: numericIds },
+    timeout: 5 * 60 * 1000 // 大文件夹操作可能耗时较长
   });
 }
 
 /** 清空回收站 */
 export function fetchEmptyTrash() {
   const userId = Number(useAuthStore().userInfo.userId);
-  return request<{ success: boolean; message: string }>({
-    url: '/file-meta/trash/empty',
+  return request<{ success: boolean; message: string; taskId?: string; status?: string }>({
+    url: '/file-meta/trash/empty?async=true',
     method: 'delete',
-    data: { userId }
+    data: { userId },
+    timeout: 5 * 60 * 1000 // 大文件夹操作可能耗时较长
+  });
+}
+
+/** 查询异步任务状态 */
+export function fetchTaskStatus(taskId: string) {
+  return request<{ id: string; type: string; status: string; total: number; processed: number; error?: string }>({
+    url: '/file-meta/task/status',
+    method: 'get',
+    params: { taskId }
   });
 }
 
