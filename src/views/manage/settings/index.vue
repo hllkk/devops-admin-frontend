@@ -86,7 +86,12 @@ const config = ref<SettingConfig>({
     videoTranscodeEnabled: false,
     ffmpegPath: '',
     transcodeThreads: 4,
-    transcodePreset: 'medium'
+    transcodePreset: 'medium',
+    maxConcurrentExtract: 2,
+    archiveCmdTimeout: 30,
+    maxArchiveFileCount: 50000,
+    maxArchiveTotalSize: 50,
+    archiveCacheTtl: 10
   },
   notify: {
     smtpHost: '',
@@ -184,7 +189,12 @@ async function loadConfig() {
         videoTranscodeEnabled: settings.disk.videoTranscode?.enable ?? false,
         ffmpegPath: settings.disk.videoTranscode?.ffmpegPath || '',
         transcodeThreads: settings.disk.videoTranscode?.threads || 4,
-        transcodePreset: settings.disk.videoTranscode?.preset || 'medium'
+        transcodePreset: settings.disk.videoTranscode?.preset || 'medium',
+        maxConcurrentExtract: settings.disk.archive?.maxConcurrentExtract || 2,
+        archiveCmdTimeout: settings.disk.archive?.archiveCmdTimeout || 30,
+        maxArchiveFileCount: settings.disk.archive?.maxArchiveFileCount || 50000,
+        maxArchiveTotalSize: settings.disk.archive?.maxArchiveTotalSize || 50,
+        archiveCacheTtl: settings.disk.archive?.archiveCacheTtl || 10
       };
     }
     // 加载认证配置
@@ -292,6 +302,13 @@ async function handleSave() {
           ffmpegPath: disk.ffmpegPath,
           threads: disk.transcodeThreads,
           preset: disk.transcodePreset
+        },
+        archive: {
+          maxConcurrentExtract: disk.maxConcurrentExtract,
+          archiveCmdTimeout: disk.archiveCmdTimeout,
+          maxArchiveFileCount: disk.maxArchiveFileCount,
+          maxArchiveTotalSize: disk.maxArchiveTotalSize,
+          archiveCacheTtl: disk.archiveCacheTtl
         }
       }
     };

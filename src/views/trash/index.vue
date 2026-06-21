@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import { useLoading } from '@sa/hooks';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
-import { fetchGetTrashList, fetchRestoreTrash, fetchDeleteTrash, fetchEmptyTrash, mapBackendTrashList } from '@/service/api/disk/file';
+import { fetchGetTrashList, fetchRestoreTrash, fetchDeleteTrash, fetchEmptyTrash, mapBackendTrashList, fetchTaskStatus } from '@/service/api/disk/file';
 import { fetchGetQuota } from '@/service/api/disk';
 import SimpleToolbar from '../disk/modules/simple-toolbar.vue';
 import FileGrid from '../disk/modules/file-grid.vue';
@@ -107,6 +107,32 @@ function handleRestore() {
   });
 }
 
+/** 轮询异步任务直到完成 */
+async function pollTaskStatus(taskId: string, onSuccess: () => void, maxRetries = 300) {
+  window.$message?.loading('处理中...', { duration: 0 });
+  for (let i = 0; i < maxRetries; i++) {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      const { data } = await fetchTaskStatus(taskId);
+      if (!data) continue;
+      if (data.status === 'completed') {
+        window.$message?.destroyAll?.();
+        onSuccess();
+        return;
+      }
+      if (data.status === 'failed') {
+        window.$message?.destroyAll?.();
+        window.$message?.error(data.error || '操作失败');
+        return;
+      }
+    } catch {
+      // 网络错误继续重试
+    }
+  }
+  window.$message?.destroyAll?.();
+  window.$message?.warning('操作超时，请稍后刷新查看结果');
+}
+
 function handleDeletePermanently() {
   const ids = selectedFiles.value;
   if (ids.length === 0) return;
@@ -119,12 +145,22 @@ function handleDeletePermanently() {
     positiveText: $t('common.confirm'),
     negativeText: $t('common.cancel'),
     onPositiveClick: async () => {
-      const { error } = await fetchDeleteTrash(ids);
-      if (!error) {
+      const { data, error } = await fetchDeleteTrash(ids);
+      if (error) return;
+      if (data?.taskId) {
+        // 异步模式: 轮询进度
+        pollTaskStatus(data.taskId, () => {
+          window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
+          selectedFiles.value = [];
+          getData();
+          refreshQuota();
+        });
+      } else {
+        // 同步模式: 直接完成
         window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
         selectedFiles.value = [];
         getData();
-        refreshQuota(); // 刷新配额信息
+        refreshQuota();
       }
     }
   });
@@ -137,12 +173,20 @@ function handleEmptyTrash() {
     positiveText: $t('common.confirm'),
     negativeText: $t('common.cancel'),
     onPositiveClick: async () => {
-      const { error } = await fetchEmptyTrash();
-      if (!error) {
+      const { data, error } = await fetchEmptyTrash();
+      if (error) return;
+      if (data?.taskId) {
+        pollTaskStatus(data.taskId, () => {
+          window.$message?.success($t('page.disk.trash.emptySuccess'));
+          selectedFiles.value = [];
+          getData();
+          refreshQuota();
+        });
+      } else {
         window.$message?.success($t('page.disk.trash.emptySuccess'));
         selectedFiles.value = [];
         getData();
-        refreshQuota(); // 刷新配额信息
+        refreshQuota();
       }
     }
   });

@@ -299,6 +299,15 @@ declare namespace Api {
       uploadLinkPasswordMinLength?: number;
       onlyOffice?: OnlyOfficeSettings;
       videoTranscode?: VideoTranscodeSettings;
+      archive?: ArchiveSettings;
+    }
+
+    interface ArchiveSettings {
+      maxConcurrentExtract?: number;
+      archiveCmdTimeout?: number;
+      maxArchiveFileCount?: number;
+      maxArchiveTotalSize?: number;
+      archiveCacheTtl?: number;
     }
 
     interface OnlyOfficeSettings {

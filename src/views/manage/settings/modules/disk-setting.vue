@@ -202,6 +202,90 @@ async function testConnection() {
           </NFormItem>
         </NForm>
       </NTabPane>
+
+      <NTabPane name="archive" tab="解压缩">
+        <NForm :model="configModel" label-placement="left" :label-width="150" class="mt-16px">
+          <NFormItem path="maxConcurrentExtract">
+            <template #label>
+              <NTooltip trigger="hover">
+                <template #trigger>
+                  <span class="flex items-center gap-4px">
+                    每用户并发解压数
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+                  </span>
+                </template>
+                每个用户同时进行的解压任务上限，超出后返回提示"有正在进行的解压任务"
+              </NTooltip>
+            </template>
+            <NInputNumber v-model:value="configModel.maxConcurrentExtract" :min="1" :max="10" class="max-w-200px" />
+          </NFormItem>
+          <NFormItem path="archiveCmdTimeout">
+            <template #label>
+              <NTooltip trigger="hover">
+                <template #trigger>
+                  <span class="flex items-center gap-4px">
+                    命令超时时间
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+                  </span>
+                </template>
+                7z/unar 命令的最大执行时间，超时后强制终止进程
+              </NTooltip>
+            </template>
+            <NInputNumber v-model:value="configModel.archiveCmdTimeout" :min="5" :max="120" class="max-w-200px">
+              <template #suffix>分钟</template>
+            </NInputNumber>
+          </NFormItem>
+          <NDivider />
+          <div class="section-title">安全限制（ZIP 炸弹防护）</div>
+          <NFormItem path="maxArchiveFileCount">
+            <template #label>
+              <NTooltip trigger="hover">
+                <template #trigger>
+                  <span class="flex items-center gap-4px">
+                    最大文件数
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+                  </span>
+                </template>
+                单次解压允许的最大文件数量，超过此限制将拒绝解压（防止 ZIP 炸弹攻击）
+              </NTooltip>
+            </template>
+            <NInputNumber v-model:value="configModel.maxArchiveFileCount" :min="100" :max="500000" class="max-w-200px" />
+          </NFormItem>
+          <NFormItem path="maxArchiveTotalSize">
+            <template #label>
+              <NTooltip trigger="hover">
+                <template #trigger>
+                  <span class="flex items-center gap-4px">
+                    最大解压大小
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+                  </span>
+                </template>
+                单次解压允许的最大总大小（所有文件解压后大小之和），超过此限制将拒绝解压
+              </NTooltip>
+            </template>
+            <NInputNumber v-model:value="configModel.maxArchiveTotalSize" :min="1" :max="500" class="max-w-200px">
+              <template #suffix>GB</template>
+            </NInputNumber>
+          </NFormItem>
+          <NDivider />
+          <NFormItem path="archiveCacheTtl">
+            <template #label>
+              <NTooltip trigger="hover">
+                <template #trigger>
+                  <span class="flex items-center gap-4px">
+                    列表缓存时间
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+                  </span>
+                </template>
+                压缩包内容列表的缓存有效期，浏览子目录时从缓存读取（避免重复解析压缩包）
+              </NTooltip>
+            </template>
+            <NInputNumber v-model:value="configModel.archiveCacheTtl" :min="1" :max="60" class="max-w-200px">
+              <template #suffix>分钟</template>
+            </NInputNumber>
+          </NFormItem>
+        </NForm>
+      </NTabPane>
     </NTabs>
   </div>
 </template>

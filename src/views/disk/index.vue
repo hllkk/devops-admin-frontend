@@ -25,6 +25,7 @@ import FileDetailModal from './modules/file-detail-modal.vue';
 import ArchiveActionDialog from '@/components/disk/archive-action-dialog.vue';
 import ArchivePreview from '@/components/preview/archive-preview.vue';
 import { fetchExtractArchive } from '@/service/api/disk/archive';
+import { useAsyncTask } from '@/hooks/business/use-async-task';
 import ExtractToDialog from './modules/extract-to-dialog.vue';
 
 defineOptions({
@@ -48,6 +49,7 @@ const preview = reactive(useFilePreview({ fileList, imagePreviewRef, audioFilter
 // 解压状态
 const extractLoading = ref(false);
 const showExtractTo = ref(false);
+const extractTask = useAsyncTask({ interval: 2000, maxRetries: 600 });
 
 // 重命名状态
 const renamingFile = ref<Api.Disk.FileItem | null>(null);
@@ -121,19 +123,34 @@ async function runExtract(destPath: string, intoSubfolder: boolean) {
 
   extractLoading.value = true;
   window.$message?.loading($t('page.disk.extract.extracting'), { duration: 0 });
-  const { error } = await fetchExtractArchive({ fileId, destPath, intoSubfolder });
-  extractLoading.value = false;
-  window.$message?.destroyAll?.();
 
-  if (!error) {
-    window.$message?.success($t('page.disk.extract.success'));
-    preview.showArchiveAction = false;
-    preview.showArchivePreview = false;
-    showExtractTo.value = false;
-    getFileList();
-  } else {
+  const { data, error } = await fetchExtractArchive({ fileId, destPath, intoSubfolder });
+
+  if (error || !data?.taskId) {
+    extractLoading.value = false;
+    window.$message?.destroyAll?.();
     window.$message?.error($t('page.disk.extract.failed'));
+    return;
   }
+
+  // 异步轮询进度
+  extractTask.start(
+    data.taskId,
+    () => {
+      extractLoading.value = false;
+      window.$message?.destroyAll?.();
+      window.$message?.success($t('page.disk.extract.success'));
+      preview.showArchiveAction = false;
+      preview.showArchivePreview = false;
+      showExtractTo.value = false;
+      getFileList();
+    },
+    (errMsg: string) => {
+      extractLoading.value = false;
+      window.$message?.destroyAll?.();
+      window.$message?.error(errMsg || $t('page.disk.extract.failed'));
+    }
+  );
 }
 
 function handleExtractHere() {
@@ -380,7 +397,7 @@ async function handleDeleteFile(file: Api.Disk.FileItem) {
         getFileList();
       }
     },
-    onNegativeClick: async () => {
+    onNegativeClick: () => {
       window.$dialog?.error({
         title: $t('page.disk.trash.deletePermanently'),
         content: $t('page.disk.trash.permanentDeleteWarning'),
@@ -533,7 +550,7 @@ function handleToolbarDelete() {
         getFileList();
       }
     },
-    onNegativeClick: async () => {
+    onNegativeClick: () => {
       window.$dialog?.error({
         title: $t('page.disk.trash.deletePermanently'),
         content: $t('page.disk.trash.permanentDeleteWarning'),

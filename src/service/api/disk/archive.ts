@@ -41,10 +41,16 @@ export interface ExtractArchiveParams {
   intoSubfolder: boolean;
 }
 
-/** 解压归档到目标目录 */
+/** 解压归档响应（异步模式返回 taskId） */
+export interface ExtractArchiveResult {
+  taskId: string;
+  status: string;
+}
+
+/** 解压归档到目标目录（异步模式，返回 taskId 用于轮询进度） */
 export function fetchExtractArchive(params: ExtractArchiveParams) {
-  return request<void>({
-    url: '/archive/extract',
+  return request<ExtractArchiveResult>({
+    url: '/archive/extract?async=true',
     method: 'post',
     data: params,
     timeout: ARCHIVE_EXTRACT_TIMEOUT

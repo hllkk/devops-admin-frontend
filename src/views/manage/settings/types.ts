@@ -81,6 +81,12 @@ export interface DiskSettingConfig {
   ffmpegPath: string;
   transcodeThreads: number;
   transcodePreset: string;
+  // 解压缩配置
+  maxConcurrentExtract: number;
+  archiveCmdTimeout: number;
+  maxArchiveFileCount: number;
+  maxArchiveTotalSize: number;
+  archiveCacheTtl: number;
 }
 
 /** 通知渠道配置 */
