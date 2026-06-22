@@ -43,6 +43,8 @@ const fileList = ref<Api.Disk.FileItem[]>([]);
 const transferPanelRef = ref<InstanceType<typeof TransferPanel>>();
 const imagePreviewRef = ref<InstanceType<typeof ImagePreview>>();
 const totalCount = ref(0);
+/** 是否处于挂载文件夹只读视图（浏览"保存到我的网盘"的源文件夹内容） */
+const isMountView = ref(false);
 
 // 文件预览 hook
 const preview = reactive(useFilePreview({ fileList, imagePreviewRef, audioFilterMode: 'fileType' }));
@@ -104,13 +106,14 @@ async function getFileList() {
 
   if (!error && data) {
     const mapped = mapBackendFileList(data);
-    if (mapped.rows.length > 0) {
-      fileList.value = mapped.rows;
-      totalCount.value = mapped.total;
-    } else {
-      fileList.value = [];
-      totalCount.value = 0;
-    }
+    fileList.value = mapped.rows;
+    totalCount.value = mapped.total;
+    // 挂载只读视图标记（进入挂载文件夹时禁止上传/新建/重命名/移动等操作）
+    isMountView.value = mapped.isMountView || false;
+  } else {
+    fileList.value = [];
+    totalCount.value = 0;
+    isMountView.value = false;
   }
   endLoading();
   diskStore.currentFileList = fileList.value;
@@ -221,6 +224,11 @@ async function handleShareFile(file: Api.Disk.FileItem) {
 }
 
 function handleFileAction(action: string, file: Api.Disk.FileItem) {
+  // 挂载只读视图：禁止写操作（重命名/复制/移动/删除对源owner文件无权限）
+  if (isMountView.value && (action === 'rename' || action === 'copy' || action === 'move' || action === 'delete')) {
+    window.$message?.warning('挂载文件夹为只读视图，不支持此操作');
+    return;
+  }
   switch (action) {
     case 'rename':
       diskStore.startRenaming(file.fileId, file.fileName);
@@ -384,6 +392,27 @@ async function handleRenameConfirm(newName: string) {
 }
 
 async function handleDeleteFile(file: Api.Disk.FileItem) {
+  // 挂载引用项：移除挂载（不影响源文件），而非物理删除
+  if (file.isMount) {
+    window.$dialog?.warning({
+      title: '移除保存',
+      content: `确认从网盘移除 "${file.fileName}"？(不影响源文件)`,
+      positiveText: $t('common.confirm'),
+      negativeText: $t('common.cancel'),
+      onPositiveClick: async () => {
+        const { fetchRemoveSaveMount } = await import('@/service/api/disk/internal-share');
+        window.$loadingBar?.start();
+        const { error } = await fetchRemoveSaveMount(Number(file.fileId));
+        window.$loadingBar?.finish();
+        if (!error) {
+          window.$message?.success(`已从网盘移除 "${file.fileName}"`);
+          getFileList();
+        }
+      }
+    });
+    return;
+  }
+
   window.$dialog?.warning({
     title: $t('page.disk.toolbar.delete'),
     content: `${$t('page.disk.moveCopy.deleteConfirm')} "${file.fileName}"?`,
@@ -688,6 +717,7 @@ onMounted(async () => {
       <NCard :bordered="false" size="small" class="card-wrapper flex-1-hidden" :content-style="{ padding: 0, height: '100%', display: 'flex', flexDirection: 'column' }">
         <!-- Toolbar -->
         <Toolbar
+          :is-mount-view="isMountView"
           @search="handleSearch"
           @refresh="handleRefresh"
           @share="handleToolbarShare"

@@ -72,11 +72,20 @@ export function mapBackendFileList(backendData: Api.Disk.BackendFileListResponse
       isFavorite: item.isFavorite || false,
       isShare: item.isShare || false,
       sharedUserCount: item.sharedUserCount || 0,
-      sharedDeptCount: item.sharedDeptCount || 0
+      sharedDeptCount: item.sharedDeptCount || 0,
+      // 挂载标记
+      isMount: item.isMount || false,
+      mountId: item.mountId,
+      sourceOwnerId: item.sourceOwnerId
     };
   });
 
-  return { rows: list, total: backendData.total || 0 };
+  return {
+    rows: list,
+    total: backendData.total || 0,
+    isMountView: backendData.isMountView || false,
+    mountName: backendData.mountName || ''
+  };
 }
 
 function getFileIcon(ext?: string): string {

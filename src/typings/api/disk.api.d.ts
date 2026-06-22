@@ -54,6 +54,12 @@ declare namespace Api {
       music?: MusicInfo;
       /** 视频信息 */
       video?: VideoInfo;
+      /** 是否为挂载引用项（"保存到我的网盘"创建的引用，指向源文件） */
+      isMount?: boolean;
+      /** 挂载记录ID */
+      mountId?: number;
+      /** 源文件归属用户ID（挂载项时非空） */
+      sourceOwnerId?: number;
     };
 
     /** 后端文件列表响应（/file-meta/list） */
@@ -62,6 +68,10 @@ declare namespace Api {
       total: number;
       page?: number;
       size?: number;
+      /** 当前是否处于挂载文件夹只读视图 */
+      isMountView?: boolean;
+      /** 挂载文件夹显示名 */
+      mountName?: string;
     };
 
     /** 文件项 */
@@ -108,6 +118,12 @@ declare namespace Api {
       sharedUserCount?: number;
       /** 已共享给部门数 */
       sharedDeptCount?: number;
+      /** 是否为挂载引用项（"保存到我的网盘"创建的引用） */
+      isMount?: boolean;
+      /** 挂载记录ID */
+      mountId?: number;
+      /** 源文件归属用户ID */
+      sourceOwnerId?: number;
     }> & {
       /** 兼容属性: 文件ID别名 */
       id?: CommonType.IdType;
@@ -247,6 +263,8 @@ declare namespace Api {
       filePath: string;
       /** 面包屑链 */
       breadcrumb: BreadcrumbItem[];
+      /** 是否处于挂载文件夹只读视图 */
+      isMountView?: boolean;
     };
 
     /** 文件夹项（选择器用） */
