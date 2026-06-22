@@ -25,7 +25,8 @@ export function fetchGetFileList(params?: Api.Disk.FileSearchParams) {
       page: params?.pageNum || 1,
       pageSize: params?.pageSize || 50,
       sortBy: params?.sortField === 'modifyTime' ? 'time' : params?.sortField,
-      sortOrder: params?.sortOrder
+      sortOrder: params?.sortOrder,
+      includeMounts: params?.includeMounts ?? (params?.pageNum === 1)
     }
   });
 }

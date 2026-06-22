@@ -12,6 +12,7 @@ import { fetchAddRecent } from '@/service/api/disk/recent';
 import { getServiceBaseURL } from '@/utils/service';
 import { useFilePreview } from '@/hooks/business/disk/use-file-preview';
 import { useFullScreenLoading } from '@/hooks/business/use-full-screen-loading';
+import { useInfiniteScroll } from '@/hooks/business/use-infinite-scroll';
 import ImagePreview from '@/components/preview/image-preview.vue';
 import FilePreviewOverlays from '@/components/disk/file-preview-overlays.vue';
 import FileTypeMenu from './modules/file-type-menu.vue';
@@ -39,12 +40,41 @@ const route = useRoute();
 const router = useRouter();
 const { loading, startLoading, endLoading } = useLoading();
 
-const fileList = ref<Api.Disk.FileItem[]>([]);
 const transferPanelRef = ref<InstanceType<typeof TransferPanel>>();
 const imagePreviewRef = ref<InstanceType<typeof ImagePreview>>();
+const fileGridRef = ref<InstanceType<typeof FileGrid>>();
+const fileListRef = ref<InstanceType<typeof FileList>>();
 const totalCount = ref(0);
 /** 是否处于挂载文件夹只读视图（浏览"保存到我的网盘"的源文件夹内容） */
 const isMountView = ref(false);
+
+// === 无限滚动：滚动容器动态获取 ===
+/** 根据当前视图模式，获取实际的滚动容器 HTMLElement */
+const scrollContainer = computed<HTMLElement | null>(() => {
+  if (diskStore.viewMode === 'grid') {
+    return fileGridRef.value?.scrollContainer ?? null;
+  }
+  if (diskStore.viewMode === 'list') {
+    return fileListRef.value?.scrollContainer ?? null;
+  }
+  return null;
+});
+
+// === 无限滚动：挂载项缓存 + 真实文件累计缓存 ===
+const PAGE_SIZE = 50;
+
+/** 挂载项缓存（首次请求后缓存，后续不再重新加载） */
+const mountCache = ref<Api.Disk.FileItem[]>([]);
+const mountTotal = ref(0);
+
+/** 真实文件累计缓存（无限滚动追加） */
+const realFilesCache = ref<Api.Disk.FileItem[]>([]);
+const realTotal = ref(0);
+const currentRealPage = ref(1);
+const hasMore = ref(true);
+
+/** 合并后的显示列表（排序：文件夹优先 → sortBy → name ASC） */
+const fileList = computed(() => mergeAndSort(mountCache.value, realFilesCache.value, diskStore.sortSettings));
 
 // 文件预览 hook
 const preview = reactive(useFilePreview({ fileList, imagePreviewRef, audioFilterMode: 'fileType' }));
@@ -75,16 +105,6 @@ const quotaLoading = ref(false);
 
 
 
-const searchParams = ref<Api.Disk.FileSearchParams>({
-  pageNum: 1,
-  pageSize: 100,
-  fileType: null,
-  keyword: null,
-  parentId: null,
-  sortField: null,
-  sortOrder: null
-});
-
 async function loadQuotaInfo() {
   quotaLoading.value = true;
   const { data, error } = await fetchGetQuota();
@@ -94,30 +114,120 @@ async function loadQuotaInfo() {
   quotaLoading.value = false;
 }
 
+/** 合并并排序挂载项 + 真实文件（与后端 sortFileListEntries 逻辑一致） */
+function mergeAndSort(mounts: Api.Disk.FileItem[], realFiles: Api.Disk.FileItem[], sortSettings: { field: string | null; order: string | null }): Api.Disk.FileItem[] {
+  const merged = [...mounts, ...realFiles];
+  const { field, order } = sortSettings;
+  const sortOrder = order === 'desc' ? -1 : 1;
+
+  return merged.sort((a, b) => {
+    // 第一排序键：文件夹优先
+    if (a.isFolder !== b.isFolder) {
+      return a.isFolder ? -1 : 1; // 文件夹始终在前
+    }
+    // 第二排序键
+    switch (field) {
+      case 'name':
+        return sortOrder * a.fileName.localeCompare(b.fileName);
+      case 'size':
+        return sortOrder * (a.fileSize - b.fileSize);
+      case 'modifyTime':
+        return sortOrder * (new Date(a.modifyTime || a.updateTime || '').getTime() - new Date(b.modifyTime || b.updateTime || '').getTime());
+      default:
+        return a.fileName.localeCompare(b.fileName); // 默认 name ASC
+    }
+  });
+}
+
+/** 搜索关键词缓存（传递到 getFileList / loadMoreFiles 的 keyword 参数） */
+const searchKeyword = ref<string | null>(null);
+
+/** 首次加载：清空缓存，请求第一页（含挂载项） */
 async function getFileList() {
   startLoading();
 
-  searchParams.value.fileType = diskStore.currentFileType === 'all' ? null : diskStore.currentFileType;
-  searchParams.value.parentId = diskStore.currentParentId;
-  searchParams.value.sortField = diskStore.sortSettings.field;
-  searchParams.value.sortOrder = diskStore.sortSettings.order;
+  // 清空缓存
+  mountCache.value = [];
+  realFilesCache.value = [];
+  currentRealPage.value = 1;
+  hasMore.value = true;
 
-  const { data, error } = await fetchGetFileList(searchParams.value);
+  const fileType = diskStore.currentFileType === 'all' ? null : diskStore.currentFileType;
+  const sortField = diskStore.sortSettings.field;
+  const sortOrder = diskStore.sortSettings.order;
+
+  const { data, error } = await fetchGetFileList({
+    pageNum: 1,
+    pageSize: PAGE_SIZE,
+    fileType,
+    keyword: searchKeyword.value,
+    parentId: null,
+    sortField,
+    sortOrder,
+    includeMounts: true
+  });
 
   if (!error && data) {
     const mapped = mapBackendFileList(data);
-    fileList.value = mapped.rows;
+    realFilesCache.value = mapped.rows;
     totalCount.value = mapped.total;
-    // 挂载只读视图标记（进入挂载文件夹时禁止上传/新建/重命名/移动等操作）
+
+    // 缓存挂载项
+    if (data.hasMountData && data.mountItems) {
+      mountCache.value = data.mountItems.map(item => {
+        const mappedItem = mapBackendFileList({ list: [item], total: 0 });
+        return mappedItem.rows[0];
+      });
+      mountTotal.value = data.mountTotal || 0;
+    }
+
+    realTotal.value = mapped.total - mountTotal.value;
     isMountView.value = mapped.isMountView || false;
+    hasMore.value = realFilesCache.value.length < realTotal.value;
   } else {
-    fileList.value = [];
+    realFilesCache.value = [];
     totalCount.value = 0;
     isMountView.value = false;
+    hasMore.value = false;
   }
+
   endLoading();
-  diskStore.currentFileList = fileList.value;
 }
+
+/** 加载更多：追加下一页真实文件 */
+async function loadMoreFiles() {
+  if (!hasMore.value) return;
+
+  currentRealPage.value++;
+
+  const fileType = diskStore.currentFileType === 'all' ? null : diskStore.currentFileType;
+  const sortField = diskStore.sortSettings.field;
+  const sortOrder = diskStore.sortSettings.order;
+
+  const { data, error } = await fetchGetFileList({
+    pageNum: currentRealPage.value,
+    pageSize: PAGE_SIZE,
+    fileType,
+    keyword: searchKeyword.value,
+    parentId: null,
+    sortField,
+    sortOrder,
+    includeMounts: false
+  });
+
+  if (!error && data) {
+    const mapped = mapBackendFileList(data);
+    realFilesCache.value.push(...mapped.rows);
+    hasMore.value = realFilesCache.value.length < realTotal.value;
+  }
+}
+
+// 无限滚动 hook — 监听滚动容器 scroll 事件
+const { loadingMore } = useInfiniteScroll({
+  onLoadMore: loadMoreFiles,
+  hasMore,
+  scrollContainerRef: scrollContainer
+});
 
 async function runExtract(destPath: string, intoSubfolder: boolean) {
   const file = preview.archiveFile;
@@ -199,7 +309,7 @@ async function handleFolderCreated(name: string) {
 }
 
 function handleSearch(keyword: string) {
-  searchParams.value.keyword = keyword || null;
+  searchKeyword.value = keyword || null;
   getFileList();
 }
 
@@ -623,6 +733,11 @@ async function doDeletePermanently(fileIds: CommonType.IdType[]) {
   }
 }
 
+// 同步 fileList computed 到 diskStore（供其他组件使用 selectedFiles 等）
+watch(fileList, list => {
+  diskStore.currentFileList = list;
+}, { deep: false });
+
 // 共享对话框关闭后刷新文件列表（更新 sharedUserCount/sharedDeptCount）
 watch(() => diskStore.shareDialogVisible, (visible, prev) => {
   if (prev && !visible) {
@@ -737,6 +852,7 @@ onMounted(async () => {
         <!-- File Content -->
         <FileGrid
           v-if="diskStore.viewMode === 'grid'"
+          ref="fileGridRef"
           :files="fileList"
           :loading="loading"
           page-type="disk"
@@ -760,6 +876,7 @@ onMounted(async () => {
         />
         <FileList
           v-if="diskStore.viewMode === 'list'"
+          ref="fileListRef"
           :files="fileList"
           :loading="loading"
           page-type="disk"
@@ -781,6 +898,14 @@ onMounted(async () => {
           @file-detail="handleFileAction('detail', $event)"
           @refresh="handleRefresh"
         />
+        <!-- 加载更多状态 -->
+        <div v-if="loadingMore" class="flex items-center justify-center py-12px">
+          <NSpin size="small" />
+          <span class="ml-8px text-13px opacity-60">加载更多...</span>
+        </div>
+        <div v-else-if="!hasMore && fileList.length > 0" class="text-center text-13px opacity-60 py-12px">
+          已加载全部 {{ fileList.length }} / {{ totalCount }} 项
+        </div>
       </NCard>
     </div>
     <!-- Transfer Panel -->

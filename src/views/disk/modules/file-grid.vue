@@ -323,6 +323,9 @@ watch(
   () => nextTick(updateScrollHeight),
   { immediate: true }
 );
+
+// 暴露滚动容器 ref 供父组件绑定 scroll 事件
+defineExpose({ scrollContainer: gridScrollRef });
 </script>
 
 <template>

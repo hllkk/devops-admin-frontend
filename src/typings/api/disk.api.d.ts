@@ -68,6 +68,12 @@ declare namespace Api {
       total: number;
       page?: number;
       size?: number;
+      /** 挂载项数据（首次请求时返回，供前端缓存） */
+      mountItems?: BackendFileItem[];
+      /** 挂载项总数 */
+      mountTotal?: number;
+      /** 是否返回了挂载项数据 */
+      hasMountData?: boolean;
       /** 当前是否处于挂载文件夹只读视图 */
       isMountView?: boolean;
       /** 挂载文件夹显示名 */
@@ -183,6 +189,8 @@ declare namespace Api {
       /** 分页参数 */
       pageNum: number;
       pageSize: number;
+      /** 是否包含挂载项数据（首页=true，后续=false） */
+      includeMounts?: boolean;
     }>;
 
     /** 上传文件参数 */

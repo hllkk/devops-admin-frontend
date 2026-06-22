@@ -501,11 +501,23 @@ function getRowKey(row: Api.Disk.FileItem) {
   return (row as any)._isCreating ? CREATION_ROW_ID : getSelectId(row);
 }
 
+// 暴露滚动容器 ref 供父组件设置 IntersectionObserver root
+// NDataTable 使用 virtual-scroll 时，内部有 .n-virtual-list 的滚动容器
+const listWrapperRef = ref<HTMLElement | null>(null);
+
+function getScrollContainer(): HTMLElement | null {
+  if (!listWrapperRef.value) return null;
+  // NDataTable virtual-scroll 的滚动容器是 .n-virtual-list 内部元素
+  return listWrapperRef.value.querySelector('.n-virtual-list') ?? listWrapperRef.value.querySelector('.n-data-table-wrapper');
+}
+
+defineExpose({ scrollContainer: computed(getScrollContainer) });
+
 
 </script>
 
 <template>
-  <div class="h-full flex flex-col" @contextmenu.prevent="handleContextMenu">
+  <div ref="listWrapperRef" class="h-full flex flex-col" @contextmenu.prevent="handleContextMenu">
     <!-- 空状态（正在创建时不展示） -->
     <FileEmpty v-if="showEmpty && !diskStore.creatingType" />
 
@@ -520,6 +532,7 @@ function getRowKey(row: Api.Disk.FileItem) {
       :row-props="getRowProps"
       size="small"
       :flex-height="true"
+      :virtual-scroll="true"
       class="flex-1"
       @update:checked-row-keys="handleCheckedRowKeysChange"
     />
