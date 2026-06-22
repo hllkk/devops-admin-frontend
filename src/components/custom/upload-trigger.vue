@@ -97,26 +97,39 @@ function readEntry(entry: FileSystemEntry, pathPrefix: string = ''): Promise<{ f
 async function extractAndUpload(dataTransfer: DataTransfer) {
   const items = dataTransfer.items;
 
-  // Prefer webkitGetAsEntry for folder support
+  // Prefer webkitGetAsEntry for folder support.
+  // IMPORTANT: dataTransfer.items 仅在 drop 事件同步派发期间有效。一旦首个 await 让出执行权，
+  // 浏览器就会清空拖拽数据存储，后续的 webkitGetAsEntry() 将返回 null（这正是多文件拖拽
+  // 只产生一个上传任务的根因）。因此必须在任何 await 之前，同步地把所有 entry 引用收集起来——
+  // FileSystemEntry 是稳定引用，之后再异步读取是安全的。
   if (items && items.length > 0 && typeof items[0].webkitGetAsEntry === 'function') {
+    // 1. 同步快照所有 entry（此时仍在 drop 事件同步派发期内）
+    const entries: FileSystemEntry[] = [];
     for (const item of Array.from(items)) {
       const entry = item.webkitGetAsEntry?.();
-      if (!entry) continue;
+      if (entry) entries.push(entry);
+    }
+
+    // 2. 逐个异步读取（entry 引用已脱离 dataTransfer，读取安全）
+    const looseFiles: { file: File; relativePath?: string }[] = [];
+    for (const entry of entries) {
+      const fileEntries = await readEntry(entry);
+      if (fileEntries.length === 0) continue;
 
       if (entry.isDirectory) {
-        const fileEntries = await readEntry(entry);
-        if (fileEntries.length > 0) {
-          upload(fileEntries, undefined, {
-            id: generateFolderId(),
-            name: entry.name
-          });
-        }
-      } else if (entry.isFile) {
-        const fileEntries = await readEntry(entry);
-        if (fileEntries.length > 0) {
-          upload(fileEntries);
-        }
+        // 每个文件夹是独立的上传分组（各自的 folderId / name）
+        upload(fileEntries, undefined, {
+          id: generateFolderId(),
+          name: entry.name
+        });
+      } else {
+        looseFiles.push(...fileEntries);
       }
+    }
+
+    // 3. 所有散文件合并为一次 upload()：单次配额校验、批量入队，任务数量正确
+    if (looseFiles.length > 0) {
+      upload(looseFiles);
     }
     return;
   }
