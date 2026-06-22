@@ -8,7 +8,6 @@ defineOptions({
 
 interface Props {
   id: number;
-  targetId: number;
   targetName: string;
   targetType: 'user' | 'dept';
   permissions: string[];
