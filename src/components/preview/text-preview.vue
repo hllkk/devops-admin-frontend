@@ -652,7 +652,7 @@ async function initFile(file: BackendFileItem | Api.Disk.FileItem, fullPath?: st
 async function fetchFiles(directory: string): Promise<TabNode[]> {
   const params = {
     userId: Number(authStore.userInfo.userId),
-    currentDirectory: encodeURIComponent(directory),
+    currentDirectory: directory,
     queryType: 'all' as const,
     page: 1,
     size: 1000
