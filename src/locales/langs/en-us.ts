@@ -1776,7 +1776,11 @@ const local: App.I18n.Schema = {
         emptyConfirm: 'This action cannot be undone. Empty the trash?',
         emptySuccess: 'Trash emptied',
         cannotDownload: 'Files in trash cannot be downloaded',
-        noData: 'Trash is empty'
+        noData: 'Trash is empty',
+        movingToTrash: 'Moving {count} files to trash…',
+        restoring: 'Restoring {count} files…',
+        deletingPermanently: 'Permanently deleting {count} files…',
+        emptying: 'Emptying trash…'
       },
       favorite: {
         title: 'Favorites',

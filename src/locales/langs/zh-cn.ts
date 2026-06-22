@@ -1769,7 +1769,11 @@ const local: App.I18n.Schema = {
         emptyConfirm: '此操作不可撤销，确定清空回收站？',
         emptySuccess: '回收站已清空',
         cannotDownload: '回收站文件无法下载',
-        noData: '回收站是空的'
+        noData: '回收站是空的',
+        movingToTrash: '正在移至回收站 {count} 个文件…',
+        restoring: '正在恢复 {count} 个文件…',
+        deletingPermanently: '正在彻底删除 {count} 个文件…',
+        emptying: '正在清空回收站…'
       },
       favorite: {
         title: '我的收藏',

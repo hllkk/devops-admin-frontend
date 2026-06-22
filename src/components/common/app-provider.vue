@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { createTextVNode, defineComponent } from 'vue';
 import { useDialog, useLoadingBar, useMessage, useNotification } from 'naive-ui';
+import FullScreenLoading from './full-screen-loading.vue';
 
 defineOptions({
   name: 'AppProvider'
@@ -29,6 +30,7 @@ const ContextHolder = defineComponent({
       <NNotificationProvider>
         <NMessageProvider>
           <ContextHolder />
+          <FullScreenLoading />
           <slot></slot>
         </NMessageProvider>
       </NNotificationProvider>

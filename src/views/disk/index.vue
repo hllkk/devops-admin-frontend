@@ -11,6 +11,7 @@ import { fetchGetShareInfo } from '@/service/api/disk/share';
 import { fetchAddRecent } from '@/service/api/disk/recent';
 import { getServiceBaseURL } from '@/utils/service';
 import { useFilePreview } from '@/hooks/business/disk/use-file-preview';
+import { useFullScreenLoading } from '@/hooks/business/use-full-screen-loading';
 import ImagePreview from '@/components/preview/image-preview.vue';
 import FilePreviewOverlays from '@/components/disk/file-preview-overlays.vue';
 import FileTypeMenu from './modules/file-type-menu.vue';
@@ -537,47 +538,60 @@ function handleToolbarDelete() {
   });
 }
 
+// 全屏 Loading（删除/恢复等耗时操作期间阻断误操作）
+const { show: showFullScreenLoading, hide: hideFullScreenLoading } = useFullScreenLoading();
+
 /** 执行移至回收站（返回 Promise 供 Dialog 按钮 loading） */
 async function doMoveToTrash(fileIds: CommonType.IdType[]) {
-  const { fetchDeleteFile } = await import('@/service/api/disk/file');
-  const { error } = await fetchDeleteFile(fileIds);
-  if (!error) {
-    window.$message?.success($t('page.disk.trash.moveToTrashSuccess'));
-    diskStore.clearSelection();
-    getFileList();
+  showFullScreenLoading($t('page.disk.trash.movingToTrash', { count: fileIds.length }));
+  try {
+    const { fetchDeleteFile } = await import('@/service/api/disk/file');
+    const { error } = await fetchDeleteFile(fileIds);
+    if (!error) {
+      window.$message?.success($t('page.disk.trash.moveToTrashSuccess'));
+      diskStore.clearSelection();
+      getFileList();
+    }
+  } finally {
+    hideFullScreenLoading();
   }
 }
 
 /** 执行彻底删除（返回 Promise 供 Dialog 按钮 loading，支持异步轮询） */
 async function doDeletePermanently(fileIds: CommonType.IdType[]) {
-  const { fetchDeleteFile, fetchTaskStatus } = await import('@/service/api/disk/file');
-  const { data, error } = await fetchDeleteFile(fileIds, true);
-  if (error) return;
-  if (data?.taskId) {
-    // 异步模式: 轮询直到完成, 期间 dialog 按钮保持 loading
-    for (let i = 0; i < 300; i++) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      try {
-        const res = await fetchTaskStatus(data.taskId);
-        const status = res.data?.status;
-        if (status === 'completed') {
-          window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
-          break;
+  showFullScreenLoading($t('page.disk.trash.deletingPermanently', { count: fileIds.length }));
+  try {
+    const { fetchDeleteFile, fetchTaskStatus } = await import('@/service/api/disk/file');
+    const { data, error } = await fetchDeleteFile(fileIds, true);
+    if (error) return;
+    if (data?.taskId) {
+      // 异步模式: 轮询直到完成, 期间 dialog 按钮保持 loading
+      for (let i = 0; i < 300; i++) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+          const res = await fetchTaskStatus(data.taskId);
+          const status = res.data?.status;
+          if (status === 'completed') {
+            window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
+            break;
+          }
+          if (status === 'failed') {
+            window.$message?.error(res.data?.error || '操作失败');
+            break;
+          }
+        } catch {
+          // 网络错误继续重试
         }
-        if (status === 'failed') {
-          window.$message?.error(res.data?.error || '操作失败');
-          break;
-        }
-      } catch {
-        // 网络错误继续重试
       }
+    } else {
+      window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
     }
-  } else {
-    window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
+    diskStore.clearSelection();
+    getFileList();
+    loadQuotaInfo();
+  } finally {
+    hideFullScreenLoading();
   }
-  diskStore.clearSelection();
-  getFileList();
-  loadQuotaInfo();
 }
 
 // 共享对话框关闭后刷新文件列表（更新 sharedUserCount/sharedDeptCount）

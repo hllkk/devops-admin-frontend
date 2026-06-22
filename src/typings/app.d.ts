@@ -1557,6 +1557,10 @@ declare namespace App {
             emptySuccess: string;
             cannotDownload: string;
             noData: string;
+            movingToTrash: string;
+            restoring: string;
+            deletingPermanently: string;
+            emptying: string;
           };
           favorite: {
             title: string;

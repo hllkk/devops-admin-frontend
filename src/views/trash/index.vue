@@ -9,6 +9,7 @@ import SimpleToolbar from '../disk/modules/simple-toolbar.vue';
 import FileGrid from '../disk/modules/file-grid.vue';
 import FileList from '../disk/modules/file-list.vue';
 import FileEmpty from '@/components/disk/file-empty.vue';
+import { useFullScreenLoading } from '@/hooks/business/use-full-screen-loading';
 
 defineOptions({
   name: 'TrashPage'
@@ -16,6 +17,7 @@ defineOptions({
 
 const diskStore = useDiskStore();
 const { loading, startLoading, endLoading } = useLoading();
+const { show: showFullScreenLoading, hide: hideFullScreenLoading } = useFullScreenLoading();
 
 const recycleList = ref<Api.Disk.RecycleItem[]>([]);
 const selectedFiles = ref<CommonType.IdType[]>([]);
@@ -97,11 +99,16 @@ function handleRestore() {
     positiveText: $t('common.confirm'),
     negativeText: $t('common.cancel'),
     onPositiveClick: async () => {
-      const { error } = await fetchRestoreTrash(ids);
-      if (!error) {
-        window.$message?.success($t('page.disk.trash.restoreSuccess'));
-        selectedFiles.value = [];
-        getData();
+      showFullScreenLoading($t('page.disk.trash.restoring', { count: ids.length }));
+      try {
+        const { error } = await fetchRestoreTrash(ids);
+        if (!error) {
+          window.$message?.success($t('page.disk.trash.restoreSuccess'));
+          selectedFiles.value = [];
+          getData();
+        }
+      } finally {
+        hideFullScreenLoading();
       }
     }
   });
@@ -139,16 +146,21 @@ function handleDeletePermanently() {
     positiveText: $t('common.confirm'),
     negativeText: $t('common.cancel'),
     onPositiveClick: async () => {
-      const { data, error } = await fetchDeleteTrash(ids);
-      if (error) return;
-      if (data?.taskId) {
-        const ok = await pollTaskStatus(data.taskId);
-        if (!ok) return;
+      showFullScreenLoading($t('page.disk.trash.deletingPermanently', { count: ids.length }));
+      try {
+        const { data, error } = await fetchDeleteTrash(ids);
+        if (error) return;
+        if (data?.taskId) {
+          const ok = await pollTaskStatus(data.taskId);
+          if (!ok) return;
+        }
+        window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
+        selectedFiles.value = [];
+        getData();
+        refreshQuota();
+      } finally {
+        hideFullScreenLoading();
       }
-      window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
-      selectedFiles.value = [];
-      getData();
-      refreshQuota();
     }
   });
 }
@@ -160,16 +172,21 @@ function handleEmptyTrash() {
     positiveText: $t('common.confirm'),
     negativeText: $t('common.cancel'),
     onPositiveClick: async () => {
-      const { data, error } = await fetchEmptyTrash();
-      if (error) return;
-      if (data?.taskId) {
-        const ok = await pollTaskStatus(data.taskId);
-        if (!ok) return;
+      showFullScreenLoading($t('page.disk.trash.emptying'));
+      try {
+        const { data, error } = await fetchEmptyTrash();
+        if (error) return;
+        if (data?.taskId) {
+          const ok = await pollTaskStatus(data.taskId);
+          if (!ok) return;
+        }
+        window.$message?.success($t('page.disk.trash.emptySuccess'));
+        selectedFiles.value = [];
+        getData();
+        refreshQuota();
+      } finally {
+        hideFullScreenLoading();
       }
-      window.$message?.success($t('page.disk.trash.emptySuccess'));
-      selectedFiles.value = [];
-      getData();
-      refreshQuota();
     }
   });
 }
