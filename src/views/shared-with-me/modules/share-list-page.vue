@@ -69,6 +69,61 @@ const contentTypeOptions = [
   { label: $t('page.disk.sharedWithMe.document'), value: 'application/' }
 ];
 
+// 最近搜索记录（与 disk Toolbar 一致，最多保存10条）
+const RECENT_SEARCH_KEY = `shared_recent_search_${props.shareType}`;
+const recentSearches = ref<string[]>([]);
+const showMobileSearch = ref(false);
+
+function loadRecentSearches() {
+  const saved = localStorage.getItem(RECENT_SEARCH_KEY);
+  if (saved) {
+    try {
+      recentSearches.value = JSON.parse(saved);
+    } catch {
+      recentSearches.value = [];
+    }
+  }
+}
+
+function saveRecentSearch(keyword: string) {
+  if (!keyword.trim() || keyword.trim().length < 2) return;
+  const trimmed = keyword.trim();
+  const exists = recentSearches.value.includes(trimmed);
+  if (exists) {
+    recentSearches.value = [trimmed, ...recentSearches.value.filter(k => k !== trimmed)];
+  } else {
+    recentSearches.value = [trimmed, ...recentSearches.value.slice(0, 9)];
+  }
+  localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(recentSearches.value));
+}
+
+function clearRecentSearches() {
+  recentSearches.value = [];
+  localStorage.removeItem(RECENT_SEARCH_KEY);
+}
+
+function handleRecentSearchClick(keyword: string) {
+  searchKeyword.value = keyword;
+  handleSearch();
+}
+
+function handleSearch() {
+  const keyword = searchKeyword.value.trim();
+  if (keyword) {
+    saveRecentSearch(keyword);
+  }
+  getData();
+}
+
+function handleMobileSearch() {
+  const keyword = searchKeyword.value.trim();
+  if (keyword) {
+    saveRecentSearch(keyword);
+  }
+  showMobileSearch.value = false;
+  getData();
+}
+
 const browsingFolder = ref<Api.Disk.SharedWithMeItem | null>(null);
 const folderContents = ref<Api.Disk.FileItem[]>([]);
 const folderTotal = ref(0);
@@ -870,6 +925,7 @@ const unsubscribe = onSSEMessage('share_created', () => {
 
 onMounted(async () => {
   window.addEventListener('resize', updateWindowHeight);
+  loadRecentSearches();
   await getData();
   if (route.query.shareId) {
     await restoreFromUrl();
@@ -886,27 +942,85 @@ onUnmounted(() => {
   <div class="h-full lt-sm:h-[calc(100dvh-56px)] flex flex-col overflow-hidden">
     <NCard :bordered="false" size="small" class="card-wrapper flex-1 min-h-0">
       <div class="h-full flex flex-col">
-        <!-- Search & filter bar (user share only) -->
-        <div v-if="showFilter && !isBrowsingFolder" class="flex items-center gap-8px px-4px py-8px lt-sm:flex-wrap">
-          <NInput
-            v-model:value="searchKeyword"
-            :placeholder="$t('page.disk.sharedWithMe.searchPlaceholder')"
-            clearable
-            class="max-w-240px lt-sm:max-w-full"
-            @keyup.enter="getData"
-            @clear="getData"
-          />
-          <NSelect
-            v-model:value="contentTypeFilter"
-            :options="contentTypeOptions"
-            clearable
-            :placeholder="$t('page.disk.sharedWithMe.fileType')"
-            class="w-120px lt-sm:w-full"
-            @update:value="getData"
-          />
-          <NButton size="small" quaternary @click="getData">
-            <template #icon><icon-mdi-refresh class="text-16px" /></template>
-            {{ $t('page.disk.sharedWithMe.refresh') }}
+        <!-- Toolbar 搜索栏（与 disk 页面风格一致） -->
+        <div v-if="showFilter && !isBrowsingFolder" class="flex items-center justify-between px-4px py-8px lt-sm:flex-wrap lt-sm:justify-start">
+          <!-- 左侧：文件类型 + 搜索输入框 + 搜索按钮（按钮组一体） -->
+          <div class="flex items-center gap-8px">
+            <NInputGroup class="hidden sm:flex" style="width: auto">
+              <!-- 文件类型筛选（在搜索框前面） -->
+              <NSelect
+                v-model:value="contentTypeFilter"
+                :options="contentTypeOptions"
+                clearable
+                :placeholder="$t('page.disk.sharedWithMe.fileType')"
+                style="width: 120px"
+                @update:value="getData"
+              />
+              <NPopover
+                trigger="focus"
+                placement="bottom-start"
+                :show-arrow="false"
+                :disabled="recentSearches.length === 0"
+                :style="{ width: '100%' }"
+                content-style="padding: 8px 0;"
+              >
+                <template #trigger>
+                  <NInput
+                    v-model:value="searchKeyword"
+                    :placeholder="$t('page.disk.sharedWithMe.searchPlaceholder')"
+                    clearable
+                    style="width: 180px"
+                    class="lg:w-240px"
+                    @keydown.enter="handleSearch"
+                    @clear="getData"
+                  />
+                </template>
+                <div class="flex flex-col gap-4px min-w-150px">
+                  <div class="flex items-center justify-between px-8px mb-4px text-12px text-gray-500">
+                    <span>{{ $t('page.disk.toolbar.recentSearch') }}</span>
+                    <NButton text size="tiny" @click.stop="clearRecentSearches">
+                      {{ $t('common.clear') }}
+                    </NButton>
+                  </div>
+                  <div
+                    v-for="item in recentSearches"
+                    :key="item"
+                    class="flex items-center gap-8px px-8px py-6px cursor-pointer hover:bg-primary/10 rd-4px text-13px"
+                    @click="handleRecentSearchClick(item)"
+                  >
+                    <SvgIcon icon="mdi:clock-outline" :size="14" class="text-gray-400" />
+                    <span class="flex-1 truncate">{{ item }}</span>
+                  </div>
+                </div>
+              </NPopover>
+              <NButton type="primary" @click="handleSearch">
+                <template #icon>
+                  <SvgIcon icon="mdi:magnify" :size="18" class="dark:text-white" />
+                </template>
+              </NButton>
+            </NInputGroup>
+            <!-- 搜索框：移动端（点击图标弹窗） -->
+            <NButton class="sm:hidden" quaternary @click="showMobileSearch = true">
+              <template #icon><SvgIcon icon="mdi:magnify" :size="18" /></template>
+            </NButton>
+          </div>
+
+          <!-- 右侧：刷新按钮 -->
+          <NButtonGroup class="hidden sm:flex">
+            <NTooltip trigger="hover">
+              <template #trigger>
+                <NButton @click="getData">
+                  <template #icon>
+                    <SvgIcon icon="mdi:refresh" :size="18" />
+                  </template>
+                </NButton>
+              </template>
+              {{ $t('page.disk.toolbar.refresh') }}
+            </NTooltip>
+          </NButtonGroup>
+          <!-- 移动端刷新按钮 -->
+          <NButton class="sm:hidden" quaternary @click="getData">
+            <template #icon><SvgIcon icon="mdi:refresh" :size="18" /></template>
           </NButton>
         </div>
 
@@ -1105,6 +1219,52 @@ onUnmounted(() => {
         <NButton @click="createFolderDialogVisible = false">{{ $t('common.cancel') }}</NButton>
         <NButton type="primary" @click="handleCreateFolderConfirm">{{ $t('common.confirm') }}</NButton>
       </template>
+    </NModal>
+
+    <!-- 移动端搜索弹窗（与 disk Toolbar 一致） -->
+    <NModal v-model:show="showMobileSearch" preset="card" style="width: 90%; max-width: 400px" :bordered="false">
+      <div class="flex flex-col gap-12px">
+        <NInputGroup>
+          <NInput v-model:value="searchKeyword" :placeholder="$t('page.disk.sharedWithMe.searchPlaceholder')" clearable autofocus @keydown.enter="handleMobileSearch" @clear="getData" />
+          <NButton type="primary" @click="handleMobileSearch">
+            <template #icon>
+              <SvgIcon icon="mdi:magnify" :size="18" />
+            </template>
+          </NButton>
+        </NInputGroup>
+        <!-- 文件类型筛选 -->
+        <NSelect
+          v-model:value="contentTypeFilter"
+          :options="contentTypeOptions"
+          clearable
+          :placeholder="$t('page.disk.sharedWithMe.fileType')"
+          @update:value="getData"
+        />
+        <!-- 最近搜索 -->
+        <div v-if="recentSearches.length > 0" class="flex flex-col gap-8px">
+          <div class="flex items-center justify-between text-12px text-gray-500">
+            <span>{{ $t('page.disk.toolbar.recentSearch') }}</span>
+            <NButton text size="tiny" @click.stop="clearRecentSearches">
+              {{ $t('common.clear') }}
+            </NButton>
+          </div>
+          <div class="flex flex-wrap gap-8px">
+            <NTag
+              v-for="item in recentSearches"
+              :key="item"
+              size="small"
+              round
+              cursor-pointer
+              @click="handleRecentSearchClick(item); showMobileSearch = false;"
+            >
+              <template #avatar>
+                <SvgIcon icon="mdi:clock-outline" :size="12" class="text-gray-400" />
+              </template>
+              {{ item }}
+            </NTag>
+          </div>
+        </div>
+      </div>
     </NModal>
   </div>
 </template>

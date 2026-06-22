@@ -5,5 +5,5 @@ defineOptions({ name: 'GroupSharePage' });
 </script>
 
 <template>
-  <ShareListPage share-type="dept" :show-filter="false" />
+  <ShareListPage share-type="dept" :show-filter="true" />
 </template>

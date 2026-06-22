@@ -34,14 +34,9 @@ function openTransfer(item: Api.Disk.StorageAdmin.LibraryItem) {
   transferVisible.value = true;
 }
 
-async function handleDelete(item: Api.Disk.StorageAdmin.LibraryItem) {
-  const { error } = await fetchDeleteStorageLibrary(item.userId);
-  if (error) return;
-  window.$message?.success('资料库已清空');
-  getData();
-}
-
 type LibRow = Api.Disk.StorageAdmin.LibraryItem;
+
+
 
 const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagination, scrollX } =
   useNaivePaginatedTable({
@@ -169,6 +164,13 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
       }
     ]
   });
+
+async function handleDelete(item: Api.Disk.StorageAdmin.LibraryItem) {
+  const { error } = await fetchDeleteStorageLibrary(item.userId);
+  if (error) return;
+  window.$message?.success('资料库已清空');
+  getData();
+}
 </script>
 
 <template>
