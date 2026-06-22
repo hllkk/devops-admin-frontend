@@ -388,31 +388,14 @@ async function handleDeleteFile(file: Api.Disk.FileItem) {
     content: `${$t('page.disk.moveCopy.deleteConfirm')} "${file.fileName}"?`,
     positiveText: $t('page.disk.trash.moveToTrash'),
     negativeText: $t('page.disk.trash.deletePermanently'),
-    onPositiveClick: async () => {
-      const { fetchDeleteFile } = await import('@/service/api/disk/file');
-      const { error } = await fetchDeleteFile([file.fileId]);
-      if (!error) {
-        window.$message?.success($t('page.disk.trash.moveToTrashSuccess'));
-        diskStore.clearSelection();
-        getFileList();
-      }
-    },
+    onPositiveClick: () => doMoveToTrash([file.fileId]),
     onNegativeClick: () => {
       window.$dialog?.error({
         title: $t('page.disk.trash.deletePermanently'),
         content: $t('page.disk.trash.permanentDeleteWarning'),
         positiveText: $t('common.confirm'),
         negativeText: $t('common.cancel'),
-        onPositiveClick: async () => {
-          const { fetchDeleteFile } = await import('@/service/api/disk/file');
-          const { error } = await fetchDeleteFile([file.fileId], true);
-          if (!error) {
-            window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
-            diskStore.clearSelection();
-            getFileList();
-            loadQuotaInfo(); // 刷新配额信息
-          }
-        }
+        onPositiveClick: () => doDeletePermanently([file.fileId])
       });
     }
   });
@@ -541,34 +524,60 @@ function handleToolbarDelete() {
       : `${$t('page.disk.moveCopy.deleteConfirm')} "${selectedFiles[0].fileName}"?`,
     positiveText: $t('page.disk.trash.moveToTrash'),
     negativeText: $t('page.disk.trash.deletePermanently'),
-    onPositiveClick: async () => {
-      const { fetchDeleteFile } = await import('@/service/api/disk/file');
-      const { error } = await fetchDeleteFile(selectedFileIds);
-      if (!error) {
-        window.$message?.success($t('page.disk.trash.moveToTrashSuccess'));
-        diskStore.clearSelection();
-        getFileList();
-      }
-    },
+    onPositiveClick: () => doMoveToTrash(selectedFileIds),
     onNegativeClick: () => {
       window.$dialog?.error({
         title: $t('page.disk.trash.deletePermanently'),
         content: $t('page.disk.trash.permanentDeleteWarning'),
         positiveText: $t('common.confirm'),
         negativeText: $t('common.cancel'),
-        onPositiveClick: async () => {
-          const { fetchDeleteFile } = await import('@/service/api/disk/file');
-          const { error } = await fetchDeleteFile(selectedFileIds, true);
-          if (!error) {
-            window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
-            diskStore.clearSelection();
-            getFileList();
-            loadQuotaInfo(); // 刷新配额信息
-          }
-        }
+        onPositiveClick: () => doDeletePermanently(selectedFileIds)
       });
     }
   });
+}
+
+/** 执行移至回收站（返回 Promise 供 Dialog 按钮 loading） */
+async function doMoveToTrash(fileIds: CommonType.IdType[]) {
+  const { fetchDeleteFile } = await import('@/service/api/disk/file');
+  const { error } = await fetchDeleteFile(fileIds);
+  if (!error) {
+    window.$message?.success($t('page.disk.trash.moveToTrashSuccess'));
+    diskStore.clearSelection();
+    getFileList();
+  }
+}
+
+/** 执行彻底删除（返回 Promise 供 Dialog 按钮 loading，支持异步轮询） */
+async function doDeletePermanently(fileIds: CommonType.IdType[]) {
+  const { fetchDeleteFile, fetchTaskStatus } = await import('@/service/api/disk/file');
+  const { data, error } = await fetchDeleteFile(fileIds, true);
+  if (error) return;
+  if (data?.taskId) {
+    // 异步模式: 轮询直到完成, 期间 dialog 按钮保持 loading
+    for (let i = 0; i < 300; i++) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      try {
+        const res = await fetchTaskStatus(data.taskId);
+        const status = res.data?.status;
+        if (status === 'completed') {
+          window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
+          break;
+        }
+        if (status === 'failed') {
+          window.$message?.error(res.data?.error || '操作失败');
+          break;
+        }
+      } catch {
+        // 网络错误继续重试
+      }
+    }
+  } else {
+    window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
+  }
+  diskStore.clearSelection();
+  getFileList();
+  loadQuotaInfo();
 }
 
 // 共享对话框关闭后刷新文件列表（更新 sharedUserCount/sharedDeptCount）

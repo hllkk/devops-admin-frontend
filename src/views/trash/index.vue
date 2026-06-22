@@ -107,30 +107,24 @@ function handleRestore() {
   });
 }
 
-/** 轮询异步任务直到完成 */
-async function pollTaskStatus(taskId: string, onSuccess: () => void, maxRetries = 300) {
-  window.$message?.loading('处理中...', { duration: 0 });
+/** 轮询异步任务（返回 Promise，dialog 按钮保持 loading 直到完成） */
+async function pollTaskStatus(taskId: string, maxRetries = 300): Promise<boolean> {
   for (let i = 0; i < maxRetries; i++) {
     await new Promise(resolve => setTimeout(resolve, 2000));
     try {
       const { data } = await fetchTaskStatus(taskId);
       if (!data) continue;
-      if (data.status === 'completed') {
-        window.$message?.destroyAll?.();
-        onSuccess();
-        return;
-      }
+      if (data.status === 'completed') return true;
       if (data.status === 'failed') {
-        window.$message?.destroyAll?.();
         window.$message?.error(data.error || '操作失败');
-        return;
+        return false;
       }
     } catch {
       // 网络错误继续重试
     }
   }
-  window.$message?.destroyAll?.();
   window.$message?.warning('操作超时，请稍后刷新查看结果');
+  return false;
 }
 
 function handleDeletePermanently() {
@@ -148,20 +142,13 @@ function handleDeletePermanently() {
       const { data, error } = await fetchDeleteTrash(ids);
       if (error) return;
       if (data?.taskId) {
-        // 异步模式: 轮询进度
-        pollTaskStatus(data.taskId, () => {
-          window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
-          selectedFiles.value = [];
-          getData();
-          refreshQuota();
-        });
-      } else {
-        // 同步模式: 直接完成
-        window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
-        selectedFiles.value = [];
-        getData();
-        refreshQuota();
+        const ok = await pollTaskStatus(data.taskId);
+        if (!ok) return;
       }
+      window.$message?.success($t('page.disk.trash.deletePermanentlySuccess'));
+      selectedFiles.value = [];
+      getData();
+      refreshQuota();
     }
   });
 }
@@ -176,18 +163,13 @@ function handleEmptyTrash() {
       const { data, error } = await fetchEmptyTrash();
       if (error) return;
       if (data?.taskId) {
-        pollTaskStatus(data.taskId, () => {
-          window.$message?.success($t('page.disk.trash.emptySuccess'));
-          selectedFiles.value = [];
-          getData();
-          refreshQuota();
-        });
-      } else {
-        window.$message?.success($t('page.disk.trash.emptySuccess'));
-        selectedFiles.value = [];
-        getData();
-        refreshQuota();
+        const ok = await pollTaskStatus(data.taskId);
+        if (!ok) return;
       }
+      window.$message?.success($t('page.disk.trash.emptySuccess'));
+      selectedFiles.value = [];
+      getData();
+      refreshQuota();
     }
   });
 }
