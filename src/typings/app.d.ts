@@ -616,7 +616,9 @@ declare namespace App {
             title: string;
             loading: string;
             scanTip: string;
+            appName: string;
             scanned: string;
+            scannedConfirm: string;
             countdown: string;
             expired: string;
             refresh: string;

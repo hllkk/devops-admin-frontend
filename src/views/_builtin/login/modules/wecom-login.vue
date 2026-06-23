@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { onUnmounted, ref } from 'vue';
+import { nextTick, onUnmounted, ref, watch } from 'vue';
+import QRCode from 'qrcode';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
+import { useThemeStore } from '@/store/modules/theme';
 import { $t } from '@/locales';
 import { fetchWecomQrCode, fetchQrCodeStatus } from '@/service/api';
 
@@ -11,8 +13,9 @@ defineOptions({
 
 const router = useRouter();
 const authStore = useAuthStore();
+const themeStore = useThemeStore();
 
-const iframeSrc = ref('');
+const oauthUrl = ref('');
 const sceneId = ref('');
 const loading = ref(false);
 const expired = ref(false);
@@ -22,8 +25,35 @@ const pollInterval = ref(3000);
 const lastStatus = ref('');
 const scanned = ref(false);
 
+const qrCanvas = ref<HTMLCanvasElement | null>(null);
+
 let pollTimer: ReturnType<typeof setTimeout> | null = null;
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
+
+/** QR码渲染选项 */
+function getQrOptions(): QRCode.QRCodeRenderersOptions {
+  return themeStore.darkMode
+    ? {
+        width: 240,
+        margin: 3,
+        color: { dark: '#d1d5db', light: '#1f2937' }
+      }
+    : {
+        width: 240,
+        margin: 3,
+        color: { dark: '#1f2937', light: '#ffffff' }
+      };
+}
+
+/** 渲染 QR码到 canvas */
+async function renderQrCode() {
+  if (!qrCanvas.value || !oauthUrl.value) return;
+  try {
+    await QRCode.toCanvas(qrCanvas.value, oauthUrl.value, getQrOptions());
+  } catch (e) {
+    console.error('QR码渲染失败:', e);
+  }
+}
 
 async function loadQrCode() {
   loading.value = true;
@@ -37,7 +67,7 @@ async function loadQrCode() {
   stopCountdown();
 
   try {
-    const { data, error } = await fetchWecomQrCode('pc');
+    const { data, error } = await fetchWecomQrCode();
     if (error || !data) {
       errorMessage.value = $t('page.login.wecomLogin.qrCodeLoadFailed');
       return;
@@ -45,7 +75,7 @@ async function loadQrCode() {
 
     sceneId.value = data.sceneId;
     countdown.value = data.countdown || 120;
-    iframeSrc.value = data.oauthUrl;
+    oauthUrl.value = data.oauthUrl;
 
     startCountdown();
     scheduleNextPoll();
@@ -122,6 +152,16 @@ function refreshQrCode() {
   loadQrCode();
 }
 
+/** 监听 oauthUrl 变化（初次加载）和暗黑模式变化，均使用 nextTick 确保 DOM 就绪后渲染 */
+watch(
+  [oauthUrl, () => themeStore.darkMode],
+  () => {
+    nextTick(() => {
+      renderQrCode();
+    });
+  }
+);
+
 onUnmounted(() => {
   stopPolling();
   stopCountdown();
@@ -132,12 +172,14 @@ loadQrCode();
 
 <template>
   <div class="flex-col-center gap-24px">
-    <div v-if="loading" class="flex-col-center h-400px">
+    <!-- 加载中 -->
+    <div v-if="loading" class="flex-col-center h-340px">
       <NSpin size="large" />
       <p class="mt-12px text-14px text-gray-400">{{ $t('page.login.wecomLogin.loading') }}</p>
     </div>
 
-    <div v-else-if="errorMessage" class="flex-col-center h-400px">
+    <!-- 错误提示 -->
+    <div v-else-if="errorMessage" class="flex-col-center h-340px">
       <div class="text-48px text-red-400">
         <SvgIcon icon="mdi:alert-circle-outline" />
       </div>
@@ -147,39 +189,56 @@ loadQrCode();
       </NButton>
     </div>
 
+    <!-- QR码卡片 -->
     <div v-else class="flex-col-center">
-      <div class="qr-code-wrapper relative" :class="{ expired }">
-        <iframe
-          v-if="iframeSrc && !expired"
-          :src="iframeSrc"
-          class="qr-code-iframe"
-          frameborder="0"
-          sandbox="allow-scripts allow-same-origin allow-popups"
-        />
-        <div v-if="expired" class="qr-code-overlay">
-          <div class="flex-col-center gap-8px">
-            <SvgIcon icon="mdi:refresh" class="text-32px text-white" />
-            <NButton type="primary" size="small" @click="refreshQrCode">
-              {{ $t('page.login.wecomLogin.refresh') }}
-            </NButton>
+      <div class="qr-card relative" :class="{ expired, scanned }">
+        <!-- 顶部品牌色渐变条 -->
+        <div class="qr-card-accent" />
+
+        <!-- QR码主体 -->
+        <div class="qr-card-body">
+          <canvas ref="qrCanvas" class="qr-canvas" />
+
+          <!-- 已扫码遮罩 — 绿色成功反馈 -->
+          <div v-if="scanned && !expired" class="qr-overlay-scanned">
+            <div class="flex-col-center gap-12px">
+              <SvgIcon icon="mdi:check-circle" class="text-48px text-green-400" />
+              <span class="text-16px text-white font-medium">{{ $t('page.login.wecomLogin.scanned') }}</span>
+            </div>
           </div>
+
+          <!-- 过期遮罩 -->
+          <div v-if="expired" class="qr-overlay-expired">
+            <div class="flex-col-center gap-8px">
+              <SvgIcon icon="mdi:refresh" class="text-32px text-white" />
+              <NButton type="primary" size="small" @click="refreshQrCode">
+                {{ $t('page.login.wecomLogin.refresh') }}
+              </NButton>
+            </div>
+          </div>
+        </div>
+
+        <!-- 底部提示文字 — 根据状态动态切换 -->
+        <div class="qr-card-footer">
+          <template v-if="scanned && !expired">
+            <div class="qr-footer-status">
+              <SvgIcon icon="mdi:check-circle" class="text-16px text-green-500" />
+              <span class="qr-tip-scanned">{{ $t('page.login.wecomLogin.scannedConfirm') }}</span>
+            </div>
+          </template>
+          <template v-else-if="expired">
+            <p class="qr-tip-expired">{{ $t('page.login.wecomLogin.expired') }}</p>
+          </template>
+          <template v-else>
+            <p class="qr-tip">{{ $t('page.login.wecomLogin.scanTip') }}</p>
+            <p class="qr-app-name">{{ $t('page.login.wecomLogin.appName') }}</p>
+          </template>
         </div>
       </div>
 
-      <div class="mt-16px flex-col-center gap-8px">
-        <div v-if="scanned && !expired" class="scanned-tip">
-          <NSpin size="small" />
-          <span class="ml-8px">{{ $t('page.login.wecomLogin.scanned') }}</span>
-        </div>
-        <p v-else class="text-14px text-gray-500">
-          {{ $t('page.login.wecomLogin.scanTip') }}
-        </p>
-        <p v-if="!expired && !scanned" class="text-12px text-gray-400">
-          {{ $t('page.login.wecomLogin.countdown', { seconds: countdown }) }}
-        </p>
-        <p v-else-if="expired" class="text-12px text-orange-500">
-          {{ $t('page.login.wecomLogin.expired') }}
-        </p>
+      <!-- 倒计时（仅未扫码、未过期时显示） -->
+      <div v-if="!expired && !scanned" class="mt-8px text-12px text-gray-400">
+        {{ $t('page.login.wecomLogin.countdown', { seconds: countdown }) }}
       </div>
     </div>
 
@@ -193,43 +252,138 @@ loadQrCode();
 </template>
 
 <style scoped>
-.qr-code-wrapper {
-  width: 300px;
-  height: 400px;
-  border-radius: 8px;
+.qr-card {
+  width: 280px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   overflow: hidden;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+:root.dark .qr-card {
+  background: #1f2937;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.qr-card-accent {
+  height: 4px;
+  background: linear-gradient(90deg, #2B7EF9, #5B9DFA);
+}
+
+.qr-card-body {
   position: relative;
-  border: 2px solid #e5e7eb;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-:root.dark .qr-code-wrapper {
-  border-color: #374151;
+.qr-canvas {
+  display: block;
+  border-radius: 8px;
 }
 
-.qr-code-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-.qr-code-overlay {
+/* 已扫码遮罩 — 绿色半透明 + 模糊 */
+.qr-overlay-scanned {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(82, 196, 26, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
+  border-radius: 0 0 12px 12px;
+  animation: fadeIn 0.3s ease;
 }
 
-.scanned-tip {
+/* 过期遮罩 — 灰黑半透明 + 模糊 */
+.qr-overlay-expired {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
   display: flex;
   align-items: center;
-  color: #52c41a;
-  font-size: 14px;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+  border-radius: 0 0 12px 12px;
+  animation: fadeIn 0.3s ease;
 }
 
-:root.dark .scanned-tip {
-  color: #73d13d;
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.qr-card-footer {
+  padding: 12px 20px 16px;
+  text-align: center;
+  border-top: 1px solid #f3f4f6;
+}
+
+:root.dark .qr-card-footer {
+  border-top-color: #374151;
+}
+
+.qr-tip {
+  font-size: 15px;
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+}
+
+:root.dark .qr-tip {
+  color: #e5e7eb;
+}
+
+.qr-app-name {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 600;
+  margin: 6px 0 0;
+}
+
+:root.dark .qr-app-name {
+  color: #9ca3af;
+}
+
+.qr-footer-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.qr-tip-scanned {
+  font-size: 15px;
+  color: #22c55e;
+  font-weight: 600;
+  margin: 0;
+}
+
+:root.dark .qr-tip-scanned {
+  color: #4ade80;
+}
+
+.qr-tip-expired {
+  font-size: 15px;
+  color: #f59e0b;
+  font-weight: 600;
+  margin: 0;
+}
+
+:root.dark .qr-tip-expired {
+  color: #fbbf24;
+}
+
+/* 移动端响应式：缩小卡片 */
+@media (max-width: 640px) {
+  .qr-card {
+    width: 240px;
+  }
+
+  .qr-card-body {
+    padding: 16px;
+  }
 }
 </style>
