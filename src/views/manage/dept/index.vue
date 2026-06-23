@@ -169,10 +169,12 @@ function addInRow(row: Api.System.Dept) {
 
 async function handleSyncWecom() {
   syncLoading.value = true;
-  const { error } = await fetchSyncWecomStructure();
+  const { data: syncData, error } = await fetchSyncWecomStructure();
   syncLoading.value = false;
-  if (!error) {
-    window.$message?.success('同步企业微信组织架构成功');
+  if (!error && syncData) {
+    window.$message?.success(
+      `同步完成：部门 ${syncData.deptCreated} 新增/${syncData.deptUpdated} 更新/${syncData.deptSkipped} 无变化，用户 ${syncData.userCreated} 新增/${syncData.userUpdated} 更新/${syncData.userRestored} 恢复/${syncData.userSkipped} 无变化`
+    );
     getData();
   }
 }
