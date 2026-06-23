@@ -31,6 +31,14 @@ declare module 'vue-router' {
      */
     constant?: boolean | null;
     /**
+     * Is fixed auth route
+     *
+     * When set to true, the route requires login but is accessible to ALL authenticated users
+     * regardless of role. It bypasses role-based permission filtering and is hidden from menus.
+     * These routes are for globally available pages like user-center and notice-user.
+     */
+    fixed?: boolean | null;
+    /**
      * Iconify icon
      *
      * It can be used in the menu or breadcrumb

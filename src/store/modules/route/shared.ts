@@ -21,6 +21,15 @@ export function filterAuthRoutesByRoles(routes: ElegantConstRoute[], roles: stri
  * @param roles Roles
  */
 function filterAuthRouteByRoles(route: ElegantConstRoute, roles: string[]): ElegantConstRoute[] {
+  // Fixed auth routes are accessible to ALL authenticated users, skip role filtering
+  if (route.meta?.fixed) {
+    const filterRoute = { ...route };
+    if (filterRoute.children?.length) {
+      filterRoute.children = filterRoute.children.flatMap(item => filterAuthRouteByRoles(item, roles));
+    }
+    return [filterRoute];
+  }
+
   const routeRoles = (route.meta && route.meta.roles) || [];
 
   // if the route's "roles" is empty, then it is allowed to access
@@ -78,11 +87,11 @@ export function getGlobalMenusByAuthRoutes(routes: ElegantConstRoute[]) {
   const menus: App.Global.Menu[] = [];
 
   routes.forEach(route => {
-    // Hide routes that are marked as hideInMenu or are constant routes (like login, 404, etc.)
-    if (!route.meta?.hideInMenu && !route.meta?.constant) {
+    // Hide routes that are marked as hideInMenu, constant routes, or fixed auth routes
+    if (!route.meta?.hideInMenu && !route.meta?.constant && !route.meta?.fixed) {
       const menu = getGlobalMenuByBaseRoute(route);
 
-      if (route.children?.some(child => !child.meta?.hideInMenu && !child.meta?.constant)) {
+      if (route.children?.some(child => !child.meta?.hideInMenu && !child.meta?.constant && !child.meta?.fixed)) {
         menu.children = getGlobalMenusByAuthRoutes(route.children);
       }
 

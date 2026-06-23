@@ -34,12 +34,12 @@ export const SHARED_PAGE_CONFIGS: SharedPageConfig[] = [
   {
     viewName: 'user-center',
     i18nKey: 'route.user-center',
-    meta: { hideInMenu: true, constant: true }
+    meta: { fixed: true }
   },
   {
     viewName: 'notice-user',
     i18nKey: 'route.notice-user',
-    meta: { hideInMenu: true, constant: true }
+    meta: { fixed: true }
   }
 ];
 
@@ -77,6 +77,12 @@ export function generateSharedRoutes(configs: SharedPageConfig[]): ElegantConstR
 /**
  * Expand `layout.auto$view.xxx` routes into per-module variants.
  * Used in dynamic route mode — backend returns `layout.auto` for shared pages.
+ *
+ * IMPORTANT: layout.auto routes MUST be expanded into per-module variants
+ * (e.g. /user-center → /admin/user-center + /disk/user-center)
+ * because navigation uses module-specific paths (e.g. router.push('/admin/user-center')),
+ * not the root path (/user-center). Without expansion, module-specific paths
+ * have no matching route in Vue Router, resulting in 404.
  */
 export function expandAutoLayoutRoutes(routes: ElegantConstRoute[]): ElegantConstRoute[] {
   return routes.flatMap(route => expandAutoLayoutRoute(route));
@@ -85,9 +91,22 @@ export function expandAutoLayoutRoutes(routes: ElegantConstRoute[]): ElegantCons
 function expandAutoLayoutRoute(route: ElegantConstRoute): ElegantConstRoute[] {
   const component = route.component as string | undefined;
 
-  // layout.auto$view.xxx 路由不需要展开，auto layout 会根据当前模块动态切换
+  // layout.auto$view.xxx routes must be expanded into per-module variants
+  // (name: adminUserCenter, path: /admin/user-center, etc.)
+  // so that module-specific navigation paths match registered routes.
   if (component && component.startsWith('layout.auto$view.')) {
-    return [route];
+    const viewName = component.replace('layout.auto$view.', '');
+    const routeMeta = route.meta ?? {};
+
+    return ALL_MODULES.map(module => ({
+      name: `${module}${toPascalRouteName(viewName)}`,
+      path: `/${module}/${viewName}`,
+      component: `layout.${MODULE_LAYOUT_MAP[module]}$view.${viewName}` as ElegantConstRoute['component'],
+      meta: {
+        ...routeMeta,
+        module
+      }
+    } as ElegantConstRoute));
   }
 
   // Non-auto routes: recurse into children
@@ -100,10 +119,12 @@ function expandAutoLayoutRoute(route: ElegantConstRoute): ElegantConstRoute[] {
 
 /**
  * Build a path for a shared page.
- * Shared pages use root paths (e.g. /user-center) with auto layout that adapts to current module.
+ * Returns a module-specific path based on the current route context.
  */
 export function getSharedPagePath(pageName: string): string {
-  return `/${pageName}`;
+  // This function is used by auto-layout for redirect resolution.
+  // Since shared pages are now per-module, return admin variant as default.
+  return `/admin/${pageName}`;
 }
 
 let _router: any = null;
@@ -112,4 +133,3 @@ let _router: any = null;
 export function setRouterForSharedPages(routerInstance: any) {
   _router = routerInstance;
 }
-

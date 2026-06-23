@@ -96,10 +96,19 @@ function isRouteAuthorized(to: RouteLocationNormalized, routeStore: ReturnType<t
     return true;
   }
 
-  // Also check all matched route records for constant flag
-  // (handles single-level routes where parent meta doesn't have constant)
+  // Fixed auth routes are accessible to all authenticated users
+  if (to.meta.fixed) {
+    return true;
+  }
+
+  // Also check all matched route records for constant/fixed flag
+  // (handles single-level routes where parent meta doesn't have constant/fixed)
   const isConstantInMatched = to.matched.some(record => record.meta?.constant);
   if (isConstantInMatched) {
+    return true;
+  }
+  const isFixedInMatched = to.matched.some(record => record.meta?.fixed);
+  if (isFixedInMatched) {
     return true;
   }
 
@@ -198,6 +207,12 @@ export function createRouteGuard(router: Router) {
     // the route need login but the user is not logged in, then switch to the login page
     if (!isLogin) {
       return { name: loginRoute, query: { redirect: to.fullPath } };
+    }
+
+    // Fixed auth routes require login but skip role-based permission check
+    // (accessible to ALL authenticated users)
+    if (to.meta.fixed) {
+      return handleRouteSwitch(to, from);
     }
 
     // if the user is logged in but does not have authorization, then switch to the 403 page
