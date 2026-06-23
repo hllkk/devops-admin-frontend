@@ -1,6 +1,9 @@
 import { useRouter } from 'vue-router';
 import type { RouteLocationRaw } from 'vue-router';
+import { computed } from 'vue';
 import type { RouteKey } from '@elegant-router/types';
+import type { RouteModule } from '@/typings/router.d.ts';
+import { getModuleHomeKey } from '@/store/modules/route/shared';
 import { storeToRefs } from 'pinia';
 import { router as globalRouter } from '@/router';
 import { useRouteStore } from '@/store/modules/route';
@@ -153,4 +156,33 @@ export function useSharedPageNav() {
   }
 
   return { navigateToSharedPage, getSharedPath, currentModule };
+}
+
+/**
+ * Module-aware home navigation composable
+ *
+ * Two separate fallback chains:
+ * - Logo (moduleHomeName): currentModule is authoritative → module → routeHome → 'disk'
+ * - Exception (toModuleHome): source snapshot, skip polluted currentModule → source → routeHome → 'disk'
+ */
+export function useModuleHome() {
+  const routeStore = useRouteStore();
+  const { routerPushByKey } = useRouterPush();
+
+  /** Logo: currentModule is authoritative in layout context */
+  const moduleHomeName = computed<RouteKey>(() => {
+    return getModuleHomeKey(routeStore.currentModule)
+      ?? (routeStore.routeHome as RouteKey)
+      ?? 'disk';
+  });
+
+  /** Exception page: source module snapshot, skip polluted currentModule on exception pages */
+  function toModuleHome(sourceModule?: RouteModule | null) {
+    const key = getModuleHomeKey(sourceModule)
+      ?? (routeStore.routeHome as RouteKey)
+      ?? 'disk';
+    return routerPushByKey(key);
+  }
+
+  return { moduleHomeName, toModuleHome };
 }

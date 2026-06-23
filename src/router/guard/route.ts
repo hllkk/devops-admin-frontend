@@ -3,6 +3,7 @@ import type { ElegantConstRoute, RouteKey, RoutePath } from '@elegant-router/typ
 import type { RouteModule } from '@/typings/router.d.ts';
 import { useAuthStore } from '@/store/modules/auth';
 import { useRouteStore } from '@/store/modules/route';
+import { resolveModuleFromRoute } from '@/store/modules/route/shared';
 import { useTabStore } from '@/store/modules/tab';
 import { getToken } from '@/store/modules/auth/shared';
 import { localStg } from '@/utils/storage';
@@ -181,6 +182,16 @@ function isRouteModuleAccessible(to: RouteLocationNormalized, routeStore: Return
  */
 export function createRouteGuard(router: Router) {
   router.beforeEach(async (to, from) => {
+    const routeStore = useRouteStore();
+
+    // Snapshot source module before navigating to exception pages
+    const EXCEPTION_NAMES: RouteKey[] = ['403', '404', '500'];
+    if (EXCEPTION_NAMES.includes(to.name as RouteKey)) {
+      routeStore.setExceptionSourceModule(
+        resolveModuleFromRoute(from) ?? routeStore.currentModule
+      );
+    }
+
     const location = await initRoute(to);
 
     if (location) {
@@ -188,7 +199,6 @@ export function createRouteGuard(router: Router) {
     }
 
     const authStore = useAuthStore();
-    const routeStore = useRouteStore();
 
     const rootRoute: RouteKey = 'root';
     const loginRoute: RouteKey = 'login';

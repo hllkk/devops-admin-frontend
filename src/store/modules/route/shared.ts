@@ -407,3 +407,42 @@ export function filterMenusByModule(menus: App.Global.Menu[], _module: RouteModu
     return true; // For now, return all menus, filtering is done at route level
   });
 }
+
+/** Module home route mapping — each module maps to its home route key. */
+export const MODULE_HOME_MAP: Record<RouteModule, RouteKey> = {
+  admin: 'admin',
+  disk: 'disk'
+};
+
+/**
+ * Resolve the module a route belongs to.
+ *
+ * Supports three signals (same rules as filterRouteByModule):
+ * - Static: meta.module (single string)
+ * - Dynamic: meta.modules (array from backend, takes first)
+ * - Path prefix fallback: /disk → 'disk', /admin|/manage → 'admin'
+ */
+export interface ModuleResolvableRoute {
+  meta?: { module?: RouteModule; modules?: string[] };
+  path?: string;
+}
+
+export function resolveModuleFromRoute(route: ModuleResolvableRoute): RouteModule | null {
+  const { module, modules } = route.meta ?? {};
+  if (module) return module as RouteModule;
+  if (modules?.length) return modules[0] as RouteModule;
+  const path = route.path ?? '';
+  if (path.startsWith('/disk')) return 'disk';
+  if (path.startsWith('/admin') || path.startsWith('/manage')) return 'admin';
+  return null;
+}
+
+/**
+ * Get the home route key for a module.
+ *
+ * Returns undefined if the module is not in MODULE_HOME_MAP,
+ * so callers can apply their own fallback chain.
+ */
+export function getModuleHomeKey(module?: RouteModule | null): RouteKey | undefined {
+  return module ? MODULE_HOME_MAP[module] : undefined;
+}

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useSystemConfigStore } from '@/store/modules/system-config';
+import { useModuleHome } from '@/hooks/common/router';
 
 defineOptions({
   name: 'GlobalLogo'
@@ -16,13 +17,14 @@ withDefaults(defineProps<Props>(), {
 });
 
 const systemConfigStore = useSystemConfigStore();
+const { moduleHomeName } = useModuleHome();
 
 const systemName = computed(() => systemConfigStore.getSystemName());
 const logoUrl = computed(() => systemConfigStore.getLogoUrl());
 </script>
 
 <template>
-  <RouterLink to="/" class="w-full flex-center nowrap-hidden">
+  <RouterLink :to="{ name: moduleHomeName }" class="w-full flex-center nowrap-hidden">
     <!-- 有自定义 Logo 时显示图片 -->
     <img v-if="logoUrl" :src="logoUrl" class="size-32px" alt="logo" />
     <!-- 否则显示默认 SVG Logo -->

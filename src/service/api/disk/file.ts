@@ -213,7 +213,7 @@ export function fetchDeleteFile(fileIds: CommonType.IdType[], sweep = false) {
 }
 
 /** 将后端 TrashListResponse 转换为前端 RecycleItem 格式 */
-export function mapBackendTrashList(backendData: { list: any[]; total: number }) {
+export function mapBackendTrashList(backendData: Api.Disk.BackendTrashListResponse) {
   const list: Api.Disk.RecycleItem[] = (backendData.list || []).map(item => {
     const purgeAt = item.purgeAt ? new Date(item.purgeAt) : null;
     const expireDays = purgeAt
@@ -241,7 +241,7 @@ export function mapBackendTrashList(backendData: { list: any[]; total: number })
 /** 获取回收站列表 */
 export function fetchGetTrashList(params?: Api.Disk.RecycleListParams) {
   const userId = Number(useAuthStore().userInfo.userId);
-  return request<any>({
+  return request<Api.Disk.BackendTrashListResponse>({
     url: '/file-meta/trash/list',
     method: 'get',
     params: {

@@ -17,6 +17,13 @@ const isDragging = ref(false);
 let hideTimer: ReturnType<typeof setTimeout> | null = null;
 let folderIdCounter = 0;
 
+/** 拖拽上传单次最大文件数与总大小上限，防止拖入海量小文件导致浏览器卡死/OOM */
+const MAX_DND_FILE_COUNT = 5000;
+const MAX_DND_TOTAL_SIZE = 50 * 1024 * 1024 * 1024; // 50GB
+let dndFileCount = 0;
+let dndTotalSize = 0;
+let dndTruncated = false;
+
 function generateFolderId(): string {
   folderIdCounter += 1;
   return `dnd_folder_${Date.now()}_${folderIdCounter}`;
@@ -63,6 +70,14 @@ function readEntry(entry: FileSystemEntry, pathPrefix: string = ''): Promise<{ f
     if (entry.isFile) {
       (entry as FileSystemFileEntry).file(
         file => {
+          // 超过数量或大小上限：停止收集并标记截断，由 extractAndUpload 统一提示
+          if (dndFileCount >= MAX_DND_FILE_COUNT || dndTotalSize + file.size > MAX_DND_TOTAL_SIZE) {
+            dndTruncated = true;
+            resolve([]);
+            return;
+          }
+          dndFileCount += 1;
+          dndTotalSize += file.size;
           const relativePath = pathPrefix ? `${pathPrefix}/${file.name}` : file.name;
           resolve([{ file, relativePath }]);
         },
@@ -80,8 +95,13 @@ function readEntry(entry: FileSystemEntry, pathPrefix: string = ''): Promise<{ f
             return;
           }
           for (const e of entries) {
+            if (dndTruncated) break;
             const files = await readEntry(e, subPath);
             allFiles.push(...files);
+          }
+          if (dndTruncated) {
+            resolve(allFiles);
+            return;
           }
           readBatch();
         }, () => resolve(allFiles));
@@ -95,6 +115,11 @@ function readEntry(entry: FileSystemEntry, pathPrefix: string = ''): Promise<{ f
 
 /** Extract files from a drop event, grouping by folder */
 async function extractAndUpload(dataTransfer: DataTransfer) {
+  // 重置拖拽计数与截断标记
+  dndFileCount = 0;
+  dndTotalSize = 0;
+  dndTruncated = false;
+
   const items = dataTransfer.items;
 
   // Prefer webkitGetAsEntry for folder support.
@@ -131,12 +156,16 @@ async function extractAndUpload(dataTransfer: DataTransfer) {
     if (looseFiles.length > 0) {
       upload(looseFiles);
     }
-    return;
+  } else {
+    // Fallback: plain FileList
+    const files = Array.from(dataTransfer.files);
+    if (files.length > 0) upload(files);
   }
 
-  // Fallback: plain FileList
-  const files = Array.from(dataTransfer.files);
-  if (files.length > 0) upload(files);
+  // 超限提示：数量或大小超过上限时，readEntry 已截断收集，提醒用户分批上传
+  if (dndTruncated) {
+    window.$message?.warning(`拖入文件过多，仅上传前 ${MAX_DND_FILE_COUNT} 个文件或达大小上限，请分批上传`);
+  }
 }
 
 function handleDrop(e: DragEvent) {

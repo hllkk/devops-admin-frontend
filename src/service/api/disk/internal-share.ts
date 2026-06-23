@@ -42,7 +42,7 @@ export function fetchGetFileShareTargets(fileId: number) {
 
 /** 获取我发起的共享列表 */
 export function fetchGetMySharedList(params: { pageNum: number; pageSize: number }) {
-  return request<{ total: number; rows: any[]; pageNum: number; pageSize: number }>({
+  return request<{ total: number; rows: Api.Disk.SharedWithMeItem[]; pageNum: number; pageSize: number }>({
     url: '/share/internal/my-shared',
     method: 'post',
     data: params
@@ -73,7 +73,7 @@ export function fetchGetSharedFolderContents(params: {
   sortBy?: string;
   sortOrder?: string;
 }) {
-  return request<{ list: any[]; total: number; page: number; size: number }>({
+  return request<{ list: Api.Disk.BackendFileItem[]; total: number; page: number; size: number }>({
     url: '/share/internal/folder',
     method: 'post',
     data: params

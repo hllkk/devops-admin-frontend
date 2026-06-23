@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { useRouterPush } from '@/hooks/common/router';
+import { useModuleHome } from '@/hooks/common/router';
+import { useRouteStore } from '@/store/modules/route';
 import { $t } from '@/locales';
 
 defineOptions({ name: 'ExceptionBase' });
@@ -20,7 +21,8 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const { routerPushByKey } = useRouterPush();
+const routeStore = useRouteStore();
+const { toModuleHome } = useModuleHome();
 
 const iconMap: Record<ExceptionType, string> = {
   '403': 'no-permission',
@@ -36,7 +38,7 @@ const icon = computed(() => iconMap[props.type]);
     <div class="flex text-400px text-primary">
       <SvgIcon :local-icon="icon" />
     </div>
-    <NButton type="primary" @click="routerPushByKey('root')">{{ $t('common.backToHome') }}</NButton>
+    <NButton type="primary" @click="toModuleHome(routeStore.exceptionSourceModule)">{{ $t('common.backToHome') }}</NButton>
   </div>
 </template>
 

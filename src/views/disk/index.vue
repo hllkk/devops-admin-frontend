@@ -142,8 +142,13 @@ function mergeAndSort(mounts: Api.Disk.FileItem[], realFiles: Api.Disk.FileItem[
 /** 搜索关键词缓存（传递到 getFileList / loadMoreFiles 的 keyword 参数） */
 const searchKeyword = ref<string | null>(null);
 
+/** 文件列表请求序号：连续搜索/切换目录时丢弃过期响应，防止旧请求覆盖新结果 */
+let listRequestId = 0;
+
 /** 首次加载：清空缓存，请求第一页（含挂载项） */
 async function getFileList() {
+  // 请求序号：丢弃过期响应（连续搜索/切换目录时，旧请求返回不再覆盖新数据）
+  const reqId = ++listRequestId;
   startLoading();
 
   // 清空缓存
@@ -166,6 +171,12 @@ async function getFileList() {
     sortOrder,
     includeMounts: true
   });
+
+  // 丢弃过期响应（搜索词或目录已变化）
+  if (reqId !== listRequestId) {
+    endLoading();
+    return;
+  }
 
   if (!error && data) {
     const mapped = mapBackendFileList(data);
@@ -198,6 +209,8 @@ async function getFileList() {
 async function loadMoreFiles() {
   if (!hasMore.value) return;
 
+  // 记录当前列表序号，若期间 getFileList 重置了列表则丢弃本次分页响应
+  const reqId = listRequestId;
   currentRealPage.value++;
 
   const fileType = diskStore.currentFileType === 'all' ? null : diskStore.currentFileType;
@@ -214,6 +227,9 @@ async function loadMoreFiles() {
     sortOrder,
     includeMounts: false
   });
+
+  // 列表已被 getFileList 重置（搜索/切目录），丢弃本次分页响应
+  if (reqId !== listRequestId) return;
 
   if (!error && data) {
     const mapped = mapBackendFileList(data);

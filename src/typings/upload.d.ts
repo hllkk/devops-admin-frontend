@@ -150,7 +150,8 @@ declare namespace Api {
     /** 上传任务（引擎内部使用） */
     type UploadTask = {
       taskId: string;
-      file: File;
+      /** 上传文件；任务结束后由引擎置 null 以释放引用，避免 taskMap 长期持有 File 导致内存累积 */
+      file: File | null;
       fileName: string;
       fileSize: number;
       fileType: string;

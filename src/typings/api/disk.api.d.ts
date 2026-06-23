@@ -585,6 +585,41 @@ declare namespace Api {
     /** 回收站列表响应 */
     type RecycleList = Common.PaginatingQueryRecord<RecycleItem>;
 
+    /**
+     * 后端 TrashListResponse 原始字段（/file-meta/trash/list 响应项）
+     * 对应 backend model/disk Trash，JSON tag 一一对应
+     */
+    type BackendTrashItem = {
+      /** 回收站记录ID */
+      id: string;
+      /** 原文件ID */
+      fileId: number;
+      /** 文件名 */
+      name: string;
+      /** 是否为文件夹 */
+      isDir: boolean;
+      /** MIME 类型 */
+      contentType: string;
+      /** 扩展名（不含点号） */
+      suffix: string;
+      /** 文件大小（字节） */
+      size: number;
+      /** 移入回收站时间 */
+      trashedAt: string;
+      /** 原始路径 */
+      originalPath: string;
+      /** 计划彻底清理时间 */
+      purgeAt?: string | null;
+    };
+
+    /** 后端回收站列表响应（/file-meta/trash/list） */
+    type BackendTrashListResponse = {
+      list: BackendTrashItem[];
+      total: number;
+      page?: number;
+      size?: number;
+    };
+
     /** 收藏列表请求参数 */
     type FavoriteListParams = {
       pageNum: number;

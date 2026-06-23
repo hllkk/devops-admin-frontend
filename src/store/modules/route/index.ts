@@ -101,6 +101,15 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
       menus.value = getGlobalMenusByAuthRoutes(filterRoutesByModule(sortRoutes, module));
     }
   }
+
+  /** Source module snapshot before navigating to an exception page */
+  const exceptionSourceModule = ref<RouteModule | null>(null);
+
+  /** Set exception source module (called from route guard) */
+  function setExceptionSourceModule(m: RouteModule | null) {
+    exceptionSourceModule.value = m;
+  }
+
   const searchMenus = computed(() => transformMenuToSearchMenus(menus.value));
 
   /** Get global menus */
@@ -375,6 +384,8 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
     onRouteSwitchWhenNotLoggedIn,
     currentModule,
     setCurrentModule,
+    exceptionSourceModule,
+    setExceptionSourceModule,
     authRoutes
   };
 });

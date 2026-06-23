@@ -1,10 +1,9 @@
 import { isCancel } from 'axios';
 import type { AxiosError } from 'axios';
-import SparkMD5 from 'spark-md5';
 import { fetchCheckFile, fetchMergeChunks, fetchUploadChunk } from '@/service/api/disk/file';
 import { useDiskStore } from '@/store/modules/disk';
 import { useAuthStore } from '@/store/modules/auth';
-import { computeFileHash, computeQuickHash, computeStrongHash } from './instant-check';
+import { computeChunkHash, computeFileHash, computeQuickHash, computeStrongHash } from './instant-check';
 import { onSSEMessage } from '@/hooks/common/sse';
 import {
   getChunkSize,
@@ -409,12 +408,12 @@ export class UploaderEngine {
 
   private async quickCheckPhase(task: Api.Disk.UploadTask): Promise<boolean> {
     try {
-      const quickHash = await computeQuickHash(task.file);
+      const quickHash = await computeQuickHash(task.file!);
       task.quickHash = quickHash;
 
       // strongHash 失败不影响主流程（crypto.subtle 在非 HTTPS 环境可能不可用）
       try {
-        task.strongHash = await computeStrongHash(task.file);
+        task.strongHash = await computeStrongHash(task.file!);
       } catch {
         // strongHash 可选，跳过
       }
@@ -453,7 +452,7 @@ export class UploaderEngine {
     const abortController = new AbortController();
     task.abortController = abortController;
 
-    const fileHash = await computeFileHash(task.file, undefined, abortController.signal);
+    const fileHash = await computeFileHash(task.file!, undefined, abortController.signal);
 
     if (abortController.signal.aborted) {
       throw new Error('Aborted');
@@ -539,7 +538,7 @@ export class UploaderEngine {
     const currentDirectory = getCurrentDirectory();
 
     const { error } = await fetchUploadChunk({
-      file: task.file,
+      file: task.file!,
       identifier: task.fileHash,
       chunkNumber: 0,
       chunkSize: task.fileSize,
@@ -646,15 +645,11 @@ export class UploaderEngine {
       if (signal.aborted) return;
 
       try {
-        const chunk = sliceChunk(task.file, chunkIndex, chunkSize);
+        const chunk = sliceChunk(task.file!, chunkIndex, chunkSize);
         const currentChunkSize = chunk.size;
 
-        // 计算单个分片的 MD5，用于服务端写入后校验
-        const chunkArrayBuffer = await chunk.arrayBuffer();
-
-        const chunkSpark = new SparkMD5.ArrayBuffer();
-        chunkSpark.append(chunkArrayBuffer);
-        const chunkHash = chunkSpark.end();
+        // 计算单个分片的 MD5（Web Worker，不阻塞主线程），用于服务端写入后校验
+        const chunkHash = await computeChunkHash(chunk);
 
         // Record chunk hash
         if (task.chunkHashes) {
@@ -894,6 +889,9 @@ export class UploaderEngine {
     const task = this.taskMap.get(taskId);
     if (task) {
       task.abortController = undefined;
+      // 释放 File 引用：任务已结束（完成/失败/取消），不再需要原始文件对象，
+      // 置 null 让 GC 回收，避免 taskMap 长期持有大量已完成任务的 File 导致内存累积
+      task.file = null;
     }
     this.schedule();
   }
