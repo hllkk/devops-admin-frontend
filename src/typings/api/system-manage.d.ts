@@ -337,5 +337,18 @@ declare namespace Api {
       page: number;
       pageSize: number;
     }
+
+    // 企微组织架构同步结果
+    interface WecomSyncResult {
+      deptTotal: number;
+      deptCreated: number;
+      deptUpdated: number;
+      deptSkipped: number;
+      userTotal: number;
+      userCreated: number;
+      userUpdated: number;
+      userRestored: number;
+      userSkipped: number;
+    }
   }
 }
