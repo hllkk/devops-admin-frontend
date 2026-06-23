@@ -161,6 +161,9 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
       storeTokenExpiry(data.expiresAt);
 
       await routeStore.initAuthRoute();
+      // 根据首页路由所属模块同步 currentModule，保证登录后菜单与首页模块一致
+      // （避免 currentModule 默认 admin 与 home=disk 错位，导致菜单显示错误模块）
+      routeStore.setCurrentModule(routeStore.routeHome === 'disk' ? 'disk' : 'admin');
       const isClear = checkTabClear();
       let needRedirect = redirect;
 
@@ -221,6 +224,8 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
       storeTokenExpiry(expiresAt);
 
       await routeStore.initAuthRoute();
+      // 根据首页路由所属模块同步 currentModule，保证登录后菜单与首页模块一致
+      routeStore.setCurrentModule(routeStore.routeHome === 'disk' ? 'disk' : 'admin');
 
       const isClear = checkTabClear();
       let needRedirect = redirect;

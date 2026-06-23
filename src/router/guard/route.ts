@@ -145,6 +145,13 @@ function getAccessibleModules(routes: ElegantConstRoute[]): Set<RouteModule> {
  * Check if route belongs to a module the user has access to (defense-in-depth)
  */
 function isRouteModuleAccessible(to: RouteLocationNormalized, routeStore: ReturnType<typeof useRouteStore>): boolean {
+  // Fixed auth routes (disk / user-center / notice-user 等) 对所有已认证用户可用，免模块检查。
+  // 与 isRouteAuthorized 的 fixed 豁免(:100)保持一致，避免 fixed 路由因 accessibleModules
+  // 运行时未收集到对应模块而被误判为模块不可达，导致登录后跳首页 /403。
+  if (to.meta.fixed) {
+    return true;
+  }
+
   const { module: routeModule, modules: routeModules } = to.meta;
 
   // Global routes (no module info) are always accessible
