@@ -104,7 +104,10 @@ function expandAutoLayoutRoute(route: ElegantConstRoute): ElegantConstRoute[] {
       component: `layout.${MODULE_LAYOUT_MAP[module]}$view.${viewName}` as ElegantConstRoute['component'],
       meta: {
         ...routeMeta,
-        module
+        module,
+        // Override modules to only contain the current module, so filterRouteByModule
+        // matches this specific variant only (not all expanded variants at once)
+        modules: [module]
       }
     } as ElegantConstRoute));
   }
