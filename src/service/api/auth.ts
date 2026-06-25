@@ -63,3 +63,12 @@ export function fetchQrCodeStatus(sceneId: string) {
     params: { sceneId }
   });
 }
+
+/** Fetch WeChat Work WebView silent-login OAuth URL (returns OAuth URL + one-time state) */
+export function fetchWecomWebviewLogin(redirect?: string) {
+  return request<Api.Auth.WecomWebviewLoginInfo>({
+    url: "/auth/wecomWebviewLogin",
+    method: "get",
+    params: redirect ? { redirect } : undefined
+  });
+}

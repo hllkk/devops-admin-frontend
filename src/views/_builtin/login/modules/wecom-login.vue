@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { nextTick, onUnmounted, ref, watch } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import QRCode from 'qrcode';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { useThemeStore } from '@/store/modules/theme';
+import { useSystemConfigStore } from '@/store/modules/system-config';
 import { $t } from '@/locales';
-import { fetchWecomQrCode, fetchQrCodeStatus } from '@/service/api';
+import { fetchQrCodeStatus, fetchWecomQrCode, fetchWecomWebviewLogin } from '@/service/api';
+import { isWecomWebview } from '@/utils/agent';
 
 defineOptions({
   name: 'WecomLogin'
@@ -14,6 +16,11 @@ defineOptions({
 const router = useRouter();
 const authStore = useAuthStore();
 const themeStore = useThemeStore();
+const systemConfigStore = useSystemConfigStore();
+
+// WebView 检测（一次会话内不变）
+const isWebview = isWecomWebview();
+const webviewRedirecting = ref(false);
 
 const oauthUrl = ref('');
 const sceneId = ref('');
@@ -52,6 +59,27 @@ async function renderQrCode() {
     await QRCode.toCanvas(qrCanvas.value, oauthUrl.value, getQrOptions());
   } catch (e) {
     console.error('QR码渲染失败:', e);
+  }
+}
+
+/** WebView 免登失败：重置跳转态并展示错误（与 QR 加载失败共用同一文案） */
+function failWebviewLogin() {
+  webviewRedirecting.value = false;
+  errorMessage.value = $t('page.login.wecomLogin.qrCodeLoadFailed');
+}
+
+/** WebView 免登：企微客户端内自动跳转 OAuth 授权链接 */
+async function initWebviewLogin() {
+  webviewRedirecting.value = true;
+  try {
+    const { data, error } = await fetchWecomWebviewLogin();
+    if (error || !data) {
+      failWebviewLogin();
+      return;
+    }
+    window.location.replace(data.oauthUrl);
+  } catch {
+    failWebviewLogin();
   }
 }
 
@@ -167,13 +195,23 @@ onUnmounted(() => {
   stopCountdown();
 });
 
-loadQrCode();
+if (isWebview && systemConfigStore.isWecomEnabled()) {
+  onMounted(initWebviewLogin);
+} else {
+  loadQrCode();
+}
 </script>
 
 <template>
   <div class="flex-col-center gap-24px">
+    <!-- WebView 免登跳转中 -->
+    <div v-if="webviewRedirecting" class="flex-col-center h-340px">
+      <NSpin size="large" />
+      <p class="mt-12px text-14px text-gray-400">企业微信登录中…</p>
+    </div>
+
     <!-- 加载中 -->
-    <div v-if="loading" class="flex-col-center h-340px">
+    <div v-else-if="loading" class="flex-col-center h-340px">
       <NSpin size="large" />
       <p class="mt-12px text-14px text-gray-400">{{ $t('page.login.wecomLogin.loading') }}</p>
     </div>
@@ -242,7 +280,7 @@ loadQrCode();
       </div>
     </div>
 
-    <NButton quaternary size="small" @click="goBack">
+    <NButton v-if="!webviewRedirecting" quaternary size="small" @click="goBack">
       <template #icon>
         <SvgIcon icon="mdi:arrow-left" />
       </template>
@@ -252,6 +290,7 @@ loadQrCode();
 </template>
 
 <style scoped>
+
 .qr-card {
   width: 280px;
   background: white;

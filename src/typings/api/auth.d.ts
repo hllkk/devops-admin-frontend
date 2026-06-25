@@ -23,6 +23,10 @@ declare namespace Api {
       expiresAt?: number;
     }
 
+    interface WecomWebviewLoginInfo {
+      oauthUrl: string;
+    }
+
     /** Combined login + user info response */
     interface LoginWithInfoResponse {
       /** token 走 HttpOnly cookie 不下发；expiresAt 用于前端主动刷新调度 */
