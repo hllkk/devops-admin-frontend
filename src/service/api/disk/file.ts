@@ -386,3 +386,12 @@ export function fetchRenewStreamToken(token: string) {
     data: { token }
   });
 }
+
+/** 取消上传，清理服务端分片 (DELETE /file-meta/upload) */
+export function fetchCancelUploadChunks(data: { identifier: string }) {
+  return request<boolean>({
+    url: '/file-meta/upload',
+    method: 'delete',
+    data
+  });
+}

@@ -1,6 +1,6 @@
 import { isCancel } from 'axios';
 import type { AxiosError } from 'axios';
-import { fetchCheckFile, fetchMergeChunks, fetchUploadChunk } from '@/service/api/disk/file';
+import { fetchCancelUploadChunks, fetchCheckFile, fetchMergeChunks, fetchUploadChunk } from '@/service/api/disk/file';
 import { useDiskStore } from '@/store/modules/disk';
 import { useAuthStore } from '@/store/modules/auth';
 import { computeChunkHash, computeFileHash, computeQuickHash, computeStrongHash } from './instant-check';
@@ -204,6 +204,14 @@ export class UploaderEngine {
     this.speedTrackers.delete(task.taskId);
 
     getStore().removeTransferItem(task.taskId);
+
+    // fire-and-forget 清理服务端分片（失败由 24h 过期机制兜底）
+    const identifier = task.quickHash || task.fileHash;
+    if (identifier) {
+      fetchCancelUploadChunks({ identifier }).catch(() => {
+        // 网络失败不做处理
+      });
+    }
   }
 
   /** Retry a failed task */
