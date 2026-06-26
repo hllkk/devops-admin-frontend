@@ -27,6 +27,24 @@ const RETRY_BASE_DELAY = 1000;
 /** Speed tracking window in ms — longer window gives smoother results */
 const SPEED_WINDOW = 3000;
 
+/** 判断错误是否可重试：4xx 确定性业务错误不重试，5xx/网络超时重试 */
+function isRetryableError(error: unknown): boolean {
+  if (isCancel(error)) return false;
+  const { response } = error as AxiosError;
+  const status = response?.status;
+  // 408（请求超时）和 429（限流）仍可重试
+  if (status && status >= 400 && status < 500 && status !== 408 && status !== 429) {
+    return false;
+  }
+  return true;
+}
+
+/** 带 jitter 的指数退避延迟 */
+function retryDelay(attempt: number): number {
+  const base = RETRY_BASE_DELAY * 2 ** attempt;
+  return base * (0.8 + Math.random() * 0.4); // ±20% jitter
+}
+
 /** EMA smoothing factor for speed — lower = smoother, higher = more responsive */
 const SPEED_EMA_ALPHA = 0.25;
 
@@ -708,9 +726,11 @@ export class UploaderEngine {
 
         lastError = new Error(getErrorMessage(error, '分片上传失败'));
 
+        // 4xx 确定性错误（非 408/429）立即失败，不重试
+        if (!isRetryableError(error)) break;
+
         if (attempt < CHUNK_MAX_RETRIES) {
-          const delay = RETRY_BASE_DELAY * 2 ** attempt; // 1s, 2s, 4s
-          await sleep(delay);
+          await sleep(retryDelay(attempt));
         }
       }
     }
@@ -729,8 +749,8 @@ export class UploaderEngine {
     // 监听后端 SSE 合并进度 — 后端使用 identifier 或 uploadId 发送进度
     const sseMatchId = task.fileHash || task.quickHash;
     const offSSE = onSSEMessage('merge_progress', msg => {
-      const data = msg.data as { identifier?: string; progress?: number; phase?: string } | undefined;
-      if (data && data.identifier === sseMatchId && typeof data.progress === 'number') {
+      const data = msg.data as { identifier?: string; userId?: number; progress?: number; phase?: string } | undefined;
+      if (data && data.identifier === sseMatchId && data.userId === Number(useAuthStore().userInfo.userId) && typeof data.progress === 'number') {
         task.progress = data.progress;
         this.syncToStore(task);
       }
@@ -767,9 +787,11 @@ export class UploaderEngine {
       } catch (error: unknown) {
         lastError = new Error(getErrorMessage(error, '合并分片失败'));
 
+        // 4xx 确定性错误立即失败，不重试
+        if (!isRetryableError(error)) break;
+
         if (attempt < MERGE_MAX_RETRIES) {
-          const delay = RETRY_BASE_DELAY * 2 ** attempt;
-          await sleep(delay);
+          await sleep(retryDelay(attempt));
         }
       }
     }

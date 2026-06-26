@@ -19,7 +19,16 @@ function restoreTransferList(): Api.Disk.TransferItem[] {
 }
 
 function persistTransferList(list: Api.Disk.TransferItem[]) {
-  localStg.set(STORAGE_KEY, list);
+  // 仅持久化非敏感聚合字段，过滤掉 fileName/folderName/error 等可能含敏感信息的元数据
+  const safe = list.map(item => ({
+    transferId: item.transferId,
+    status: item.status,
+    progress: item.progress,
+    totalSize: item.totalSize,
+    transferredSize: item.transferredSize,
+    transferType: item.transferType
+  }));
+  localStg.set(STORAGE_KEY, safe as unknown as Api.Disk.TransferItem[]);
 }
 
 export const useDiskStore = defineStore(SetupStoreId.Disk, () => {
