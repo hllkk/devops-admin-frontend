@@ -48,7 +48,18 @@ export async function getChunkSizes(): Promise<{ small: number; medium: number; 
 /** 获取并发数配置（异步） */
 export async function getConcurrency(): Promise<number> {
   const config = await loadUploadConfig();
-  return config.chunkConcurrency || 6;
+  const base = config.chunkConcurrency || 6;
+  const mem = getDeviceMemoryGB();
+  // 低内存设备降低并发：<2GB → 1, <4GB → 2, ≥4GB → base
+  if (mem < 2) return 1;
+  if (mem < 4) return Math.min(2, base);
+  return base;
+}
+
+/** 读取设备内存（GB），不可用时默认 4GB */
+function getDeviceMemoryGB(): number {
+  const nav = navigator as Navigator & { deviceMemory?: number };
+  return nav.deviceMemory ?? 4;
 }
 
 /** 动态分片策略：根据文件大小和后端配置确定分片大小 */

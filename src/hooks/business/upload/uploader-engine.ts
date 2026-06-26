@@ -131,6 +131,9 @@ export class UploaderEngine {
     }
   > = new Map();
 
+  /** Throttle timer for per-chunk progress sync (200ms batch window) */
+  private _syncTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+
   constructor(maxConcurrent = 3) {
     this.maxConcurrent = maxConcurrent;
   }
@@ -717,9 +720,15 @@ export class UploaderEngine {
         // Suppress progress update if task was paused mid-flight
         if (signal.aborted) return;
 
-        this.recalcChunkProgress(task);
-        this.updateSpeed(task, task.transferredSize);
-        this.syncToStore(task);
+        // Throttle per-chunk progress sync: 200ms 内最多触发一次 store 更新
+        const tid = this._syncTimers.get(task.taskId);
+        if (tid) clearTimeout(tid);
+        this._syncTimers.set(task.taskId, setTimeout(() => {
+          this._syncTimers.delete(task.taskId);
+          this.recalcChunkProgress(task);
+          this.updateSpeed(task, task.transferredSize);
+          this.syncToStore(task);
+        }, 200));
         return;
       } catch (error: unknown) {
         if (isCancel(error) || signal.aborted) return;
@@ -756,12 +765,16 @@ export class UploaderEngine {
       }
     });
 
+    // 为合并请求创建独立的 AbortController，使取消/暂停能中止合并
+    task.abortController = new AbortController();
+
     const userId = getUserId();
     const currentDirectory = getCurrentDirectory();
 
     let lastError: Error | undefined;
 
     for (let attempt = 0; attempt <= MERGE_MAX_RETRIES; attempt += 1) {
+      if (task.abortController.signal.aborted) break;
       try {
         const { error } = await fetchMergeChunks({
           identifier: task.fileHash,

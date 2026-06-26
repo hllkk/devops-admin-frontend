@@ -164,7 +164,8 @@ export function fetchMergeChunks(data: Api.Disk.MergeChunksParams) {
     url: '/file-meta/merge',
     method: 'post',
     data,
-    timeout: 15 * 60 * 1000
+    timeout: 15 * 60 * 1000,
+    signal: (data as Record<string, unknown>).signal as AbortSignal | undefined
   });
 }
 
