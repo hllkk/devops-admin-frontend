@@ -191,6 +191,7 @@ const routeMap: RouteMap = {
   "my-share": "/my-share",
   "notice-user": "/notice-user",
   "recent": "/recent",
+  "server": "/server",
   "share": "/share",
   "shared-with-me": "/shared-with-me",
   "trash": "/trash",

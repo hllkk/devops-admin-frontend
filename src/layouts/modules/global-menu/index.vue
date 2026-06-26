@@ -14,8 +14,17 @@ defineOptions({
   name: 'GlobalMenu'
 });
 
+/**
+ * Optional mode prop: passed in by BaseLayout as the module-overridden layout
+ * mode (effectiveLayoutMode), so a module with a fixed mode (e.g. server=horizontal)
+ * overrides the user's global theme. Falls back to the global theme when unset.
+ */
+const props = defineProps<{ mode?: UnionKey.ThemeLayoutMode }>();
+
 const appStore = useAppStore();
 const themeStore = useThemeStore();
+
+const activeLayoutMode = computed(() => props.mode ?? themeStore.layout.mode);
 
 const activeMenu = computed(() => {
   const menuMap: Record<UnionKey.ThemeLayoutMode, Component> = {
@@ -27,10 +36,10 @@ const activeMenu = computed(() => {
     'top-hybrid-header-first': TopHybridHeaderFirst
   };
 
-  return menuMap[themeStore.layout.mode];
+  return menuMap[activeLayoutMode.value];
 });
 
-const reRenderVertical = computed(() => themeStore.layout.mode === 'vertical' && appStore.isMobile);
+const reRenderVertical = computed(() => activeLayoutMode.value === 'vertical' && appStore.isMobile);
 </script>
 
 <template>

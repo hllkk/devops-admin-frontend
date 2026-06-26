@@ -7,7 +7,7 @@ import UserAvatar from '../../modules/global-header/components/user-avatar.vue';
 import MessageButton from '../../modules/global-header/components/message-button.vue';
 
 defineOptions({
-  name: 'DiskHeader'
+  name: 'WorkbenchHeader'
 });
 
 const appStore = useAppStore();

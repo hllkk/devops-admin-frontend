@@ -4,17 +4,19 @@ import type { RouteModule } from '@/typings/router.d.ts';
 /** Map from module name to the layout key in imports.ts */
 export const MODULE_LAYOUT_MAP: Record<RouteModule, string> = {
   admin: 'base',
-  disk: 'disk'
+  disk: 'disk',
+  server: 'base'
 };
 
 /** Map from module name to the home route key for tab initialization */
 export const MODULE_HOME_MAP: Record<RouteModule, string> = {
   admin: 'admin',
-  disk: 'disk'
+  disk: 'disk',
+  server: 'server'
 };
 
 /** All available modules — add new modules here */
-export const ALL_MODULES: RouteModule[] = ['admin', 'disk'];
+export const ALL_MODULES: RouteModule[] = ['admin', 'disk', 'server'];
 
 /** Shared page declaration — single source of truth */
 export interface SharedPageConfig {

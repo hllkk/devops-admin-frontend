@@ -412,7 +412,8 @@ export function filterMenusByModule(menus: App.Global.Menu[], _module: RouteModu
 /** Module home route mapping — each module maps to its home route key. */
 export const MODULE_HOME_MAP: Record<RouteModule, RouteKey> = {
   admin: 'admin',
-  disk: 'disk'
+  disk: 'disk',
+  server: 'server'
 };
 
 /**
@@ -434,6 +435,7 @@ export function resolveModuleFromRoute(route: ModuleResolvableRoute): RouteModul
   if (modules?.length) return modules[0] as RouteModule;
   const path = route.path ?? '';
   if (path.startsWith('/disk')) return 'disk';
+  if (path.startsWith('/server')) return 'server';
   if (path.startsWith('/admin') || path.startsWith('/manage')) return 'admin';
   return null;
 }

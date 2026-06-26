@@ -284,6 +284,7 @@ const local: App.I18n.Schema = {
     'iframe-page': 'Iframe',
     admin: 'Admin',
     disk: 'Disk',
+    server: 'Server',
     init: 'Init',
     spread: 'Share',
     about: 'About',

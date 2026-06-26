@@ -78,10 +78,15 @@ declare module 'vue-router' {
     module?: RouteModule;
     /** Route modules from backend API (dynamic mode), e.g. ["admin", "disk"] */
     modules?: string[];
+    /** Layout preset, controls the layout shell (tabs/footer/header). Defaults to 'standard'. Orthogonal to module. */
+    layoutPreset?: LayoutPreset;
     /** if set query parameters, it will be automatically carried when entering the route */
     query?: { key: string; value: string }[] | null;
   }
 }
 
 /** Route module type */
-type RouteModule = 'admin' | 'disk';
+type RouteModule = 'admin' | 'disk' | 'server';
+
+/** Layout preset type — controls layout shell appearance, orthogonal to module isolation */
+type LayoutPreset = 'standard' | 'workbench';

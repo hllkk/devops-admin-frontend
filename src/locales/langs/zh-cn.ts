@@ -280,6 +280,7 @@ const local: App.I18n.Schema = {
     'iframe-page': '外链页面',
     admin: '首页',
     disk: '网盘',
+    server: '服务器管理',
     init: '初始化',
     spread: '分享',
     about: '关于',

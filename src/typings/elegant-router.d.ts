@@ -45,6 +45,7 @@ declare module "@elegant-router/types" {
     "my-share": "/my-share";
     "notice-user": "/notice-user";
     "recent": "/recent";
+    "server": "/server";
     "share": "/share";
     "shared-with-me": "/shared-with-me";
     "trash": "/trash";
@@ -96,6 +97,7 @@ declare module "@elegant-router/types" {
     | "my-share"
     | "notice-user"
     | "recent"
+    | "server"
     | "share"
     | "shared-with-me"
     | "trash"
@@ -143,6 +145,7 @@ declare module "@elegant-router/types" {
     | "manage_user"
     | "my-share"
     | "recent"
+    | "server"
     | "share"
     | "shared-with-me"
     | "trash"

@@ -192,6 +192,13 @@ export function createRouteGuard(router: Router) {
       );
     }
 
+    // 按目标路由所属模块自动切换 currentModule（module 与 layout 解耦）。
+    // 置于 initRoute 之前：使 authRoutes 初始化时直接以正确 module 生成菜单，避免首次加载菜单错位。
+    const targetModule = resolveModuleFromRoute(to);
+    if (targetModule && targetModule !== routeStore.currentModule) {
+      routeStore.setCurrentModule(targetModule);
+    }
+
     const location = await initRoute(to);
 
     if (location) {

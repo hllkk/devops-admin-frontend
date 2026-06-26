@@ -68,7 +68,9 @@ export function setupElegantRouter() {
     layouts: {
       base: 'src/layouts/base-layout/index.vue',
       blank: 'src/layouts/blank-layout/index.vue',
-      disk: 'src/layouts/disk-layout/index.vue'
+      // 'disk' 复用 BaseLayout（workbench 预设由 useLayoutPreset 按路径识别）。
+      // 保留 disk key 以兼容后端动态路由下发的 component='layout.disk'。
+      disk: 'src/layouts/base-layout/index.vue'
     },
     routePathTransformer(routeName, routePath) {
       const key = routeName as RouteKey;

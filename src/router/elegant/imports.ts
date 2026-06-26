@@ -8,7 +8,7 @@ import type { LastLevelRouteKey, RouteLayout } from "@elegant-router/types";
 
 import BaseLayout from "@/layouts/base-layout/index.vue";
 import BlankLayout from "@/layouts/blank-layout/index.vue";
-import DiskLayout from "@/layouts/disk-layout/index.vue";
+import DiskLayout from "@/layouts/base-layout/index.vue";
 
 export const layouts: Record<RouteLayout, RouteComponent | (() => Promise<RouteComponent>)> = {
   base: BaseLayout,
@@ -44,6 +44,7 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   manage_user: () => import("@/views/manage/user/index.vue"),
   "my-share": () => import("@/views/my-share/index.vue"),
   recent: () => import("@/views/recent/index.vue"),
+  server: () => import("@/views/server/index.vue"),
   share: () => import("@/views/share/index.vue"),
   "shared-with-me": () => import("@/views/shared-with-me/index.vue"),
   trash: () => import("@/views/trash/index.vue"),

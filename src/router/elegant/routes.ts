@@ -310,6 +310,15 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
+    name: 'server',
+    path: '/server',
+    component: 'layout.base$view.server',
+    meta: {
+      title: 'server',
+      i18nKey: 'route.server'
+    }
+  },
+  {
     name: 'share',
     path: '/share',
     component: 'layout.base$view.share',
