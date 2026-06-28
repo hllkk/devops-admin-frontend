@@ -8,6 +8,16 @@ import { fetchResolvePath } from '@/service/api/disk/file';
 
 const STORAGE_KEY = 'diskTransferList' as const;
 
+/** 持久化的传输项（仅非敏感聚合字段，不含 fileName/folderName/error） */
+interface PersistedTransferItem {
+  transferId: string;
+  status: Api.Disk.TransferItem['status'];
+  progress: number;
+  totalSize: number;
+  transferredSize: number;
+  transferType: 'upload' | 'download';
+}
+
 function restoreTransferList(): Api.Disk.TransferItem[] {
   const saved = localStg.get(STORAGE_KEY);
   if (!saved || !Array.isArray(saved)) return [];
@@ -15,12 +25,26 @@ function restoreTransferList(): Api.Disk.TransferItem[] {
   // Page refresh discards all in-progress transfers.
   // Only completed items survive. When the user re-drags the same file,
   // the backend's CheckFileBeforeUpload detects existing chunks and resumes.
-  return saved.filter(item => item.status === 'completed');
+  // 持久化时已过滤敏感字段，恢复时补全默认值以满足 TransferItem 类型契约
+  return saved
+    .filter(item => item && item.status === 'completed')
+    .map(item => ({
+      transferId: item.transferId,
+      fileName: '历史记录', // 敏感字段未持久化，用占位符避免渲染空
+      fileType: '',
+      transferType: item.transferType ?? 'upload',
+      status: 'completed',
+      progress: 100,
+      transferredSize: item.totalSize,
+      totalSize: item.totalSize,
+      speed: 0,
+      remainingTime: 0
+    }));
 }
 
 function persistTransferList(list: Api.Disk.TransferItem[]) {
   // 仅持久化非敏感聚合字段，过滤掉 fileName/folderName/error 等可能含敏感信息的元数据
-  const safe = list.map(item => ({
+  const safe: PersistedTransferItem[] = list.map(item => ({
     transferId: item.transferId,
     status: item.status,
     progress: item.progress,

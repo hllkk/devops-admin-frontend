@@ -134,6 +134,15 @@ export class UploaderEngine {
   /** Throttle timer for per-chunk progress sync (200ms batch window) */
   private _syncTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
+  /** 清理指定任务的进度节流定时器（cancel/finish 调用，防幽灵任务与状态覆盖） */
+  private clearSyncTimer(taskId: string): void {
+    const tid = this._syncTimers.get(taskId);
+    if (tid) {
+      clearTimeout(tid);
+      this._syncTimers.delete(taskId);
+    }
+  }
+
   constructor(maxConcurrent = 3) {
     this.maxConcurrent = maxConcurrent;
   }
@@ -217,6 +226,9 @@ export class UploaderEngine {
   cancel(taskId: string): void {
     const task = this.taskMap.get(taskId);
     if (!task) return;
+
+    // 清理进度节流定时器，避免取消后定时器触发把任务重新加回列表（幽灵任务）
+    this.clearSyncTimer(taskId);
 
     task.abortController?.abort();
     this.taskMap.delete(task.taskId);
@@ -788,8 +800,9 @@ export class UploaderEngine {
           folder: task.folderName || '',
           override: task.override ?? false,
           uploadId: task.quickHash,
-          strongHash: task.strongHash
-        });
+          strongHash: task.strongHash,
+          signal: task.abortController.signal
+        } as Api.Disk.MergeChunksParams & { signal: AbortSignal });
 
         if (error) {
           throw new Error(getErrorMessage(error, '合并分片失败'));
@@ -927,6 +940,13 @@ export class UploaderEngine {
 
   /** Release an active slot and trigger scheduling */
   private finishTask(taskId: string): void {
+    // 任务结束前 flush 进度节流，确保最终状态同步到 store，避免定时器残留覆盖完成态
+    this.clearSyncTimer(taskId);
+    const flushTask = this.taskMap.get(taskId);
+    if (flushTask) {
+      this.recalcChunkProgress(flushTask);
+      this.syncToStore(flushTask);
+    }
     this.activePool.delete(taskId);
     this.speedTrackers.delete(taskId);
     const task = this.taskMap.get(taskId);

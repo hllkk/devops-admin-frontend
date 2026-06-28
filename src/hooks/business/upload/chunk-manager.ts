@@ -56,10 +56,14 @@ export async function getConcurrency(): Promise<number> {
   return base;
 }
 
-/** 读取设备内存（GB），不可用时默认 4GB */
+/** 读取设备内存（GB），不可用时默认 4GB；Safari 不暴露该属性 */
 function getDeviceMemoryGB(): number {
-  const nav = navigator as Navigator & { deviceMemory?: number };
-  return nav.deviceMemory ?? 4;
+  try {
+    const nav = navigator as Navigator & { deviceMemory?: number };
+    return nav.deviceMemory ?? 4;
+  } catch {
+    return 4;
+  }
 }
 
 /** 动态分片策略：根据文件大小和后端配置确定分片大小 */
