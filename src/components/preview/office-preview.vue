@@ -296,34 +296,35 @@ function onDocumentReady() {
   });
 }
 
-function getIframeDoc(): Document | null {
+/** 收集所有可访问的 OnlyOffice iframe document（跨域 iframe 会被跳过） */
+function getAllIframeDocs(): Document[] {
   const root = rootRef.value;
-  if (!root) {
+  if (!root) return [];
+  const docs: Document[] = [];
+  root.querySelectorAll('iframe').forEach(iframe => {
+    try {
+      const doc = iframe.contentWindow?.document;
+      if (doc) docs.push(doc);
+    } catch {
+      // 跨域 iframe 无法访问 document，跳过
+    }
+  });
+  return docs;
+}
+
+function getIframeDoc(): Document | null {
+  if (!rootRef.value) {
     console.warn('[OfficePreview] 组件根元素未挂载');
     return null;
   }
-  const iframes = root.querySelectorAll('iframe');
-  if (iframes.length === 0) {
-    return null;
-  }
-  for (let i = 0; i < iframes.length; i++) {
-    try {
-      const doc = iframes[i].contentWindow?.document;
-      if (doc) {
-        return doc;
-      }
-    } catch {
-      // cross-origin, try next
-    }
-  }
-  return null;
+  return getAllIframeDocs()[0] ?? null;
 }
 
 function waitForIframeAndInject() {
-  // 立即尝试一次
-  const doc = getIframeDoc();
-  if (doc) {
-    injectCustomUI(doc);
+  // 立即尝试一次 —— 对所有可访问的 iframe 注入自定义 UI
+  const docs = getAllIframeDocs();
+  if (docs.length > 0) {
+    docs.forEach(injectCustomUI);
     return;
   }
 
@@ -339,11 +340,11 @@ function waitForIframeAndInject() {
   const maxAttempts = 20;
   uiInjectionObserver = new MutationObserver(() => {
     attempt++;
-    const iframeDoc = getIframeDoc();
-    if (iframeDoc) {
+    const iframeDocs = getAllIframeDocs();
+    if (iframeDocs.length > 0) {
       uiInjectionObserver?.disconnect();
       uiInjectionObserver = null;
-      injectCustomUI(iframeDoc);
+      iframeDocs.forEach(injectCustomUI);
     } else if (attempt >= maxAttempts) {
       uiInjectionObserver?.disconnect();
       uiInjectionObserver = null;
@@ -354,34 +355,51 @@ function waitForIframeAndInject() {
 }
 
 function injectCustomUI(doc: Document) {
-  // 1. 隐藏 logo — 尝试多种选择器适配不同版本
-  const logoSelectors = ['.extra .logo', '#left-panel-logo', '.header-logo', '#box-doc-logo'];
-  for (const sel of logoSelectors) {
-    const el = doc.querySelector(sel);
-    if (el instanceof HTMLElement) {
-      el.style.display = 'none';
-    }
-  }
+  // 1. 注入自定义样式 —— 隐藏左上角 logo（避免误点击跳转 OnlyOffice 官网）与 about 按钮
+  injectCustomStyle(doc);
 
-  // 2. 隐藏 about 按钮
-  const aboutSelectors = ['#left-btn-about', '#slot-btn-about'];
-  for (const sel of aboutSelectors) {
-    const el = doc.querySelector(sel);
-    if (el instanceof HTMLElement) {
-      el.style.display = 'none';
-    }
-  }
-
-  // 3. 调整文档名称区域 padding
+  // 2. 调整文档名称区域 padding
   const docNameBox = doc.getElementById('id-box-doc-name');
   if (docNameBox instanceof HTMLElement) {
     docNameBox.style.paddingRight = '0';
   }
 
-  // 4. 注入历史版本按钮（仅当有历史版本时）
+  // 3. 注入历史版本按钮（仅当有历史版本时）
   if (hasHistoryVersion.value) {
     injectHistoryButton(doc);
   }
+}
+
+/**
+ * 向 OnlyOffice iframe 注入一段 <style>。
+ * 相比逐元素设内联 style，CSS 规则可覆盖后续异步渲染的元素，
+ * 配合 !important 与多版本选择器，确保 logo 被稳定隐藏且不可点击。
+ * 注意：customization.logo 配置仅商业版生效，社区版必须走此 CSS 注入。
+ */
+function injectCustomStyle(doc: Document) {
+  const styleId = 'devops-office-custom-ui';
+  if (doc.getElementById(styleId)) return; // 幂等，避免重复注入
+  const style = doc.createElement('style');
+  style.id = styleId;
+  style.textContent = `
+    /* 隐藏 OnlyOffice 左上角 logo —— 覆盖多版本选择器，pointer-events 阻止点击跳转官网 */
+    #header-logo,
+    .asc-logo,
+    a.logo,
+    .extra .logo,
+    #left-panel-logo,
+    .header-logo,
+    #box-doc-logo {
+      display: none !important;
+      pointer-events: none !important;
+    }
+    /* 隐藏 about 按钮 */
+    #left-btn-about,
+    #slot-btn-about {
+      display: none !important;
+    }
+  `;
+  (doc.head || doc.documentElement).appendChild(style);
 }
 
 function injectHistoryButton(doc: Document) {
