@@ -1,6 +1,6 @@
 import { isCancel } from 'axios';
 import type { AxiosError } from 'axios';
-import { fetchCancelUploadChunks, fetchCheckFile, fetchMergeChunks, fetchUploadChunk } from '@/service/api/disk/file';
+import { fetchCancelUploadChunks, fetchCheckFile, fetchMergeChunks, fetchUploadChunk, fetchVerifyCrossUserInstantUpload } from '@/service/api/disk/file';
 import { useDiskStore } from '@/store/modules/disk';
 import { useAuthStore } from '@/store/modules/auth';
 import { computeChunkHash, computeFileHash, computeQuickHash, computeStrongHash } from './instant-check';
@@ -476,8 +476,40 @@ export class UploaderEngine {
         folderPath: task.folderName
       });
 
-      return data?.pass === true && data?.exist === true;
+      // 同用户秒传命中
+      if (data?.pass === true && data?.exist === true) return true;
+      // 跨用户秒传待验证：上传首尾采样由服务端实测哈希，通过则秒传成功
+      if (data?.crossUserVerify) {
+        return await this.verifyCrossUserPhase(task, data.crossUserVerify);
+      }
+      return false;
     } catch {
+      return false;
+    }
+  }
+
+  /** 跨用户秒传实测验证：上传首尾各 2MB 采样由服务端实测哈希，通过则复用（信任锚服务端化） */
+  private async verifyCrossUserPhase(task: Api.Disk.UploadTask, info: Api.Disk.CrossUserVerifyInfo): Promise<boolean> {
+    try {
+      const SAMPLE = 2 * 1024 * 1024;
+      const file = task.file!;
+      const head = file.slice(0, Math.min(SAMPLE, file.size));
+      const tail = file.size > SAMPLE ? file.slice(file.size - SAMPLE) : new Blob();
+      await fetchVerifyCrossUserInstantUpload({
+        head,
+        tail,
+        userId: getUserId(),
+        fileId: info.fileId,
+        filename: task.fileName,
+        currentDirectory: getCurrentDirectory(),
+        relativePath: task.relativePath || task.fileName,
+        isFolder: !!task.folderId,
+        folderPath: task.folderName,
+        fileSize: task.fileSize
+      });
+      return true;
+    } catch {
+      // 验证失败/网络错误 → 降级正常上传
       return false;
     }
   }

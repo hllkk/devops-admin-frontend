@@ -65,6 +65,20 @@ declare namespace Api {
       upload: boolean;
       /** 是否所有分片已上传完毕，可以合并 */
       merge: boolean;
+      /** 跨用户秒传待验证信息：存在则需上传首尾采样由服务端实测后才复用（信任锚服务端化） */
+      crossUserVerify?: CrossUserVerifyInfo;
+    };
+
+    /** 跨用户秒传待验证信息（匹配后端 CrossUserVerifyInfo） */
+    type CrossUserVerifyInfo = {
+      /** 源文件(他人)ID */
+      fileId: number;
+      /** 文件大小 */
+      size: number;
+      /** 源文件快速指纹 */
+      quickHash: string;
+      /** 源文件强指纹 */
+      strongHash: string;
     };
 
     /** 分片上传参数 (匹配后端 FileUploadRequest form fields) */

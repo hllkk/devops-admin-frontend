@@ -149,6 +149,44 @@ export function fetchUploadChunk(data: Api.Disk.ChunkUploadParams) {
   });
 }
 
+/** 跨用户秒传实测验证 (POST /file-meta/verifyCrossUserInstantUpload) — 上传首尾采样由服务端实测哈希 */
+export function fetchVerifyCrossUserInstantUpload(params: {
+  head: Blob;
+  tail: Blob;
+  userId: number;
+  fileId: number;
+  filename: string;
+  currentDirectory: string;
+  relativePath: string;
+  isFolder: boolean;
+  folderPath?: string;
+  fileSize: number;
+  override?: boolean;
+}) {
+  const formData = new FormData();
+  formData.append('head', params.head);
+  formData.append('tail', params.tail);
+  formData.append('userId', String(params.userId));
+  formData.append('fileId', String(params.fileId));
+  formData.append('filename', params.filename);
+  formData.append('currentDirectory', params.currentDirectory);
+  formData.append('relativePath', params.relativePath);
+  formData.append('fileSize', String(params.fileSize));
+  if (params.isFolder) formData.append('isFolder', 'true');
+  if (params.folderPath) formData.append('folderPath', params.folderPath);
+  if (params.override) formData.append('override', 'true');
+
+  return request<null>({
+    url: '/file-meta/verifyCrossUserInstantUpload',
+    method: 'post',
+    data: formData,
+    timeout: 60 * 1000,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+}
+
 /** 批量检查分片是否已存在于服务端去重池 (POST /file-meta/check-chunks) */
 export function fetchCheckChunks(chunks: { index: number; hash: string }[]) {
   return request<Api.Disk.CheckChunksResponse>({
