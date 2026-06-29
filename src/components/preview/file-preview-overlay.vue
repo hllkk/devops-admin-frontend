@@ -45,9 +45,6 @@ const previewCategory = computed(() => {
   return getPreviewCategory(props.file.fileName);
 });
 
-// 文档保存状态（OnlyOffice）
-const docSaved = ref(true);
-const showSaveDialog = ref(false);
 const loading = ref(true);
 
 // 代码/Markdown 内容
@@ -120,7 +117,6 @@ async function loadTextContent() {
 // 初始化预览
 async function initPreview() {
   loading.value = true;
-  docSaved.value = true;
   codeContent.value = '';
   showVideoPreview.value = false;
   showAudioPreview.value = false;
@@ -280,10 +276,6 @@ function handlePdfReady() {
   loading.value = false;
 }
 
-function handleOfficeEdit(saved: boolean) {
-  docSaved.value = saved;
-}
-
 function handleOfficeReady() {
   loading.value = false;
 }
@@ -294,12 +286,6 @@ function handleOfficeError(message: string) {
 }
 
 function beforeClose() {
-  // 只对 Office 文档检查保存状态
-  if (!docSaved.value && previewCategory.value === 'office') {
-    showSaveDialog.value = true;
-    return;
-  }
-
   // 关闭各预览组件
   showVideoPreview.value = false;
   showAudioPreview.value = false;
@@ -307,16 +293,8 @@ function beforeClose() {
   close();
 }
 
-function discardAndClose() {
-  showSaveDialog.value = false;
-  showVideoPreview.value = false;
-  showAudioPreview.value = false;
-  close();
-}
-
 function close() {
   loading.value = true;
-  docSaved.value = true;
   codeContent.value = '';
   emit('update:visible', false);
   emit('close');
@@ -346,21 +324,6 @@ onUnmounted(() => {
 
 <template>
   <Teleport to="body">
-    <!-- Save confirmation dialog -->
-    <NDialog
-      v-if="showSaveDialog"
-      v-model:show="showSaveDialog"
-      preset="dialog"
-      title="确认关闭"
-      content="文档有未保存的修改，是否放弃修改并关闭？"
-      positive-text="放弃修改"
-      negative-text="取消"
-      type="warning"
-      z-index="2000"
-      @positive-click="discardAndClose"
-      @negative-click="showSaveDialog = false"
-    />
-
     <!-- 图片预览 - 使用 v-viewer 全屏模式 -->
     <ImagePreview ref="imagePreviewRef" />
 
@@ -440,7 +403,6 @@ onUnmounted(() => {
           v-if="previewCategory === 'office'"
           :file-id="file?.fileId"
           @ready="handleOfficeReady"
-          @edit="handleOfficeEdit"
           @close="beforeClose"
           @error="handleOfficeError"
         />
