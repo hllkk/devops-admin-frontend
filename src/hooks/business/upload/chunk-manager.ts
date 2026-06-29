@@ -66,10 +66,22 @@ function getDeviceMemoryGB(): number {
   }
 }
 
+/**
+ * 整文件 vs 分片上传的切换阈值（字节），按设备内存动态：
+ * 低内存设备更早切入分片，避免单次请求把整个文件读入内存。
+ * 与 getConcurrency 的设备感知策略保持一致。
+ */
+function getChunkThresholdBytes(): number {
+  const mem = getDeviceMemoryGB();
+  if (mem < 2) return 5 * MB; // 低内存设备(移动端常见)：5MB 即分片
+  if (mem < 4) return 8 * MB; // 中等：8MB
+  return 10 * MB; // 内存充裕：10MB（原默认）
+}
+
 /** 动态分片策略：根据文件大小和后端配置确定分片大小 */
 export async function getChunkSize(fileSize: number): Promise<number> {
   const sizes = await getChunkSizes();
-  if (fileSize < 10 * MB) return 0;
+  if (fileSize < getChunkThresholdBytes()) return 0;
   if (fileSize < 100 * MB) return sizes.small * MB;
   if (fileSize < 1024 * MB) return sizes.medium * MB;
   if (fileSize < 5 * 1024 * MB) return sizes.large * MB;
@@ -78,7 +90,7 @@ export async function getChunkSize(fileSize: number): Promise<number> {
 
 /** 是否需要分片 */
 export function needsChunking(fileSize: number): boolean {
-  return fileSize >= 10 * MB;
+  return fileSize >= getChunkThresholdBytes();
 }
 
 /** 计算总分片数 */

@@ -132,14 +132,14 @@ export class UploaderEngine {
   > = new Map();
 
   /** Throttle timer for per-chunk progress sync (200ms batch window) */
-  private _syncTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+  private syncTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
   /** 清理指定任务的进度节流定时器（cancel/finish 调用，防幽灵任务与状态覆盖） */
   private clearSyncTimer(taskId: string): void {
-    const tid = this._syncTimers.get(taskId);
+    const tid = this.syncTimers.get(taskId);
     if (tid) {
       clearTimeout(tid);
-      this._syncTimers.delete(taskId);
+      this.syncTimers.delete(taskId);
     }
   }
 
@@ -733,10 +733,10 @@ export class UploaderEngine {
         if (signal.aborted) return;
 
         // Throttle per-chunk progress sync: 200ms 内最多触发一次 store 更新
-        const tid = this._syncTimers.get(task.taskId);
+        const tid = this.syncTimers.get(task.taskId);
         if (tid) clearTimeout(tid);
-        this._syncTimers.set(task.taskId, setTimeout(() => {
-          this._syncTimers.delete(task.taskId);
+        this.syncTimers.set(task.taskId, setTimeout(() => {
+          this.syncTimers.delete(task.taskId);
           this.recalcChunkProgress(task);
           this.updateSpeed(task, task.transferredSize);
           this.syncToStore(task);
