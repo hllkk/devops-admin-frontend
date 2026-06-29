@@ -11,6 +11,19 @@ export function fetchCheckDB() {
 }
 
 /**
+ * 测试数据库或Redis连接是否可用
+ * @param data 连接测试参数（connectType: 'db' | 'redis'）
+ */
+export function fetchTestConnect(data: Api.Init.TestConnectRequest) {
+  return request<void>({
+    url: '/init/testConnect',
+    method: 'post',
+    data,
+    timeout: 15000
+  });
+}
+
+/**
  * Docker环境自动初始化数据库
  * 使用docker-compose配置自动完成初始化
  */

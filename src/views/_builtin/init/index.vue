@@ -2,7 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { getPaletteColorByNumber, mixColor } from '@sa/color';
-import { fetchCheckDB, fetchInitDB, fetchAutoInitDB } from '@/service/api/init';
+import { fetchCheckDB, fetchInitDB, fetchAutoInitDB, fetchTestConnect } from '@/service/api/init';
 import { useNaiveForm, createDynamicPwdRule, useFormRules } from '@/hooks/common/form';
 import { useThemeStore } from '@/store/modules/theme';
 import { clearInitStatusCache } from '@/router/guard/route';
@@ -33,6 +33,7 @@ const currentStep = ref(1);
 
 // 加载状态
 const loading = ref(false);
+const testing = ref(false); // 测试连接加载状态
 const checking = ref(true);
 const needInit = ref(false);
 const autoInit = ref(false);      // Docker环境支持自动初始化
@@ -257,6 +258,46 @@ function goToLogin() {
   router.replace('/login/pwd-login');
 }
 
+// 测试连接（步骤1: 数据库, 步骤2: Redis）
+async function handleTestConnect() {
+  try {
+    await validate();
+  } catch {
+    // 验证失败，表单会自动显示错误信息
+    return;
+  }
+
+  testing.value = true;
+
+  const params: Api.Init.TestConnectRequest = {
+    connectType: currentStep.value === 1 ? 'db' : 'redis'
+  };
+
+  if (currentStep.value === 1) {
+    params.dbType = model.dbType;
+    params.host = model.host;
+    params.port = model.port;
+    params.userName = model.userName;
+    params.password = model.password;
+    params.dbName = model.dbName;
+    if (model.dbType === 'sqlite') {
+      params.dbPath = model.dbPath;
+    }
+  } else {
+    params.redisAddr = model.redisAddr;
+    params.redisPassword = model.redisPassword;
+    params.redisDB = model.redisDB;
+  }
+
+  const { error } = await fetchTestConnect(params);
+  testing.value = false;
+
+  if (!error) {
+    window.$message?.success('连接成功');
+  }
+  // 失败时错误消息由请求拦截器统一弹出
+}
+
 // 初始化检查
 checkDBStatus();
 </script>
@@ -464,8 +505,14 @@ checkDBStatus();
               </NButton>
               <div v-else></div>
               <div class="flex gap-12px">
-                <NButton size="large" @click="goToLogin">
-                  返回登录
+                <NButton
+                  v-if="currentStep === 1 || currentStep === 2"
+                  size="large"
+                  :loading="testing"
+                  :disabled="currentStep === 2 && !model.redisEnabled"
+                  @click="handleTestConnect"
+                >
+                  测试连接
                 </NButton>
                 <NButton
                   v-if="currentStep < 3"
