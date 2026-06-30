@@ -160,13 +160,13 @@ const windowHeight = ref(window.innerHeight);
 function updateWindowHeight() { windowHeight.value = window.innerHeight; }
 const tableMaxHeight = computed(() => Math.max(300, windowHeight.value - 220));
 
-// 角色 -> 权限集合映射（viewer 仅下载；editor 可上传/编辑；owner 全权限含删除/分享）
+// 角色 -> 权限集合映射（viewer 仅下载；editor 可增删改；owner 全权限含分享）— 与后端 RolePermissions 一致
 function roleToPermissions(role: Api.Disk.ShareRole): string[] {
   switch (role) {
     case 'owner':
       return ['DOWNLOAD', 'UPLOAD', 'PUT', 'DELETE', 'SHARE'];
     case 'editor':
-      return ['DOWNLOAD', 'UPLOAD', 'PUT'];
+      return ['DOWNLOAD', 'UPLOAD', 'PUT', 'DELETE'];
     case 'viewer':
     default:
       return ['DOWNLOAD'];
