@@ -758,11 +758,13 @@ export class UploaderEngine {
           throw new Error(getErrorMessage(error, '分片上传失败'));
         }
 
-        // Record uploaded chunk (always track for resume, even if paused)
-        task.uploadedChunks = [...task.uploadedChunks, chunkIndex];
-
-        // Suppress progress update if task was paused mid-flight
+        // 上传期间若已被取消/暂停，本次成功结果不可信（后端是否真正持久化该分片未知），
+        // 不记入本地 uploadedChunks——resume 时由后端 checkPhase 返回的真实 resume 列表校正：
+        // 后端已落盘的分片会出现在 resume 列表里(不会漏传)，本地也不信任 abort 后的状态(不会误信)。
         if (signal.aborted) return;
+
+        // Record uploaded chunk
+        task.uploadedChunks = [...task.uploadedChunks, chunkIndex];
 
         // Throttle per-chunk progress sync: 200ms 内最多触发一次 store 更新
         const tid = this.syncTimers.get(task.taskId);
