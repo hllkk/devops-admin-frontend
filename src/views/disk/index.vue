@@ -518,27 +518,6 @@ async function handleRenameConfirm(newName: string) {
 }
 
 async function handleDeleteFile(file: Api.Disk.FileItem) {
-  // 挂载引用项：移除挂载（不影响源文件），而非物理删除
-  if (file.isMount) {
-    window.$dialog?.warning({
-      title: '移除保存',
-      content: `确认从网盘移除 "${file.fileName}"？(不影响源文件)`,
-      positiveText: $t('common.confirm'),
-      negativeText: $t('common.cancel'),
-      onPositiveClick: async () => {
-        const { fetchRemoveSaveMount } = await import('@/service/api/disk/internal-share');
-        window.$loadingBar?.start();
-        const { error } = await fetchRemoveSaveMount(Number(file.fileId));
-        window.$loadingBar?.finish();
-        if (!error) {
-          window.$message?.success(`已从网盘移除 "${file.fileName}"`);
-          getFileList();
-        }
-      }
-    });
-    return;
-  }
-
   window.$dialog?.warning({
     title: $t('page.disk.toolbar.delete'),
     content: `${$t('page.disk.moveCopy.deleteConfirm')} "${file.fileName}"?`,

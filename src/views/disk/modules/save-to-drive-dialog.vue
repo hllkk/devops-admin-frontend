@@ -205,6 +205,7 @@ watch(() => props.visible, visible => {
             <span class="truncate">{{ item.fileName }}</span>
           </div>
         </div>
+        <div class="text-12px opacity-60">{{ $t('page.disk.sharedWithMe.saveAsIndependentCopy') }}</div>
       </div>
 
       <!-- Folder Tree -->

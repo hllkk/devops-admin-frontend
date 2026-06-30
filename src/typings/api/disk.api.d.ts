@@ -641,6 +641,9 @@ declare namespace Api {
       fileIds: number[];
     };
 
+    /** 共享角色（viewer 查看者 / editor 编辑者 / owner 所有者） */
+    type ShareRole = 'viewer' | 'editor' | 'owner';
+
     /** 共享给我的列表项 */
     type SharedWithMeItem = {
       /** 分享记录ID */
@@ -661,8 +664,8 @@ declare namespace Api {
       shareUserName: string;
       /** 分享类型 (user/dept) */
       shareType: 'user' | 'dept';
-      /** 权限列表 */
-      permissions: string[];
+      /** 共享角色 */
+      role: ShareRole;
       /** 过期时间 */
       expireDate?: string | null;
       /** 来源标签 (直接分享 / 部门: XX) */
@@ -671,10 +674,6 @@ declare namespace Api {
       createdAt: string;
       /** 是否有媒体封面 */
       mediaCover?: boolean;
-      /** 是否已挂载 */
-      isMounted: boolean;
-      /** 挂载ID */
-      mountId?: number | null;
     };
 
     /** 共享给我的列表响应 */
@@ -693,7 +692,8 @@ declare namespace Api {
       targetType: string;
       targetId: number;
       targetName: string;
-      permissions: string[];
+      /** 共享角色 */
+      role: ShareRole;
       mountName?: string;
     };
 

@@ -2,14 +2,16 @@
 import { ref, computed, onMounted } from 'vue';
 import { $t } from '@/locales';
 import { useLoading } from '@sa/hooks';
+import type { TreeSelectOption } from 'naive-ui';
 import {
   fetchCreateInternalShare,
   fetchGetFileShareTargets,
-  fetchUpdateTargetPermissions,
+  fetchUpdateShareRole,
   fetchRemoveShareTarget
 } from '@/service/api/disk/internal-share';
 import { fetchGetDeptSelect } from '@/service/api/system/dept';
 import ShareTargetItem from './share-target-item.vue';
+import SharePermissionChecker from './share-permission-checker.vue';
 
 defineOptions({
   name: 'ShareToDept'
@@ -24,19 +26,12 @@ const props = defineProps<Props>();
 const { startLoading, endLoading } = useLoading();
 
 const selectedDeptIds = ref<number[]>([]);
-const selectedPermissions = ref<string[]>(['DOWNLOAD']);
+const selectedRole = ref<Api.Disk.ShareRole>('viewer');
 const existingTargets = ref<Api.Disk.FileShareTargetItem[]>([]);
-const deptTreeOptions = ref<any[]>([]);
+const deptTreeOptions = ref<TreeSelectOption[]>([]);
 const deptLoading = ref(false);
 
-const permissionOptions = computed(() => [
-  { label: $t('page.disk.sharedWithMe.permDownload'), value: 'DOWNLOAD' },
-  { label: $t('page.disk.sharedWithMe.permUpload'), value: 'UPLOAD' },
-  { label: $t('page.disk.sharedWithMe.permEdit'), value: 'PUT' },
-  { label: $t('page.disk.sharedWithMe.permDelete'), value: 'DELETE' }
-]);
-
-const canSubmit = computed(() => selectedDeptIds.value.length > 0 && selectedPermissions.value.length > 0);
+const canSubmit = computed(() => selectedDeptIds.value.length > 0);
 
 async function loadExistingTargets() {
   const { data } = await fetchGetFileShareTargets(props.fileId);
@@ -50,7 +45,7 @@ async function loadDeptOptions() {
   deptLoading.value = true;
   const { data } = await fetchGetDeptSelect();
   if (data) {
-    deptTreeOptions.value = data as any[];
+    deptTreeOptions.value = data as TreeSelectOption[];
   }
   deptLoading.value = false;
 }
@@ -59,15 +54,13 @@ async function handleSubmit() {
   if (!canSubmit.value) return;
 
   startLoading();
-  const targets = selectedDeptIds.value.map(id => ({
-    targetId: id,
-    permissions: [...selectedPermissions.value]
-  }));
+  const targets = selectedDeptIds.value.map(id => ({ targetId: id }));
 
   const { error } = await fetchCreateInternalShare({
     fileId: props.fileId,
     shareType: 'dept',
-    targets
+    targets,
+    role: selectedRole.value
   });
 
   endLoading();
@@ -78,9 +71,9 @@ async function handleSubmit() {
   }
 }
 
-async function handleUpdateTargetPermissions(id: number, permissions: string[]) {
+async function handleUpdateTargetRole(id: number, role: Api.Disk.ShareRole) {
   startLoading();
-  const { error } = await fetchUpdateTargetPermissions(id, permissions);
+  const { error } = await fetchUpdateShareRole(id, role);
   endLoading();
   if (!error) {
     window.$message?.success($t('page.disk.share.updateSuccess'));
@@ -109,33 +102,29 @@ onMounted(() => {
 
 <template>
   <div class="flex flex-col gap-16px">
-    <div class="flex items-center gap-8px">
-      <NTreeSelect
-        v-model:value="selectedDeptIds"
-        multiple
-        filterable
-        key-field="id"
-        label-field="label"
-        :placeholder="$t('page.disk.share.selectDept')"
-        :options="deptTreeOptions"
-        :loading="deptLoading"
-        class="flex-1"
-        @focus="loadDeptOptions"
-      />
-      <NSelect
-        v-model:value="selectedPermissions"
-        multiple
-        :options="permissionOptions"
-        :placeholder="$t('page.disk.share.permissions')"
-        class="w-200px"
-      />
-      <NButton
-        type="primary"
-        :disabled="!canSubmit"
-        @click="handleSubmit"
-      >
-        {{ $t('common.confirm') }}
-      </NButton>
+    <div class="flex flex-col gap-8px">
+      <div class="flex items-center gap-8px">
+        <NTreeSelect
+          v-model:value="selectedDeptIds"
+          multiple
+          filterable
+          key-field="id"
+          label-field="label"
+          :placeholder="$t('page.disk.share.selectDept')"
+          :options="deptTreeOptions"
+          :loading="deptLoading"
+          class="flex-1"
+          @focus="loadDeptOptions"
+        />
+        <NButton
+          type="primary"
+          :disabled="!canSubmit"
+          @click="handleSubmit"
+        >
+          {{ $t('common.confirm') }}
+        </NButton>
+      </div>
+      <SharePermissionChecker v-model:role="selectedRole" />
     </div>
 
     <div v-if="existingTargets.length > 0" class="flex flex-col gap-8px">
@@ -147,8 +136,8 @@ onMounted(() => {
         :target-id="target.targetId"
         :target-name="target.targetName"
         target-type="dept"
-        :permissions="target.permissions"
-        @update="handleUpdateTargetPermissions"
+        :role="target.role"
+        @update="handleUpdateTargetRole"
         @remove="handleRemoveTarget"
       />
     </div>

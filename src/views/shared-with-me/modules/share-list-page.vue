@@ -12,7 +12,6 @@ import {
   fetchGetSharedWithMeList,
   fetchGetSharedFolderContents,
   fetchBatchSaveToDrive,
-  fetchRemoveSaveMount,
   fetchIsAllowDownload,
   fetchIsAllowPackageDownload,
   fetchRenameFile,
@@ -161,10 +160,23 @@ const windowHeight = ref(window.innerHeight);
 function updateWindowHeight() { windowHeight.value = window.innerHeight; }
 const tableMaxHeight = computed(() => Math.max(300, windowHeight.value - 220));
 
+// 角色 -> 权限集合映射（viewer 仅下载；editor 可上传/编辑；owner 全权限含删除/分享）
+function roleToPermissions(role: Api.Disk.ShareRole): string[] {
+  switch (role) {
+    case 'owner':
+      return ['DOWNLOAD', 'UPLOAD', 'PUT', 'DELETE', 'SHARE'];
+    case 'editor':
+      return ['DOWNLOAD', 'UPLOAD', 'PUT'];
+    case 'viewer':
+    default:
+      return ['DOWNLOAD'];
+  }
+}
+
 // 检查当前浏览的共享文件夹是否有上传权限
 const hasUploadPermission = computed(() => {
   if (!browsingFolder.value) return false;
-  return browsingFolder.value.permissions.includes('UPLOAD');
+  return roleToPermissions(browsingFolder.value.role).includes('UPLOAD');
 });
 
 const fileList = computed(() => shareList.value.map(convertToFileItem));
@@ -253,23 +265,16 @@ function formatDateShort(dateStr: string | null | undefined): string {
   return `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-function getPermLabel(p: string): string {
-  const map: Record<string, string> = {
-    DOWNLOAD: $t('page.disk.sharedWithMe.permDownload'),
-    UPLOAD: $t('page.disk.sharedWithMe.permUpload'),
-    PUT: $t('page.disk.sharedWithMe.permEdit'),
-    DELETE: $t('page.disk.sharedWithMe.permDelete'),
-    SHARE: $t('page.disk.sharedWithMe.permShare')
-  };
-  return map[p] || p;
-}
+const roleLabelMap: Record<Api.Disk.ShareRole, string> = {
+  viewer: $t('page.disk.sharedWithMe.roleViewer'),
+  editor: $t('page.disk.sharedWithMe.roleEditor'),
+  owner: $t('page.disk.sharedWithMe.roleOwner')
+};
 
-const permissionTagTypeMap: Record<string, 'success' | 'info' | 'warning' | 'error'> = {
-  DOWNLOAD: 'success',
-  UPLOAD: 'info',
-  PUT: 'warning',
-  DELETE: 'error',
-  SHARE: 'info'
+const roleTagTypeMap: Record<Api.Disk.ShareRole, 'success' | 'warning' | 'error'> = {
+  viewer: 'success',
+  editor: 'warning',
+  owner: 'error'
 };
 
 // --- Data fetching ---
@@ -438,18 +443,14 @@ async function handleCreateFolderConfirm() {
 
 // --- Context menu ---
 function getShareCtxMenu(item: Api.Disk.SharedWithMeItem): DropdownOption[] {
-  const permissions = item.permissions;
+  const permissions = roleToPermissions(item.role);
   const options: DropdownOption[] = [
     { label: $t('page.disk.contextMenu.open'), key: 'open', icon: SvgIconVNode({ icon: 'mdi:open-in-new', fontSize: 18 }) }
   ];
   if (permissions.includes('DOWNLOAD')) {
     options.push({ label: $t('page.disk.contextMenu.download'), key: 'download', icon: SvgIconVNode({ icon: 'mdi:download-outline', fontSize: 18 }) });
     if (isUserShare.value) {
-      if (item.isMounted) {
-        options.push({ label: $t('page.disk.sharedWithMe.removeFromDrive'), key: 'removeFromDrive', icon: SvgIconVNode({ icon: 'mdi:link-off', fontSize: 18 }) });
-      } else {
-        options.push({ label: $t('page.disk.sharedWithMe.saveToDrive'), key: 'saveToDrive', icon: SvgIconVNode({ icon: 'mdi:content-save-outline', fontSize: 18 }) });
-      }
+      options.push({ label: $t('page.disk.sharedWithMe.saveToDrive'), key: 'saveToDrive', icon: SvgIconVNode({ icon: 'mdi:content-save-outline', fontSize: 18 }) });
     }
   }
   if (permissions.includes('PUT')) {
@@ -526,7 +527,6 @@ function handleCtxMenuSelect(key: string) {
     case 'open': handleShareFileDblClick(item); break;
     case 'download': handleDownload([file]); break;
     case 'saveToDrive': if (isUserShare.value) handleSaveToMyDrive(item); break;
-    case 'removeFromDrive': if (isUserShare.value) handleRemoveFromDrive(item); break;
     case 'rename':
       diskStore.startRenaming(item.fileId, item.fileName);
       renamingFile.value = file;
@@ -544,7 +544,7 @@ async function handleShareFileDblClick(item: Api.Disk.SharedWithMeItem) {
     return;
   }
 
-  if (isUserShare.value && !item.permissions.includes('DOWNLOAD')) {
+  if (isUserShare.value && !roleToPermissions(item.role).includes('DOWNLOAD')) {
     window.$notification?.warning({ content: $t('page.disk.sharedWithMe.noPreviewPermission'), duration: 3000 });
     return;
   }
@@ -682,22 +682,6 @@ function handleBatchSaveToDrive() {
   saveToDriveVisible.value = true;
 }
 
-async function handleRemoveFromDrive(item: Api.Disk.SharedWithMeItem) {
-  window.$dialog?.warning({
-    title: $t('page.disk.sharedWithMe.removeFromDrive'),
-    content: $t('page.disk.sharedWithMe.removeFromDriveConfirm', { name: item.fileName }),
-    positiveText: $t('common.confirm'),
-    negativeText: $t('common.cancel'),
-    onPositiveClick: async () => {
-      const { error } = await fetchRemoveSaveMount(item.fileId);
-      if (!error) {
-        window.$message?.success($t('page.disk.sharedWithMe.removeFromDriveSuccess'));
-        getData();
-      }
-    }
-  });
-}
-
 async function handleSaveToMyDrive(item: Api.Disk.SharedWithMeItem) {
   pendingSaveItems.value = [{
     shareId: item.fileShareId,
@@ -763,13 +747,6 @@ const shareColumns = computed(() => {
           h('span', { class: 'flex-1 truncate', style: 'min-width:0' }, row.fileName)
         ];
 
-        // Show mounted status
-        if (isUserShare.value && row.isMounted) {
-          children.push(
-            h(NTag, { size: 'small', type: 'success' }, () => $t('page.disk.sharedWithMe.mounted'))
-          );
-        }
-
         return h('div', { class: 'flex items-center gap-8px group' }, children);
       }
     },
@@ -796,13 +773,11 @@ const shareColumns = computed(() => {
 
   cols.push(
     {
-      key: 'permissions',
-      title: $t('page.disk.sharedWithMe.permissions'),
-      width: 180,
+      key: 'role',
+      title: $t('page.disk.sharedWithMe.role'),
+      width: 100,
       render(row: Api.Disk.SharedWithMeItem) {
-        return h('div', { class: 'flex flex-wrap gap-4px' },
-          row.permissions.map(p => h(NTag, { size: 'small', type: permissionTagTypeMap[p] || 'default' }, () => getPermLabel(p)))
-        );
+        return h(NTag, { size: 'small', bordered: false, type: roleTagTypeMap[row.role] }, () => roleLabelMap[row.role]);
       }
     },
     {
@@ -1108,7 +1083,7 @@ onUnmounted(() => {
                   <span class="opacity-50">{{ $t('page.disk.sharedWithMe.from') }}：</span>
                   <span class="opacity-70">{{ item.shareUserName }}</span>
                   <div class="flex flex-wrap gap-4px ml-auto">
-                    <NTag v-for="p in item.permissions" :key="p" size="small" :type="permissionTagTypeMap[p] || 'default'">{{ getPermLabel(p) }}</NTag>
+                    <NTag size="small" :type="roleTagTypeMap[item.role]">{{ roleLabelMap[item.role] }}</NTag>
                   </div>
                 </div>
 
@@ -1118,10 +1093,7 @@ onUnmounted(() => {
 
                 <div class="flex items-center justify-end gap-8px pt-4px">
                   <NButton size="tiny" quaternary @click.stop="handleDownload([convertToFileItem(item)])">{{ $t('page.disk.sharedWithMe.permDownload') }}</NButton>
-                  <NButton v-if="isUserShare && item.isMounted" size="tiny" quaternary type="warning" @click.stop="handleRemoveFromDrive(item)">
-                    {{ $t('page.disk.sharedWithMe.removeFromDrive') }}
-                  </NButton>
-                  <NButton v-else-if="isUserShare && !item.isMounted" size="tiny" quaternary @click.stop="handleSaveToMyDrive(item)">
+                  <NButton v-if="isUserShare" size="tiny" quaternary @click.stop="handleSaveToMyDrive(item)">
                     {{ $t('page.disk.sharedWithMe.saveToDrive') }}
                   </NButton>
                   <NButton size="tiny" quaternary @click.stop="handleShareFile(convertToFileItem(item))">{{ $t('page.disk.sharedWithMe.permShare') }}</NButton>
@@ -1167,7 +1139,7 @@ onUnmounted(() => {
       trigger="manual"
       :x="ctxMenuX"
       :y="ctxMenuY"
-      :options="isBrowsingFolder ? getFolderCtxMenu(browsingFolder?.permissions || []) : (ctxMenuFile ? getShareCtxMenu(ctxMenuFile) : [])"
+      :options="isBrowsingFolder ? getFolderCtxMenu(browsingFolder ? roleToPermissions(browsingFolder.role) : []) : (ctxMenuFile ? getShareCtxMenu(ctxMenuFile) : [])"
       :menu-props="() => ({ class: 'disk-ctx-glass' })"
       @clickoutside="ctxMenuVisible = false"
       @select="handleCtxMenuSelect"

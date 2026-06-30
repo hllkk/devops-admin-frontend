@@ -5,11 +5,12 @@ import { useLoading } from '@sa/hooks';
 import {
   fetchCreateInternalShare,
   fetchGetFileShareTargets,
-  fetchUpdateTargetPermissions,
+  fetchUpdateShareRole,
   fetchRemoveShareTarget
 } from '@/service/api/disk/internal-share';
 import { fetchGetUserSelect } from '@/service/api/system/user';
 import ShareTargetItem from './share-target-item.vue';
+import SharePermissionChecker from './share-permission-checker.vue';
 
 defineOptions({
   name: 'ShareToUser'
@@ -30,7 +31,7 @@ interface UserOption {
 const { startLoading, endLoading } = useLoading();
 
 const selectedUserIds = ref<number[]>([]);
-const selectedPermissions = ref<string[]>(['DOWNLOAD']);
+const selectedRole = ref<Api.Disk.ShareRole>('viewer');
 const existingTargets = ref<Api.Disk.FileShareTargetItem[]>([]);
 const userOptions = ref<UserOption[]>([]);
 const userLoading = ref(false);
@@ -41,14 +42,7 @@ const availableUserOptions = computed(() =>
   userOptions.value.filter(u => !existingTargetIds.value.has(u.value))
 );
 
-const permissionOptions = computed(() => [
-  { label: $t('page.disk.sharedWithMe.permDownload'), value: 'DOWNLOAD' },
-  { label: $t('page.disk.sharedWithMe.permUpload'), value: 'UPLOAD' },
-  { label: $t('page.disk.sharedWithMe.permEdit'), value: 'PUT' },
-  { label: $t('page.disk.sharedWithMe.permDelete'), value: 'DELETE' }
-]);
-
-const canSubmit = computed(() => selectedUserIds.value.length > 0 && selectedPermissions.value.length > 0);
+const canSubmit = computed(() => selectedUserIds.value.length > 0);
 
 async function loadExistingTargets() {
   const { data } = await fetchGetFileShareTargets(props.fileId);
@@ -81,15 +75,13 @@ async function handleSubmit() {
   if (!canSubmit.value) return;
 
   startLoading();
-  const targets = selectedUserIds.value.map(id => ({
-    targetId: id,
-    permissions: [...selectedPermissions.value]
-  }));
+  const targets = selectedUserIds.value.map(id => ({ targetId: id }));
 
   const { error } = await fetchCreateInternalShare({
     fileId: props.fileId,
     shareType: 'user',
-    targets
+    targets,
+    role: selectedRole.value
   });
 
   endLoading();
@@ -100,9 +92,9 @@ async function handleSubmit() {
   }
 }
 
-async function handleUpdateTargetPermissions(id: number, permissions: string[]) {
+async function handleUpdateTargetRole(id: number, role: Api.Disk.ShareRole) {
   startLoading();
-  const { error } = await fetchUpdateTargetPermissions(id, permissions);
+  const { error } = await fetchUpdateShareRole(id, role);
   endLoading();
   if (!error) {
     window.$message?.success($t('page.disk.share.updateSuccess'));
@@ -132,32 +124,28 @@ onMounted(() => {
 
 <template>
   <div class="flex flex-col gap-16px">
-    <div class="flex items-center gap-8px">
-      <NSelect
-        v-model:value="selectedUserIds"
-        multiple
-        filterable
-        :placeholder="$t('page.disk.share.searchUser')"
-        :options="availableUserOptions"
-        :loading="userLoading"
-        class="flex-1"
-        @focus="loadUserOptions"
-        @search="handleSearch"
-      />
-      <NSelect
-        v-model:value="selectedPermissions"
-        multiple
-        :options="permissionOptions"
-        :placeholder="$t('page.disk.share.permissions')"
-        class="w-200px"
-      />
-      <NButton
-        type="primary"
-        :disabled="!canSubmit"
-        @click="handleSubmit"
-      >
-        {{ $t('common.confirm') }}
-      </NButton>
+    <div class="flex flex-col gap-8px">
+      <div class="flex items-center gap-8px">
+        <NSelect
+          v-model:value="selectedUserIds"
+          multiple
+          filterable
+          :placeholder="$t('page.disk.share.searchUser')"
+          :options="availableUserOptions"
+          :loading="userLoading"
+          class="flex-1"
+          @focus="loadUserOptions"
+          @search="handleSearch"
+        />
+        <NButton
+          type="primary"
+          :disabled="!canSubmit"
+          @click="handleSubmit"
+        >
+          {{ $t('common.confirm') }}
+        </NButton>
+      </div>
+      <SharePermissionChecker v-model:role="selectedRole" />
     </div>
 
     <div v-if="existingTargets.length > 0" class="flex flex-col gap-8px">
@@ -170,9 +158,9 @@ onMounted(() => {
           :target-id="target.targetId"
           :target-name="target.targetName"
           target-type="user"
-          :permissions="target.permissions"
+          :role="target.role"
           :avatar="getUserAvatar(target.targetId)"
-          @update="handleUpdateTargetPermissions"
+          @update="handleUpdateTargetRole"
           @remove="handleRemoveTarget"
         />
       </div>

@@ -1490,7 +1490,6 @@ declare namespace App {
             saveToDrive: string;
             saveToDriveSuccess: string;
             saveSuccessRenamed: string;
-            mounted: string;
             itemsToSave: string;
             selectTargetFolder: string;
             source: string;
@@ -1507,9 +1506,12 @@ declare namespace App {
             selectedCount: string;
             fileType: string;
             receiveStatus: string;
+            role: string;
+            roleViewer: string;
+            roleEditor: string;
+            roleOwner: string;
+            saveAsIndependentCopy: string;
             permDownload: string;
-            permUpload: string;
-            permEdit: string;
             permDelete: string;
             permShare: string;
             image: string;
@@ -1530,9 +1532,6 @@ declare namespace App {
             createFolderSuccess: string;
             folderNamePlaceholder: string;
             batchSaveToDrive: string;
-            removeFromDrive: string;
-            removeFromDriveConfirm: string;
-            removeFromDriveSuccess: string;
             shareCancelled: string;
           };
           recent: {

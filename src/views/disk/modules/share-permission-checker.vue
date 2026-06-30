@@ -7,7 +7,7 @@ defineOptions({
 });
 
 interface Props {
-  permissions: string[];
+  role: Api.Disk.ShareRole;
   disabled?: boolean;
 }
 
@@ -16,46 +16,28 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 interface Emits {
-  (e: 'update:permissions', value: string[]): void;
+  (e: 'update:role', value: Api.Disk.ShareRole): void;
 }
 
 const emit = defineEmits<Emits>();
 
-const permissionOptions = computed(() => [
-  { label: $t('page.disk.sharedWithMe.permDownload'), value: 'DOWNLOAD' },
-  { label: $t('page.disk.sharedWithMe.permUpload'), value: 'UPLOAD' },
-  { label: $t('page.disk.sharedWithMe.permEdit'), value: 'PUT' },
-  { label: $t('page.disk.sharedWithMe.permDelete'), value: 'DELETE' }
+const roleOptions = computed(() => [
+  { label: $t('page.disk.sharedWithMe.roleViewer'), value: 'viewer' as const },
+  { label: $t('page.disk.sharedWithMe.roleEditor'), value: 'editor' as const },
+  { label: $t('page.disk.sharedWithMe.roleOwner'), value: 'owner' as const }
 ]);
 
-function handleCheck(checked: boolean, value: string) {
-  const updated = [...props.permissions];
-  if (checked) {
-    if (!updated.includes(value)) {
-      updated.push(value);
-    }
-  } else {
-    const idx = updated.indexOf(value);
-    if (idx >= 0) {
-      updated.splice(idx, 1);
-    }
-  }
-  emit('update:permissions', updated);
+function handleChange(value: Api.Disk.ShareRole) {
+  emit('update:role', value);
 }
 </script>
 
 <template>
-  <NCheckboxGroup :value="permissions">
+  <NRadioGroup :value="props.role" :disabled="disabled" @update:value="handleChange">
     <NSpace :size="16">
-      <NCheckbox
-        v-for="opt in permissionOptions"
-        :key="opt.value"
-        :checked="permissions.includes(opt.value)"
-        :disabled="disabled"
-        @update:checked="(checked: boolean) => handleCheck(checked, opt.value)"
-      >
+      <NRadio v-for="opt in roleOptions" :key="opt.value" :value="opt.value">
         {{ opt.label }}
-      </NCheckbox>
+      </NRadio>
     </NSpace>
-  </NCheckboxGroup>
+  </NRadioGroup>
 </template>

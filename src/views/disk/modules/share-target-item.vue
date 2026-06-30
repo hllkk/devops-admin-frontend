@@ -10,7 +10,7 @@ interface Props {
   id: number;
   targetName: string;
   targetType: 'user' | 'dept';
-  permissions: string[];
+  role: Api.Disk.ShareRole;
   avatar?: string;
   editing?: boolean;
 }
@@ -21,54 +21,49 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 interface Emits {
-  (e: 'update', id: number, permissions: string[]): void;
+  (e: 'update', id: number, role: Api.Disk.ShareRole): void;
   (e: 'remove', id: number): void;
 }
 
 const emit = defineEmits<Emits>();
 
 const isEditing = ref(props.editing);
-const currentPermissions = ref([...props.permissions]);
+const currentRole = ref<Api.Disk.ShareRole>(props.role);
 
-const permLabelMap: Record<string, string> = {
-  DOWNLOAD: $t('page.disk.sharedWithMe.permDownload'),
-  UPLOAD: $t('page.disk.sharedWithMe.permUpload'),
-  PUT: $t('page.disk.sharedWithMe.permEdit'),
-  DELETE: $t('page.disk.sharedWithMe.permDelete')
+const roleOptions = computed(() => [
+  { label: $t('page.disk.sharedWithMe.roleViewer'), value: 'viewer' as const },
+  { label: $t('page.disk.sharedWithMe.roleEditor'), value: 'editor' as const },
+  { label: $t('page.disk.sharedWithMe.roleOwner'), value: 'owner' as const }
+]);
+
+const roleTagTypeMap: Record<Api.Disk.ShareRole, 'success' | 'warning' | 'error'> = {
+  viewer: 'success',
+  editor: 'warning',
+  owner: 'error'
 };
 
-const permissionOptions = computed(() => {
-  const all = [
-    { label: permLabelMap.DOWNLOAD, value: 'DOWNLOAD' },
-    { label: permLabelMap.UPLOAD, value: 'UPLOAD' },
-    { label: permLabelMap.PUT, value: 'PUT' },
-    { label: permLabelMap.DELETE, value: 'DELETE' }
-  ];
-  return all;
+const roleLabel = computed(() => {
+  const map: Record<Api.Disk.ShareRole, string> = {
+    viewer: $t('page.disk.sharedWithMe.roleViewer'),
+    editor: $t('page.disk.sharedWithMe.roleEditor'),
+    owner: $t('page.disk.sharedWithMe.roleOwner')
+  };
+  return map[props.role];
 });
 
 function handleStartEdit() {
-  currentPermissions.value = [...props.permissions];
+  currentRole.value = props.role;
   isEditing.value = true;
 }
 
 function handleCancelEdit() {
   isEditing.value = false;
-  currentPermissions.value = [...props.permissions];
+  currentRole.value = props.role;
 }
 
 function handleSaveEdit() {
-  emit('update', props.id, currentPermissions.value);
+  emit('update', props.id, currentRole.value);
   isEditing.value = false;
-}
-
-function handleTogglePermission(perm: string) {
-  const idx = currentPermissions.value.indexOf(perm);
-  if (idx >= 0) {
-    currentPermissions.value.splice(idx, 1);
-  } else {
-    currentPermissions.value.push(perm);
-  }
 }
 
 function handleRemove() {
@@ -109,16 +104,12 @@ function renderTargetIcon() {
     <span class="flex-1 truncate text-13px">{{ targetName }}</span>
 
     <template v-if="isEditing">
-      <div class="flex gap-8px">
-        <NCheckbox
-          v-for="opt in permissionOptions"
-          :key="opt.value"
-          :checked="currentPermissions.includes(opt.value)"
-          @update:checked="handleTogglePermission(opt.value)"
-        >
-          {{ opt.label }}
-        </NCheckbox>
-      </div>
+      <NSelect
+        v-model:value="currentRole"
+        size="small"
+        :options="roleOptions"
+        class="w-100px"
+      />
       <NButton size="tiny" class="ml-12px" @click="handleCancelEdit">
         {{ $t('common.cancel') }}
       </NButton>
@@ -128,17 +119,13 @@ function renderTargetIcon() {
     </template>
 
     <template v-else>
-      <div class="flex gap-4px">
-        <NTag
-          v-for="perm in permissions"
-          :key="perm"
-          size="tiny"
-          :bordered="false"
-          type="info"
-        >
-          {{ permLabelMap[perm] || perm }}
-        </NTag>
-      </div>
+      <NTag
+        size="tiny"
+        :bordered="false"
+        :type="roleTagTypeMap[role]"
+      >
+        {{ roleLabel }}
+      </NTag>
       <NButton size="tiny" class="ml-12px" @click="handleStartEdit">
         {{ $t('common.modify') }}
       </NButton>

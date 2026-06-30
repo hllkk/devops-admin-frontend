@@ -4,7 +4,8 @@ import { request } from '@/service/request';
 export function fetchCreateInternalShare(data: {
   fileId: number;
   shareType: 'user' | 'dept';
-  targets: { targetId: number; permissions: string[] }[];
+  targets: { targetId: number }[];
+  role: Api.Disk.ShareRole;
   expireDate?: string;
   remark?: string;
 }) {
@@ -166,24 +167,12 @@ export function fetchCreateShareFolder(data: {
   });
 }
 
-/** 更新共享目标权限 */
-export function fetchUpdateTargetPermissions(
-  targetId: number,
-  permissions: string[]
-) {
+/** 更新共享角色 */
+export function fetchUpdateShareRole(shareId: number, role: Api.Disk.ShareRole) {
   return request<boolean>({
-    url: '/share/internal/target/permissions',
+    url: '/share/internal/role',
     method: 'put',
-    data: { targetId, permissions }
-  });
-}
-
-/** 从网盘移除保存的文件 */
-export function fetchRemoveSaveMount(sourceFileId: number) {
-  return request<boolean>({
-    url: '/share/internal/save-mount',
-    method: 'delete',
-    data: { sourceFileId }
+    data: { shareId, role }
   });
 }
 
