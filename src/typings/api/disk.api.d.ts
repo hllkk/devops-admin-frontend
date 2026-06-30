@@ -364,6 +364,8 @@ declare namespace Api {
       fileExtension?: string;
       /** 文件路径 */
       filePath?: string;
+      /** 只读模式（共享查看者无编辑权限时自动开启） */
+      readOnly?: boolean;
     };
 
     /** 创建分享请求参数 */

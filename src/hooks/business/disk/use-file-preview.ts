@@ -33,6 +33,9 @@ export function useFilePreview(options: UseFilePreviewOptions) {
   const showArchiveAction = ref(false);
   const showArchivePreview = ref(false);
 
+  // Text preview readOnly state（共享 viewer 角色使用）
+  const textPreviewReadOnly = ref(false);
+
   // --- Computed ---
   const audioPlaylist = computed(() => {
     const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
@@ -130,25 +133,27 @@ export function useFilePreview(options: UseFilePreviewOptions) {
   }
 
   // --- Office/PDF ---
-  function openOfficePdfPreview(file: Api.Disk.FileItem) {
+  function openOfficePdfPreview(file: Api.Disk.FileItem, readOnly?: boolean) {
     previewFile.value = {
       fileId: file.fileId,
       fileName: file.fileName || file.name || '',
       fileSize: file.fileSize || file.size || 0,
       fileExtension: file.fileExtension || file.extendName,
-      filePath: file.filePath
+      filePath: file.filePath,
+      readOnly
     };
     previewVisible.value = true;
   }
 
   // --- Text/Code ---
-  function openTextPreview(file: Api.Disk.FileItem) {
+  function openTextPreview(file: Api.Disk.FileItem, readOnly?: boolean) {
+    textPreviewReadOnly.value = readOnly ?? false;
     diskStore.textPreviewRow = file;
     diskStore.textPreviewVisible = true;
   }
 
   // --- Unified preview dispatch ---
-  function previewByCategory(file: Api.Disk.FileItem, opts?: { folderFiles?: Api.Disk.FileItem[] }) {
+  function previewByCategory(file: Api.Disk.FileItem, opts?: { folderFiles?: Api.Disk.FileItem[]; readOnly?: boolean }) {
     const category = getPreviewCategory(file.fileName || file.name || '');
     switch (category) {
       case 'image':
@@ -163,11 +168,11 @@ export function useFilePreview(options: UseFilePreviewOptions) {
         break;
       case 'office':
       case 'pdf':
-        openOfficePdfPreview(file);
+        openOfficePdfPreview(file, opts?.readOnly);
         break;
       case 'code':
       case 'markdown':
-        openTextPreview(file);
+        openTextPreview(file, opts?.readOnly);
         break;
       case 'archive':
         archiveFile.value = file;
@@ -205,6 +210,8 @@ export function useFilePreview(options: UseFilePreviewOptions) {
     previewByCategory,
     archiveFile,
     showArchiveAction,
-    showArchivePreview
+    showArchivePreview,
+    // Text preview readOnly state
+    textPreviewReadOnly,
   };
 }

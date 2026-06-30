@@ -21,11 +21,14 @@ interface Props {
   file?: Api.Disk.PreviewFileInfo | null;
   /** 同目录下的文件列表（用于图片轮播、音频播放列表等） */
   fileList?: Api.Disk.FileItem[];
+  /** 只读模式（共享查看者无编辑权限） */
+  readOnly?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   file: null,
-  fileList: () => []
+  fileList: () => [],
+  readOnly: false
 });
 
 interface Emits {
@@ -402,6 +405,7 @@ onUnmounted(() => {
         <OfficePreview
           v-if="previewCategory === 'office'"
           :file-id="file?.fileId"
+          :read-only="readOnly"
           @ready="handleOfficeReady"
           @close="beforeClose"
           @error="handleOfficeError"

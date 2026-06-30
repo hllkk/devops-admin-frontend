@@ -203,6 +203,18 @@ function buildEditorConfig(): EditorConfig {
       },
       onRequestClose: () => {
         emit('close');
+      },
+      onError: (event: { data: { errorCode: number; errorDescription?: string } }) => {
+        // OnlyOffice 回调保存失败时 DS 会触发 onError，统一展示一条友好提示
+        const code = event?.data?.errorCode;
+        const desc = event?.data?.errorDescription;
+        if (code === 3 || code === 4) {
+          // errorCode 3=下载错误 4=保存错误，通常是权限不足
+          window.$message?.error('文档保存失败：您没有编辑权限，文件以只读模式打开');
+        } else if (desc) {
+          window.$message?.error(`文档操作失败：${desc}`);
+        }
+        emit('error', desc || '文档操作失败');
       }
     }
   };

@@ -550,8 +550,10 @@ async function handleShareFileDblClick(item: Api.Disk.SharedWithMeItem) {
   }
 
   const file = convertToFileItem(item);
+  // 根据共享角色决定是否只读（viewer 角色无 PUT 权限，以 view 模式打开）
+  const readOnly = isUserShare.value && !roleToPermissions(item.role).includes('PUT');
   fetchAddRecent(file.fileId);
-  preview.previewByCategory(file);
+  preview.previewByCategory(file, { readOnly });
 }
 
 async function handleFolderFileDblClick(file: Api.Disk.FileItem) {
@@ -572,8 +574,10 @@ async function handleFolderFileDblClick(file: Api.Disk.FileItem) {
     return;
   }
 
+  // 根据共享文件夹角色决定是否只读（viewer 角色无 PUT 权限）
+  const readOnly = browsingFolder.value ? !roleToPermissions(browsingFolder.value.role).includes('PUT') : false;
   fetchAddRecent(file.fileId);
-  preview.previewByCategory(file, { folderFiles: folderContents.value });
+  preview.previewByCategory(file, { folderFiles: folderContents.value, readOnly });
 }
 
 // --- Download ---
@@ -1165,6 +1169,7 @@ onUnmounted(() => {
       :is-audio-compact="preview.isAudioCompact"
       :preview-visible="preview.previewVisible"
       :preview-file="preview.previewFile"
+      :text-preview-read-only="preview.textPreviewReadOnly"
       @close-video="preview.closeVideoPreview"
       @video-token-update="preview.handleVideoTokenUpdate"
       @close-audio="preview.closeAudioPreview"

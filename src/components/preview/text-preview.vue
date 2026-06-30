@@ -69,9 +69,13 @@ interface TabNode extends TreeOption {
 
 interface Props {
   shareId?: string;
+  /** 只读模式（共享查看者无编辑权限时自动开启，禁用编辑/保存） */
+  readOnly?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  readOnly: false
+});
 
 const dialog = useDialog();
 const diskStore = useDiskStore();
@@ -206,6 +210,7 @@ const isMarkdown = computed(() => {
 });
 
 const isModified = computed(() => {
+  if (props.readOnly) return false;
   return currentTab.value?.isModified ?? false;
 });
 
@@ -280,6 +285,7 @@ async function saveTab(tab: TabItem) {
 }
 
 async function handleSave() {
+  if (props.readOnly) return;
   const tab = currentTab.value;
   if (!tab || !tab.isModified) {
     return;
@@ -938,7 +944,7 @@ watch(visible, show => {
       <div class="flex items-center gap-2">
         <NTag v-if="isModified" type="warning" size="small">已修改</NTag>
         <HistoryVersionPopover
-          v-if="!isShare && hasHistoryVersion"
+          v-if="!isShare && !readOnly && hasHistoryVersion"
           :file-id="currentTab?.fileId"
           :active-version-id="activeDiffVersionId"
           @preview="handleHistoryPreview"
@@ -953,7 +959,7 @@ watch(visible, show => {
             历史版本
           </NButton>
         </HistoryVersionPopover>
-        <NButton v-if="isModified" type="primary" size="small" :loading="saving" @click="handleSave">保存</NButton>
+        <NButton v-if="!readOnly && isModified" type="primary" size="small" :loading="saving" @click="handleSave">保存</NButton>
         <NButton v-if="isMarkdown" quaternary size="small" @click="toggleMarkdownMode">
           <template #icon>
             <icon-ic-baseline-remove-red-eye v-if="!markdownMode" />
@@ -1077,9 +1083,10 @@ watch(visible, show => {
               <VditorEditor
                 v-if="isMarkdown && markdownMode"
                 v-model="currentTab.content"
+                :disabled="readOnly"
                 class="absolute inset-0 size-full"
               />
-              <MonacoEditor v-else v-model="currentTab.content" :language="currentTab.language" class="h-full" />
+              <MonacoEditor v-else v-model="currentTab.content" :language="currentTab.language" :read-only="readOnly" class="h-full" />
             </div>
           </template>
         </div>

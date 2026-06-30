@@ -18,6 +18,7 @@ defineProps<{
   isAudioCompact: boolean;
   previewVisible: boolean;
   previewFile: Api.Disk.PreviewFileInfo | null;
+  textPreviewReadOnly?: boolean;
 }>();
 
 defineEmits<{
@@ -35,6 +36,7 @@ defineEmits<{
   <FilePreviewOverlay
     :visible="previewVisible"
     :file="previewFile"
+    :read-only="previewFile?.readOnly ?? false"
     @update:visible="$emit('update:previewVisible', $event)"
     @close="$emit('update:previewVisible', false)"
   />
@@ -71,7 +73,7 @@ defineEmits<{
     </Transition>
   </Teleport>
 
-  <TextPreview />
+  <TextPreview :read-only="textPreviewReadOnly" />
 </template>
 
 <style scoped>
