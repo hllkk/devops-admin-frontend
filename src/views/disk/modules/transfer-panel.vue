@@ -27,7 +27,7 @@ defineOptions({
 
 const diskStore = useDiskStore();
 const appStore = useAppStore();
-const { pause, resume, cancel, reupload, pauseAll, resumeAll } = useUploader();
+const { pause, resume, cancel, retry, reupload, pauseAll, resumeAll, getEngineRef } = useUploader();
 
 const isVisible = ref(false);
 // PC端默认list，手机端默认sphere
@@ -180,6 +180,13 @@ watch(() => diskStore.uploadingCount, (newCount, oldCount) => {
   }
 });
 
+// 全部完成后 3 秒自动关闭传输面板
+watch(allCompleted, (completed) => {
+  if (completed && isVisible.value) {
+    setTimeout(closePanel, 3000);
+  }
+});
+
 function switchToSphere() {
   viewMode.value = 'sphere';
 }
@@ -248,31 +255,65 @@ function getFileTypeCategory(extension: string): string {
 const expandedFolders = ref<Set<string>>(new Set());
 const expandedDetails = ref<Set<string>>(new Set());
 
+// 文件夹级聚合条目：从 store 中直接读取（子文件不在 store 中，引擎按需提供）
 const folderGroups = computed(() => {
-  const groups = new Map<string, { name: string; items: Api.Disk.TransferItem[] }>();
+  const groups = new Map<string, { aggregate: Api.Disk.TransferItem }>();
   for (const item of activeTransfers.value) {
-    if (item.folderId) {
-      let group = groups.get(item.folderId);
-      if (!group) {
-        group = { name: item.folderName || '文件夹', items: [] };
-        groups.set(item.folderId, group);
-      }
-      group.items.push(item);
+    if (item.folderId && item.fileType === 'folder') {
+      groups.set(item.folderId, { aggregate: item });
     }
   }
   return groups;
 });
 
+// 非文件夹条目（普通文件上传）
 const ungroupedItems = computed(() =>
   activeTransfers.value.filter(item => !item.folderId)
 );
+
+// 展开文件夹的子文件列表（按需从引擎获取，映射为 TransferItem 格式以复用模板）
+const expandedFolderTasks = ref<Map<string, Api.Disk.TransferItem[]>>(new Map());
+
+function refreshExpandedTasks(folderId: string): Api.Disk.TransferItem[] {
+  const engine = getEngineRef();
+  if (!engine) {
+    expandedFolderTasks.value.delete(folderId);
+    return [];
+  }
+  const tasks = engine.getFolderTasks(folderId);
+  const items: Api.Disk.TransferItem[] = tasks.map(t => ({
+    transferId: t.taskId,
+    fileName: t.fileName,
+    fileType: t.fileType,
+    transferType: 'upload',
+    status: (t.status === 'uploading' || t.status === 'hashing' || t.status === 'checking' || t.status === 'merging') ? 'transferring' : t.status,
+    progress: t.progress,
+    transferredSize: t.transferredSize,
+    totalSize: t.fileSize,
+    speed: t.speed,
+    remainingTime: t.remainingTime,
+    chunkProgress: t.totalChunks > 1 ? `${t.uploadedChunks.length}/${t.totalChunks}` : undefined,
+    error: t.error,
+    folderId: t.folderId,
+    folderName: t.folderName
+  }));
+  expandedFolderTasks.value.set(folderId, items);
+  return items;
+}
+
+function getExpandedTasks(folderId: string): Api.Disk.TransferItem[] {
+  return expandedFolderTasks.value.get(folderId) || [];
+}
 
 function toggleFolder(folderId: string) {
   const set = new Set(expandedFolders.value);
   if (set.has(folderId)) {
     set.delete(folderId);
+    // 折叠时只清理缓存，不删除
   } else {
     set.add(folderId);
+    // 展开时从引擎获取最新子文件列表
+    refreshExpandedTasks(folderId);
   }
   expandedFolders.value = set;
 }
@@ -287,40 +328,47 @@ function toggleDetail(transferId: string) {
   expandedDetails.value = set;
 }
 
-function getFolderProgress(items: Api.Disk.TransferItem[]): number {
-  if (items.length === 0) return 0;
-  const total = items.reduce((sum, item) => sum + item.progress, 0);
-  return Math.round(total / items.length);
-}
-
-function getFolderStatus(items: Api.Disk.TransferItem[]): Api.Disk.TransferItem['status'] {
-  if (items.every(i => i.status === 'completed')) return 'completed';
-  if (items.every(i => i.status === 'paused')) return 'paused';
-  if (items.some(i => i.status === 'failed')) return 'failed';
-  return 'transferring';
-}
-
 function cancelFolder(folderId: string) {
-  const items = folderGroups.value.get(folderId)?.items;
-  if (!items) return;
-  for (const item of items) {
-    cancel(item.transferId);
+  const engine = getEngineRef();
+  if (!engine) return;
+  const tasks = engine.getFolderTasks(folderId);
+  for (const task of tasks) {
+    cancel(task.taskId);
   }
 }
 
 function pauseFolder(folderId: string) {
-  const items = folderGroups.value.get(folderId)?.items;
-  if (!items) return;
-  for (const item of items) {
-    if (isActiveStatus(item.status)) pause(item.transferId);
+  const engine = getEngineRef();
+  if (!engine) return;
+  const tasks = engine.getFolderTasks(folderId);
+  for (const task of tasks) {
+    if (task.status === 'uploading' || task.status === 'hashing' || task.status === 'checking') pause(task.taskId);
   }
 }
 
 function resumeFolder(folderId: string) {
-  const items = folderGroups.value.get(folderId)?.items;
-  if (!items) return;
-  for (const item of items) {
-    if (item.status === 'paused') resume(item.transferId);
+  const engine = getEngineRef();
+  if (!engine) return;
+  const tasks = engine.getFolderTasks(folderId);
+  for (const task of tasks) {
+    if (task.status === 'paused') resume(task.taskId);
+  }
+}
+
+function retryFolder(folderId: string) {
+  const engine = getEngineRef();
+  if (!engine) return;
+  const tasks = engine.getFolderTasks(folderId);
+  for (const task of tasks) {
+    if (task.status === 'failed') retry(task.taskId);
+  }
+}
+
+// 清除已完成文件夹（移除 engine taskMap 和 store 条目）
+function clearFolder(folderId: string) {
+  const engine = getEngineRef();
+  if (engine) {
+    engine.clearFolderTasks(folderId);
   }
 }
 
@@ -431,17 +479,17 @@ onMounted(() => {
                   <polyline points="9 6 15 12 9 18" />
                 </svg>
                 <FileIcon file-type="folder" size="small" />
-                <span class="text-14px dark:text-white/80 text-gray-700 whitespace-nowrap truncate">{{ group.name }}</span>
+                <span class="text-14px dark:text-white/80 text-gray-700 whitespace-nowrap truncate">{{ group.aggregate.fileName }}</span>
               </div>
               <div class="flex items-center gap-8px" @click.stop>
                 <span class="text-13px dark:text-white/40 text-gray-400">
-                  {{ group.items.filter(i => i.status === 'completed').length }}/{{ group.items.length }}
+                  {{ group.aggregate.completedCount || 0 }}/{{ group.aggregate.totalCount || 0 }}
                 </span>
-                <span class="text-14px font-600 tabular-nums" :style="{ color: getStatusColor(getFolderStatus(group.items)) }">
-                  {{ getFolderProgress(group.items) }}%
+                <span class="text-14px font-600 tabular-nums" :style="{ color: getStatusColor(group.aggregate.status) }">
+                  {{ group.aggregate.progress }}%
                 </span>
                 <button
-                  v-if="getFolderStatus(group.items) === 'transferring'"
+                  v-if="group.aggregate.status === 'transferring'"
                   class="w-28px h-28px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
                   title="暂停全部"
                   @click="pauseFolder(folderId)"
@@ -452,13 +500,35 @@ onMounted(() => {
                   </svg>
                 </button>
                 <button
-                  v-if="getFolderStatus(group.items) === 'paused'"
+                  v-if="group.aggregate.status === 'paused'"
                   class="w-28px h-28px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--primary-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
                   title="继续全部"
                   @click="resumeFolder(folderId)"
                 >
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                     <polygon points="8,6 18,12 8,18" />
+                  </svg>
+                </button>
+                <button
+                  v-if="group.aggregate.status === 'failed'"
+                  class="w-28px h-28px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--n-warning-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
+                  title="重试全部失败文件"
+                  @click="retryFolder(folderId)"
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="1,4 1,10 7,10" />
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                  </svg>
+                </button>
+                <button
+                  v-if="group.aggregate.status === 'completed'"
+                  class="w-28px h-28px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
+                  title="清除"
+                  @click="clearFolder(folderId)"
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
                 <button class="w-28px h-28px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]" title="取消全部" @click="cancelFolder(folderId)">
@@ -473,26 +543,26 @@ onMounted(() => {
             <div class="h-6px rd-3px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px mb-2px">
               <div
                 class="h-full rd-3px transition-width duration-300"
-                :style="{ width: `${getFolderProgress(group.items)}%`, background: getStatusColor(getFolderStatus(group.items)) }"
+                :style="{ width: `${group.aggregate.progress}%`, background: getStatusColor(group.aggregate.status) }"
               />
             </div>
-            <!-- Expanded file list -->
+            <!-- Expanded file list (from engine, not store) -->
             <div v-if="expandedFolders.has(folderId)" class="p-x-4px pb-4px border-t-1px border-t-solid border-t-[rgba(100,108,255,0.08)] dark:border-t-[rgba(100,108,255,0.12)]">
-              <div v-for="item in group.items" :key="item.transferId" class="p-8px mb-3px rd-8px transition-bg duration-200 hover:bg-[rgba(100,108,255,0.06)] dark:hover:bg-[rgba(100,108,255,0.1)]">
+              <div v-for="childTask in getExpandedTasks(folderId)" :key="childTask.transferId" class="p-8px mb-3px rd-8px transition-bg duration-200 hover:bg-[rgba(100,108,255,0.06)] dark:hover:bg-[rgba(100,108,255,0.1)]">
                 <div class="flex justify-between items-center mb-4px">
                   <div class="flex items-center gap-8px overflow-hidden">
-                    <FileIcon :file-type="getFileTypeCategory(item.fileType)" :extension="item.fileType" size="small" />
-                    <span class="text-13px dark:text-white/80 text-gray-700 whitespace-nowrap truncate max-w-300px">{{ item.fileName }}</span>
+                    <FileIcon :file-type="getFileTypeCategory(childTask.fileType)" :extension="childTask.fileType" size="small" />
+                    <span class="text-13px dark:text-white/80 text-gray-700 whitespace-nowrap truncate max-w-300px">{{ childTask.fileName }}</span>
                   </div>
                   <div class="flex items-center gap-6px">
-                    <span class="ml-auto text-13px font-600 tabular-nums" :style="{ color: getStatusColor(item.status) }">
-                      {{ isPreparingStatus(item.status) ? getStatusText(item) : item.status === 'failed' ? getStatusText(item) : `${item.progress}%` }}
+                    <span class="ml-auto text-13px font-600 tabular-nums" :style="{ color: getStatusColor(childTask.status) }">
+                      {{ isPreparingStatus(childTask.status) ? getStatusText(childTask) : childTask.status === 'failed' ? getStatusText(childTask) : `${childTask.progress}%` }}
                     </span>
                     <button
-                      v-if="isActiveStatus(item.status)"
+                      v-if="isActiveStatus(childTask.status)"
                       class="w-28px h-28px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
                       title="暂停"
-                      @click="pause(item.transferId)"
+                      @click="pause(childTask.transferId)"
                     >
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
                         <line x1="10" y1="6" x2="10" y2="18" />
@@ -500,20 +570,20 @@ onMounted(() => {
                       </svg>
                     </button>
                     <button
-                      v-if="item.status === 'paused'"
+                      v-if="childTask.status === 'paused'"
                       class="w-28px h-28px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--primary-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
                       title="继续"
-                      @click="resume(item.transferId)"
+                      @click="resume(childTask.transferId)"
                     >
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                         <polygon points="8,6 18,12 8,18" />
                       </svg>
                     </button>
                     <button
-                      v-if="item.status === 'failed'"
+                      v-if="childTask.status === 'failed'"
                       class="w-28px h-28px border-none rd-full bg-transparent cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--n-warning-color)] hover:bg-red/10 hover:text-[var(--n-error-color)]"
-                      title="重新上传"
-                      @click="reupload(item.transferId)"
+                      title="重试"
+                      @click="retry(childTask.transferId)"
                     >
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
                         <polyline points="1,4 1,10 7,10" />
@@ -521,10 +591,10 @@ onMounted(() => {
                       </svg>
                     </button>
                     <button
-                      v-if="item.status !== 'completed'"
+                      v-if="childTask.status !== 'completed'"
                       class="w-28px h-28px border-none rd-full bg-transparent text-black/25 dark:text-white/30 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red/10 hover:text-[var(--n-error-color)]"
                       title="取消"
-                      @click="cancelTransfer(item.transferId)"
+                      @click="cancelTransfer(childTask.transferId)"
                     >
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
                         <line x1="18" y1="6" x2="6" y2="18" />
@@ -534,46 +604,46 @@ onMounted(() => {
                   </div>
                 </div>
                 <!-- Preparing: indeterminate bar -->
-                <div v-if="isPreparingStatus(item.status)" class="h-6px rd-3px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px">
-                  <div class="h-full rd-2px w-30% progress-indeterminate" :style="{ background: getStatusColor(item.status) }" />
+                <div v-if="isPreparingStatus(childTask.status)" class="h-6px rd-3px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px">
+                  <div class="h-full rd-2px w-30% progress-indeterminate" :style="{ background: getStatusColor(childTask.status) }" />
                 </div>
                 <!-- Uploading/merging: real progress -->
                 <div v-else class="h-6px rd-3px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px">
                   <div
                     class="h-full rd-3px transition-width duration-300"
-                    :style="{ width: `${item.progress}%`, background: getStatusColor(item.status) }"
+                    :style="{ width: `${childTask.progress}%`, background: getStatusColor(childTask.status) }"
                   />
                 </div>
                 <!-- Progress info -->
-                <div v-if="!isPreparingStatus(item.status) && isActiveStatus(item.status)" class="flex justify-between items-center text-14px dark:text-white/35 text-gray-400 mt-3px tabular-nums mx-10px">
-                  <span>{{ formatFileSize(item.transferredSize) }} / {{ formatFileSize(item.totalSize) }}</span>
+                <div v-if="!isPreparingStatus(childTask.status) && isActiveStatus(childTask.status)" class="flex justify-between items-center text-14px dark:text-white/35 text-gray-400 mt-3px tabular-nums mx-10px">
+                  <span>{{ formatFileSize(childTask.transferredSize) }} / {{ formatFileSize(childTask.totalSize) }}</span>
                   <div class="flex items-center gap-6px">
-                    <span>{{ formatFileSize(item.speed) }}/s</span>
-                    <button class="text-11px text-[var(--primary-color)] opacity-60 hover:opacity-100 cursor-pointer bg-transparent border-none px-2px" @click.stop="toggleDetail(item.transferId)">
-                      {{ expandedDetails.has(item.transferId) ? '收起' : '详情' }}
+                    <span>{{ formatFileSize(childTask.speed) }}/s</span>
+                    <button class="text-11px text-[var(--primary-color)] opacity-60 hover:opacity-100 cursor-pointer bg-transparent border-none px-2px" @click.stop="toggleDetail(childTask.transferId)">
+                      {{ expandedDetails.has(childTask.transferId) ? '收起' : '详情' }}
                     </button>
                   </div>
                 </div>
-                <div v-else-if="getStatusText(item)" class="text-14px mt-3px tabular-nums mx-10px">
-                  <span :style="{ color: getStatusColor(item.status) }">{{ getStatusText(item) }}</span>
+                <div v-else-if="getStatusText(childTask)" class="text-14px mt-3px tabular-nums mx-10px">
+                  <span :style="{ color: getStatusColor(childTask.status) }">{{ getStatusText(childTask) }}</span>
                 </div>
                 <!-- Chunk detail -->
-                <div v-if="expandedDetails.has(item.transferId)" class="mt-4px mx-10px px-6px py-4px rd-4px bg-[rgba(100,108,255,0.04)] dark:bg-[rgba(100,108,255,0.08)] text-14px dark:text-white/40 text-gray-400 flex flex-col gap-2px tabular-nums">
+                <div v-if="expandedDetails.has(childTask.transferId)" class="mt-4px mx-10px px-6px py-4px rd-4px bg-[rgba(100,108,255,0.04)] dark:bg-[rgba(100,108,255,0.08)] text-14px dark:text-white/40 text-gray-400 flex flex-col gap-2px tabular-nums">
                   <div class="flex justify-between">
                     <span>文件大小</span>
-                    <span>{{ formatFileSize(item.totalSize) }}</span>
+                    <span>{{ formatFileSize(childTask.totalSize) }}</span>
                   </div>
-                  <div v-if="item.chunkProgress" class="flex justify-between">
+                  <div v-if="childTask.chunkProgress" class="flex justify-between">
                     <span>分片进度</span>
-                    <span>{{ item.chunkProgress }} 分片</span>
+                    <span>{{ childTask.chunkProgress }} 分片</span>
                   </div>
-                  <div v-if="item.remainingTime > 0" class="flex justify-between">
+                  <div v-if="childTask.remainingTime > 0" class="flex justify-between">
                     <span>预计剩余</span>
-                    <span>{{ item.remainingTime }}s</span>
+                    <span>{{ childTask.remainingTime }}s</span>
                   </div>
                   <div class="flex justify-between">
                     <span>当前阶段</span>
-                    <span :style="{ color: getStatusColor(item.status) }">{{ getStatusText(item) || item.status }}</span>
+                    <span :style="{ color: getStatusColor(childTask.status) }">{{ getStatusText(childTask) || childTask.status }}</span>
                   </div>
                 </div>
               </div>

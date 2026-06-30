@@ -247,6 +247,14 @@ declare namespace Api {
       folderId?: string;
       /** 所属文件夹名称 */
       folderName?: string;
+      /** 文件夹上传：已完成文件数 */
+      completedCount?: number;
+      /** 文件夹上传：总文件数 */
+      totalCount?: number;
+      /** 文件夹上传：总传输大小（所有子文件之和） */
+      folderTotalSize?: number;
+      /** 文件夹上传：总已传输大小 */
+      folderTransferredSize?: number;
     };
 
     /** 面包屑项 */

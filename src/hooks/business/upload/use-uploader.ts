@@ -322,5 +322,9 @@ export function useUploader() {
     }
   }
 
-  return { upload, triggerFile, triggerFolder, pause, resume, cancel, retry, reupload, pauseAll, resumeAll };
+  function getEngineRef(): UploaderEngine | null {
+    return engineInstance;
+  }
+
+  return { upload, triggerFile, triggerFolder, pause, resume, cancel, retry, reupload, pauseAll, resumeAll, getEngineRef };
 }

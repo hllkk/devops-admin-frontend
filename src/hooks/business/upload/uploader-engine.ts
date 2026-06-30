@@ -174,7 +174,15 @@ export class UploaderEngine {
       this.taskMap.set(task.taskId, task);
       this.queue.push(task);
       ids.push(task.taskId);
-      this.syncToStore(task);
+      // 文件夹上传：子文件不逐个同步到 store，只更新文件夹级聚合条目
+      if (!task.folderId) {
+        this.syncToStore(task);
+      }
+    }
+
+    // 文件夹上传：添加文件夹级聚合条目到 store
+    if (folderInfo) {
+      this.syncFolderToStore(folderInfo.id);
     }
 
     this.schedule();
@@ -230,13 +238,20 @@ export class UploaderEngine {
     // 清理进度节流定时器，避免取消后定时器触发把任务重新加回列表（幽灵任务）
     this.clearSyncTimer(taskId);
 
+    const folderId = task.folderId;
+
     task.abortController?.abort();
     this.taskMap.delete(task.taskId);
     this.queue = this.queue.filter(t => t.taskId !== taskId);
     this.activePool.delete(task.taskId);
     this.speedTrackers.delete(task.taskId);
 
-    getStore().removeTransferItem(task.taskId);
+    // 文件夹子文件不在 store 中，只需更新文件夹级聚合条目
+    if (folderId) {
+      this.syncFolderToStore(folderId);
+    } else {
+      getStore().removeTransferItem(task.taskId);
+    }
 
     // fire-and-forget 清理服务端分片（失败由 24h 过期机制兜底）
     const identifier = task.quickHash || task.fileHash;
@@ -269,19 +284,45 @@ export class UploaderEngine {
     return this.taskMap.get(taskId);
   }
 
+  /** Get all tasks belonging to a folder (for panel expansion) */
+  getFolderTasks(folderId: string): Api.Disk.UploadTask[] {
+    const tasks: Api.Disk.UploadTask[] = [];
+    for (const task of this.taskMap.values()) {
+      if (task.folderId === folderId) {
+        tasks.push(task);
+      }
+    }
+    return tasks;
+  }
+
   /** Get all tasks */
   getAllTasks(): Api.Disk.UploadTask[] {
     return Array.from(this.taskMap.values());
   }
 
-  /** Clear completed tasks */
+  /** Clear completed tasks. Folder child tasks stay in taskMap for aggregate counting. */
   clearCompleted(): void {
     for (const task of this.taskMap.values()) {
       if (task.status === 'completed') {
-        this.taskMap.delete(task.taskId);
-        getStore().removeTransferItem(task.taskId);
+        if (task.folderId) {
+          // 文件夹子文件：保留在 taskMap 中以维持聚合计数
+          // 仅在用户手动清除文件夹传输条目时才清除（通过 clearFolderTasks）
+        } else {
+          getStore().removeTransferItem(task.taskId);
+          this.taskMap.delete(task.taskId);
+        }
       }
     }
+  }
+
+  /** Clear all tasks belonging to a completed folder (called when user dismisses folder item). */
+  clearFolderTasks(folderId: string): void {
+    for (const task of this.taskMap.values()) {
+      if (task.folderId === folderId) {
+        this.taskMap.delete(task.taskId);
+      }
+    }
+    getStore().removeTransferItem(folderId);
   }
 
   // ---------------------------------------------------------------------------
@@ -941,8 +982,15 @@ export class UploaderEngine {
   // Store sync
   // ---------------------------------------------------------------------------
 
-  /** Map UploadTask to TransferItem and sync to disk store */
+  /** Map UploadTask to TransferItem and sync to disk store.
+   *  For folder tasks, delegates to syncFolderToStore (aggregate update). */
   private syncToStore(task: Api.Disk.UploadTask): void {
+    // 文件夹上传的子文件 → 更新文件夹级聚合条目
+    if (task.folderId) {
+      this.syncFolderToStore(task.folderId);
+      return;
+    }
+
     const store = getStore();
 
     const existing = store.transferList.find(item => item.transferId === task.taskId);
@@ -974,6 +1022,82 @@ export class UploaderEngine {
     }
   }
 
+  /** Sync folder-level aggregate TransferItem to disk store.
+   *  Collects all tasks with the same folderId from taskMap and computes aggregate progress/status. */
+  private syncFolderToStore(folderId: string): void {
+    const store = getStore();
+
+    // Collect all child tasks belonging to this folder
+    const childTasks: Api.Disk.UploadTask[] = [];
+    for (const task of this.taskMap.values()) {
+      if (task.folderId === folderId) {
+        childTasks.push(task);
+      }
+    }
+
+    if (childTasks.length === 0) {
+      // All child tasks removed (e.g. all cancelled) → remove folder item from store
+      store.removeTransferItem(folderId);
+      return;
+    }
+
+    const totalCount = childTasks.length;
+    const completedCount = childTasks.filter(t => t.status === 'completed').length;
+    const failedCount = childTasks.filter(t => t.status === 'failed').length;
+    const pausedCount = childTasks.filter(t => t.status === 'paused').length;
+
+    // Aggregate status
+    let status: Api.Disk.TransferItem['status'] = 'transferring';
+    if (completedCount === totalCount) status = 'completed';
+    else if (pausedCount === totalCount) status = 'paused';
+    else if (failedCount > 0) status = 'failed';
+
+    // Aggregate progress: weighted by file size
+    const folderTotalSize = childTasks.reduce((sum, t) => sum + t.fileSize, 0);
+    const folderTransferredSize = childTasks.reduce((sum, t) => sum + t.transferredSize, 0);
+    const progress = folderTotalSize > 0
+      ? Math.round((folderTransferredSize / folderTotalSize) * 100)
+      : Math.round(childTasks.reduce((sum, t) => sum + t.progress, 0) / totalCount);
+
+    // Aggregate speed: sum of active transfers
+    const speed = childTasks.filter(t => t.status === 'uploading')
+      .reduce((sum, t) => sum + t.speed, 0);
+
+    // Remaining time estimate
+    const remainingSize = folderTotalSize - folderTransferredSize;
+    const remainingTime = speed > 0 ? Math.round(remainingSize / speed) : 0;
+
+    // Get folder name from first child task
+    const folderName = childTasks[0]?.folderName || '文件夹';
+
+    const transferItem: Api.Disk.TransferItem = {
+      transferId: folderId,
+      fileName: folderName,
+      fileType: 'folder',
+      transferType: 'upload',
+      status,
+      progress,
+      transferredSize: folderTransferredSize,
+      totalSize: 0, // individual file sizes tracked in folderTotalSize
+      speed,
+      remainingTime,
+      error: failedCount > 0 ? `${failedCount}个文件上传失败` : undefined,
+      folderId,
+      folderName,
+      completedCount,
+      totalCount,
+      folderTotalSize,
+      folderTransferredSize
+    };
+
+    const existing = store.transferList.find(item => item.transferId === folderId);
+    if (existing) {
+      store.updateTransferItem(folderId, transferItem);
+    } else {
+      store.addTransferItem(transferItem);
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Cleanup
   // ---------------------------------------------------------------------------
@@ -992,9 +1116,10 @@ export class UploaderEngine {
     const task = this.taskMap.get(taskId);
     if (task) {
       task.abortController = undefined;
-      // 释放 File 引用：任务已结束（完成/失败/取消），不再需要原始文件对象，
-      // 置 null 让 GC 回收，避免 taskMap 长期持有大量已完成任务的 File 导致内存累积
-      task.file = null;
+      // 仅对已完成/已取消的任务释放 File 引用；失败任务保留引用以便 retry
+      if (task.status !== 'failed') {
+        task.file = null;
+      }
     }
     this.schedule();
   }
