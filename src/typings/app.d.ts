@@ -1338,6 +1338,14 @@ declare namespace App {
             overwrite: string;
             keepBoth: string;
           };
+          uploadConflict: {
+            title: string;
+            description: string;
+            keepBothAll: string;
+            overwriteAll: string;
+            skipAll: string;
+            skip: string;
+          };
           moveCopy: {
             copyTitle: string;
             moveTitle: string;

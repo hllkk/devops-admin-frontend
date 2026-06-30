@@ -1,8 +1,12 @@
+import { createApp } from 'vue';
 import { $t } from '@/locales';
 import { fetchCheckQuota } from '@/service/api/disk/quota';
+import { fetchCheckConflicts, fetchEnsureFolder } from '@/service/api/disk/file';
+import { useAuthStore } from '@/store/modules/auth';
 import { useDiskStore } from '@/store/modules/disk';
 import { getFileExtension, getMaxUploadSize } from './chunk-manager';
 import { UploaderEngine } from './uploader-engine';
+import UploadConflictDialog from '@/views/disk/modules/upload-conflict-dialog.vue';
 
 let engineInstance: UploaderEngine | null = null;
 let folderIdCounter = 0;
@@ -17,6 +21,14 @@ function getEngine(): UploaderEngine {
 function generateFolderId(): string {
   folderIdCounter += 1;
   return `folder_${Date.now()}_${folderIdCounter}`;
+}
+
+/** Get the current directory path from disk store breadcrumbs */
+function getCurrentDirectory(): string {
+  const diskStore = useDiskStore();
+  if (diskStore.currentPath.length === 0) return '/';
+  const parts = diskStore.currentPath.map(item => item.fileName);
+  return `/${parts.join('/')}`;
 }
 
 /** Get the set of file names (non-folder) in the current directory */
@@ -68,6 +80,40 @@ function showDuplicateDialog(fileName: string): Promise<'overwrite' | 'keepBoth'
   });
 }
 
+/** Show batch conflict dialog for folder uploads. Returns Map<key, action> */
+function showBatchConflictDialog(
+  conflicts: { fileName: string; targetPath: string }[]
+): Promise<Map<string, 'keepBoth' | 'overwrite' | 'skip'>> {
+  return new Promise(resolve => {
+    const mountEl = document.createElement('div');
+    document.body.appendChild(mountEl);
+
+    const app = createApp(UploadConflictDialog, {
+      visible: true,
+      conflicts,
+      onConfirm(decisions: Map<string, 'keepBoth' | 'overwrite' | 'skip'>) {
+        resolve(decisions);
+        app.unmount();
+        mountEl.remove();
+      },
+      'onUpdate:visible'(value: boolean) {
+        if (!value) {
+          // Dialog closed without confirm → default all to keepBoth
+          const defaults = new Map<string, 'keepBoth' | 'overwrite' | 'skip'>();
+          for (const c of conflicts) {
+            defaults.set(`${c.fileName}@${c.targetPath}`, 'keepBoth');
+          }
+          resolve(defaults);
+          app.unmount();
+          mountEl.remove();
+        }
+      }
+    });
+
+    app.mount(mountEl);
+  });
+}
+
 type FileEntry = { file: File; relativePath?: string };
 
 export function useUploader() {
@@ -80,7 +126,6 @@ export function useUploader() {
     folderInfo?: { id: string; name: string }
   ) {
     const targetParentId = parentId ?? Number(diskStore.currentParentId ?? 0);
-    const existingNames = getExistingFileNames();
 
     // Normalize to FileEntry array
     const entries: FileEntry[] = files.map(f =>
@@ -109,25 +154,103 @@ export function useUploader() {
     // Resolve duplicates
     const resolvedFiles: { file: File; resolvedName?: string; override?: boolean; relativePath?: string }[] = [];
 
-    for (const entry of entries) {
-      const fileName = entry.file.name;
+    if (folderInfo) {
+      // === 文件夹上传：先预建文件夹 + 精确冲突检测 ===
+      const currentDirectory = getCurrentDirectory();
+      const userId = Number(useAuthStore().userInfo.userId);
 
-      if (!existingNames.has(fileName)) {
-        resolvedFiles.push({ file: entry.file, relativePath: entry.relativePath });
-        continue;
+      // 1. 预建文件夹结构
+      let ensureError = false;
+      await fetchEnsureFolder({
+        userId,
+        currentDirectory,
+        folderName: folderInfo.name
+      }).catch(() => {
+        // 预建失败不阻断上传，后续上传时会懒创建
+        ensureError = true;
+      });
+
+      if (ensureError) {
+        window.$message?.warning('预建文件夹失败，将在上传文件时自动创建');
       }
 
-      // Duplicate found — ask user
-      const choice = await showDuplicateDialog(fileName);
+      // 2. 批量冲突检测
+      const checkEntries = entries.map(e => ({
+        fileName: e.file.name,
+        relativePath: e.relativePath || e.file.name
+      }));
 
-      if (choice === 'overwrite') {
-        resolvedFiles.push({ file: entry.file, override: true, relativePath: entry.relativePath });
-      } else if (choice === 'keepBoth') {
-        const newName = resolveFileName(fileName, existingNames);
-        existingNames.add(newName);
-        resolvedFiles.push({ file: entry.file, resolvedName: newName, relativePath: entry.relativePath });
+      const { data: conflictsData, error: conflictsError } = await fetchCheckConflicts({
+        userId,
+        currentDirectory,
+        entries: checkEntries
+      });
+
+      if (conflictsError || !conflictsData) {
+        // 检测失败降级：不检查冲突，直接上传（后端有 Duplicate 兜底）
+        for (const entry of entries) {
+          resolvedFiles.push({ file: entry.file, relativePath: entry.relativePath });
+        }
+      } else if (conflictsData.conflicts.length === 0) {
+        // 无冲突：直接上传
+        for (const entry of entries) {
+          resolvedFiles.push({ file: entry.file, relativePath: entry.relativePath });
+        }
+      } else {
+        // 有冲突：弹出批量冲突弹窗
+        const decisions = await showBatchConflictDialog(conflictsData.conflicts);
+
+        // 构建冲突集，快速查找
+        const conflictSet = new Set(
+          conflictsData.conflicts.map(c => `${c.fileName}@${c.targetPath}`)
+        );
+
+        for (const entry of entries) {
+          const fileName = entry.file.name;
+          // relativePath 已包含文件夹名前缀（如 "docs/sub/readme.txt"），无需再加 folderInfo.name
+          const relPath = entry.relativePath || entry.file.name;
+          const relDir = relPath.includes('/') ? relPath.substring(0, relPath.lastIndexOf('/')) : '';
+          const targetPath = relDir ? `${currentDirectory}/${relDir}` : currentDirectory;
+          const key = `${fileName}@${targetPath}`;
+
+          if (conflictSet.has(key)) {
+            const action = decisions.get(key) || 'keepBoth';
+            if (action === 'overwrite') {
+              resolvedFiles.push({ file: entry.file, override: true, relativePath: entry.relativePath });
+            } else if (action === 'keepBoth') {
+              // 为冲突文件生成新名（后端 resolveNameConflict 也可兜底）
+              resolvedFiles.push({ file: entry.file, relativePath: entry.relativePath });
+            }
+            // 'skip' → don't add
+          } else {
+            resolvedFiles.push({ file: entry.file, relativePath: entry.relativePath });
+          }
+        }
       }
-      // 'skip' → don't add the file
+    } else {
+      // === 普通文件上传：当前目录冲突检测（保持现有逻辑） ===
+      const existingNames = getExistingFileNames();
+
+      for (const entry of entries) {
+        const fileName = entry.file.name;
+
+        if (!existingNames.has(fileName)) {
+          resolvedFiles.push({ file: entry.file, relativePath: entry.relativePath });
+          continue;
+        }
+
+        // Duplicate found — ask user
+        const choice = await showDuplicateDialog(fileName);
+
+        if (choice === 'overwrite') {
+          resolvedFiles.push({ file: entry.file, override: true, relativePath: entry.relativePath });
+        } else if (choice === 'keepBoth') {
+          const newName = resolveFileName(fileName, existingNames);
+          existingNames.add(newName);
+          resolvedFiles.push({ file: entry.file, resolvedName: newName, relativePath: entry.relativePath });
+        }
+        // 'skip' → don't add the file
+      }
     }
 
     if (resolvedFiles.length > 0) {

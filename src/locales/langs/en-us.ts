@@ -1559,6 +1559,14 @@ const local: App.I18n.Schema = {
         overwrite: 'Overwrite',
         keepBoth: 'Keep Both'
       },
+      uploadConflict: {
+        title: 'Upload Conflict Resolution',
+        description: '{count} file(s) conflict with existing files in the target directory. Choose how to handle:',
+        keepBothAll: 'Keep Both (All)',
+        overwriteAll: 'Overwrite All',
+        skipAll: 'Skip All',
+        skip: 'Skip'
+      },
       moveCopy: {
         copyTitle: 'Copy To',
         moveTitle: 'Move To',

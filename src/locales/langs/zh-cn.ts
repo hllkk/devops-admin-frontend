@@ -1551,6 +1551,14 @@ const local: App.I18n.Schema = {
         overwrite: '覆盖',
         keepBoth: '保留两者'
       },
+      uploadConflict: {
+        title: '上传冲突处理',
+        description: '检测到 {count} 个文件与目标目录中已有文件冲突，请选择处理方式：',
+        keepBothAll: '全部保留两者',
+        overwriteAll: '全部覆盖',
+        skipAll: '全部跳过',
+        skip: '跳过'
+      },
       moveCopy: {
         copyTitle: '复制到',
         moveTitle: '移动到',
