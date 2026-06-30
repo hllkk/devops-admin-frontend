@@ -92,9 +92,9 @@ async function handleSubmit() {
   }
 }
 
-async function handleUpdateTargetRole(id: number, role: Api.Disk.ShareRole) {
+async function handleUpdateTargetRole(fileShareId: number, role: Api.Disk.ShareRole) {
   startLoading();
-  const { error } = await fetchUpdateShareRole(id, role);
+  const { error } = await fetchUpdateShareRole(fileShareId, role);
   endLoading();
   if (!error) {
     window.$message?.success($t('page.disk.share.updateSuccess'));
@@ -155,6 +155,7 @@ onMounted(() => {
           v-for="target in existingTargets"
           :id="target.id"
           :key="target.id"
+          :file-share-id="target.fileShareId"
           :target-id="target.targetId"
           :target-name="target.targetName"
           target-type="user"

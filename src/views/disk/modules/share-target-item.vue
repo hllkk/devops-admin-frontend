@@ -8,6 +8,7 @@ defineOptions({
 
 interface Props {
   id: number;
+  fileShareId: number;
   targetName: string;
   targetType: 'user' | 'dept';
   role: Api.Disk.ShareRole;
@@ -21,7 +22,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 interface Emits {
-  (e: 'update', id: number, role: Api.Disk.ShareRole): void;
+  (e: 'update', fileShareId: number, role: Api.Disk.ShareRole): void;
   (e: 'remove', id: number): void;
 }
 
@@ -62,7 +63,7 @@ function handleCancelEdit() {
 }
 
 function handleSaveEdit() {
-  emit('update', props.id, currentRole.value);
+  emit('update', props.fileShareId, currentRole.value);
   isEditing.value = false;
 }
 
