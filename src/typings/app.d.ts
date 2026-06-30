@@ -1510,6 +1510,8 @@ declare namespace App {
             roleViewer: string;
             roleEditor: string;
             roleOwner: string;
+            permHintViewer: string;
+            permHintEditor: string;
             saveAsIndependentCopy: string;
             permDownload: string;
             permDelete: string;

@@ -33,14 +33,20 @@ const currentRole = ref<Api.Disk.ShareRole>(props.role);
 
 const roleOptions = computed(() => [
   { label: $t('page.disk.sharedWithMe.roleViewer'), value: 'viewer' as const },
-  { label: $t('page.disk.sharedWithMe.roleEditor'), value: 'editor' as const },
-  { label: $t('page.disk.sharedWithMe.roleOwner'), value: 'owner' as const }
+  { label: $t('page.disk.sharedWithMe.roleEditor'), value: 'editor' as const }
 ]);
 
+// owner 分支保留作为内部兜底（旧数据/发起人身份），UI 不暴露授予
 const roleTagTypeMap: Record<Api.Disk.ShareRole, 'success' | 'warning' | 'error'> = {
   viewer: 'success',
   editor: 'warning',
   owner: 'error'
+};
+
+const roleHintMap: Record<Api.Disk.ShareRole, string> = {
+  viewer: $t('page.disk.sharedWithMe.permHintViewer'),
+  editor: $t('page.disk.sharedWithMe.permHintEditor'),
+  owner: $t('page.disk.sharedWithMe.roleOwner')
 };
 
 const roleLabel = computed(() => {
@@ -51,6 +57,8 @@ const roleLabel = computed(() => {
   };
   return map[props.role];
 });
+
+const roleHint = computed(() => roleHintMap[props.role]);
 
 function handleStartEdit() {
   currentRole.value = props.role;
@@ -120,13 +128,19 @@ function renderTargetIcon() {
     </template>
 
     <template v-else>
-      <NTag
-        size="tiny"
-        :bordered="false"
-        :type="roleTagTypeMap[role]"
-      >
-        {{ roleLabel }}
-      </NTag>
+      <NTooltip>
+        <template #trigger>
+          <NTag
+            size="tiny"
+            :bordered="false"
+            :type="roleTagTypeMap[role]"
+            class="cursor-help"
+          >
+            {{ roleLabel }}
+          </NTag>
+        </template>
+        {{ roleHint }}
+      </NTooltip>
       <NButton size="tiny" class="ml-12px" @click="handleStartEdit">
         {{ $t('common.modify') }}
       </NButton>

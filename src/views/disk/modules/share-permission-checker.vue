@@ -21,10 +21,15 @@ interface Emits {
 
 const emit = defineEmits<Emits>();
 
-const roleOptions = computed(() => [
-  { label: $t('page.disk.sharedWithMe.roleViewer'), value: 'viewer' as const },
-  { label: $t('page.disk.sharedWithMe.roleEditor'), value: 'editor' as const },
-  { label: $t('page.disk.sharedWithMe.roleOwner'), value: 'owner' as const }
+interface RoleOption {
+  label: string;
+  value: Api.Disk.ShareRole;
+  hint: string;
+}
+
+const roleOptions = computed<RoleOption[]>(() => [
+  { label: $t('page.disk.sharedWithMe.roleViewer'), value: 'viewer', hint: $t('page.disk.sharedWithMe.permHintViewer') },
+  { label: $t('page.disk.sharedWithMe.roleEditor'), value: 'editor', hint: $t('page.disk.sharedWithMe.permHintEditor') }
 ]);
 
 function handleChange(value: Api.Disk.ShareRole) {
@@ -34,10 +39,18 @@ function handleChange(value: Api.Disk.ShareRole) {
 
 <template>
   <NRadioGroup :value="props.role" :disabled="disabled" @update:value="handleChange">
-    <NSpace :size="16">
-      <NRadio v-for="opt in roleOptions" :key="opt.value" :value="opt.value">
-        {{ opt.label }}
-      </NRadio>
+    <NSpace :size="16" align="center">
+      <div v-for="opt in roleOptions" :key="opt.value" class="flex items-center gap-4px">
+        <NRadio :value="opt.value">
+          {{ opt.label }}
+        </NRadio>
+        <NTooltip>
+          <template #trigger>
+            <span class="icon-[mdi--help-circle-outline] text-14px text-gray-400 cursor-help" />
+          </template>
+          {{ opt.hint }}
+        </NTooltip>
+      </div>
     </NSpace>
   </NRadioGroup>
 </template>
