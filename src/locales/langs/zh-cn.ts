@@ -1548,6 +1548,7 @@ const local: App.I18n.Schema = {
       duplicateFile: {
         title: '文件名冲突',
         message: '当前目录下已存在同名文件「{fileName}」，请选择操作',
+        folderConflictMessage: '文件夹「{folderName}」已存在，同名文件将被覆盖，是否继续？',
         overwrite: '覆盖',
         keepBoth: '保留两者'
       },

@@ -361,31 +361,6 @@ export function fetchGetFolderList(path?: string) {
   });
 }
 
-/** 批量冲突检测（文件夹上传前精确检测目标路径冲突） */
-export function fetchCheckConflicts(data: {
-  userId: number;
-  currentDirectory: string;
-  entries: { fileName: string; relativePath: string }[];
-}) {
-  return request<Api.Disk.CheckConflictsResponse>({
-    url: '/file-meta/checkConflicts',
-    method: 'post',
-    data
-  });
-}
-
-/** 预建文件夹（文件夹上传前确保目录结构存在） */
-export function fetchEnsureFolder(data: {
-  userId: number;
-  currentDirectory: string;
-  folderName: string;
-}) {
-  return request<Api.Disk.EnsureFolderResponse>({
-    url: '/file-meta/ensureFolder',
-    method: 'post',
-    data
-  });
-}
 
 /** 路径解析 - 用于URL导航恢复 */
 export function fetchResolvePath(path: string) {

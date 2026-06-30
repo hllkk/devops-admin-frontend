@@ -1,12 +1,8 @@
-import { createApp } from 'vue';
 import { $t } from '@/locales';
 import { fetchCheckQuota } from '@/service/api/disk/quota';
-import { fetchCheckConflicts, fetchEnsureFolder } from '@/service/api/disk/file';
-import { useAuthStore } from '@/store/modules/auth';
 import { useDiskStore } from '@/store/modules/disk';
 import { getFileExtension, getMaxUploadSize } from './chunk-manager';
 import { UploaderEngine } from './uploader-engine';
-import UploadConflictDialog from '@/views/disk/modules/upload-conflict-dialog.vue';
 
 let engineInstance: UploaderEngine | null = null;
 let folderIdCounter = 0;
@@ -21,14 +17,6 @@ function getEngine(): UploaderEngine {
 function generateFolderId(): string {
   folderIdCounter += 1;
   return `folder_${Date.now()}_${folderIdCounter}`;
-}
-
-/** Get the current directory path from disk store breadcrumbs */
-function getCurrentDirectory(): string {
-  const diskStore = useDiskStore();
-  if (diskStore.currentPath.length === 0) return '/';
-  const parts = diskStore.currentPath.map(item => item.fileName);
-  return `/${parts.join('/')}`;
 }
 
 /** Get the set of file names (non-folder) in the current directory */
@@ -80,37 +68,24 @@ function showDuplicateDialog(fileName: string): Promise<'overwrite' | 'keepBoth'
   });
 }
 
-/** Show batch conflict dialog for folder uploads. Returns Map<key, action> */
-function showBatchConflictDialog(
-  conflicts: { fileName: string; targetPath: string }[]
-): Promise<Map<string, 'keepBoth' | 'overwrite' | 'skip'>> {
+/** Show a simple folder upload conflict dialog. Returns 'overwrite' | 'keepBoth' | 'cancel' */
+function showFolderConflictDialog(folderName: string): Promise<'overwrite' | 'keepBoth' | 'cancel'> {
   return new Promise(resolve => {
-    const mountEl = document.createElement('div');
-    document.body.appendChild(mountEl);
-
-    const app = createApp(UploadConflictDialog, {
-      visible: true,
-      conflicts,
-      onConfirm(decisions: Map<string, 'keepBoth' | 'overwrite' | 'skip'>) {
-        resolve(decisions);
-        app.unmount();
-        mountEl.remove();
-      },
-      'onUpdate:visible'(value: boolean) {
-        if (!value) {
-          // Dialog closed without confirm → default all to keepBoth
-          const defaults = new Map<string, 'keepBoth' | 'overwrite' | 'skip'>();
-          for (const c of conflicts) {
-            defaults.set(`${c.fileName}@${c.targetPath}`, 'keepBoth');
-          }
-          resolve(defaults);
-          app.unmount();
-          mountEl.remove();
-        }
-      }
+    const dialog = window.$dialog?.warning({
+      title: $t('page.disk.duplicateFile.title'),
+      content: $t('page.disk.duplicateFile.folderConflictMessage', { folderName }),
+      positiveText: $t('page.disk.duplicateFile.keepBoth'),
+      negativeText: $t('page.disk.duplicateFile.overwrite'),
+      onPositiveClick: () => resolve('keepBoth'),
+      onNegativeClick: () => resolve('overwrite'),
+      onClose: () => resolve('cancel'),
+      onMaskClick: () => resolve('cancel')
     });
 
-    app.mount(mountEl);
+    // Fallback if dialog is unavailable
+    if (!dialog) {
+      resolve('keepBoth');
+    }
   });
 }
 
@@ -155,76 +130,33 @@ export function useUploader() {
     const resolvedFiles: { file: File; resolvedName?: string; override?: boolean; relativePath?: string }[] = [];
 
     if (folderInfo) {
-      // === 文件夹上传：先预建文件夹 + 精确冲突检测 ===
-      const currentDirectory = getCurrentDirectory();
-      const userId = Number(useAuthStore().userInfo.userId);
+      // === 文件夹上传：简单冲突确认 ===
+      // 后端 merge 阶段会自动调用 ensureFolderRecords 懒创建文件夹结构，
+      // 无需前端预建文件夹。只需检测同名文件夹并让用户一键决定。
+      const existingFolder = diskStore.currentFileList.find(
+        item => item.isFolder && item.fileName === folderInfo.name
+      );
 
-      // 1. 预建文件夹结构
-      let ensureError = false;
-      await fetchEnsureFolder({
-        userId,
-        currentDirectory,
-        folderName: folderInfo.name
-      }).catch(() => {
-        // 预建失败不阻断上传，后续上传时会懒创建
-        ensureError = true;
-      });
+      if (existingFolder) {
+        const choice = await showFolderConflictDialog(folderInfo.name);
 
-      if (ensureError) {
-        window.$message?.warning('预建文件夹失败，将在上传文件时自动创建');
-      }
-
-      // 2. 批量冲突检测
-      const checkEntries = entries.map(e => ({
-        fileName: e.file.name,
-        relativePath: e.relativePath || e.file.name
-      }));
-
-      const { data: conflictsData, error: conflictsError } = await fetchCheckConflicts({
-        userId,
-        currentDirectory,
-        entries: checkEntries
-      });
-
-      if (conflictsError || !conflictsData) {
-        // 检测失败降级：不检查冲突，直接上传（后端有 Duplicate 兜底）
-        for (const entry of entries) {
-          resolvedFiles.push({ file: entry.file, relativePath: entry.relativePath });
+        if (choice === 'cancel') {
+          return;
         }
-      } else if (conflictsData.conflicts.length === 0) {
-        // 无冲突：直接上传
+
+        const overrideAll = choice === 'overwrite';
+
         for (const entry of entries) {
-          resolvedFiles.push({ file: entry.file, relativePath: entry.relativePath });
+          resolvedFiles.push({
+            file: entry.file,
+            override: overrideAll,
+            relativePath: entry.relativePath
+          });
         }
       } else {
-        // 有冲突：弹出批量冲突弹窗
-        const decisions = await showBatchConflictDialog(conflictsData.conflicts);
-
-        // 构建冲突集，快速查找
-        const conflictSet = new Set(
-          conflictsData.conflicts.map(c => `${c.fileName}@${c.targetPath}`)
-        );
-
+        // 无同名文件夹：直接上传
         for (const entry of entries) {
-          const fileName = entry.file.name;
-          // relativePath 已包含文件夹名前缀（如 "docs/sub/readme.txt"），无需再加 folderInfo.name
-          const relPath = entry.relativePath || entry.file.name;
-          const relDir = relPath.includes('/') ? relPath.substring(0, relPath.lastIndexOf('/')) : '';
-          const targetPath = relDir ? `${currentDirectory}/${relDir}` : currentDirectory;
-          const key = `${fileName}@${targetPath}`;
-
-          if (conflictSet.has(key)) {
-            const action = decisions.get(key) || 'keepBoth';
-            if (action === 'overwrite') {
-              resolvedFiles.push({ file: entry.file, override: true, relativePath: entry.relativePath });
-            } else if (action === 'keepBoth') {
-              // 为冲突文件生成新名（后端 resolveNameConflict 也可兜底）
-              resolvedFiles.push({ file: entry.file, relativePath: entry.relativePath });
-            }
-            // 'skip' → don't add
-          } else {
-            resolvedFiles.push({ file: entry.file, relativePath: entry.relativePath });
-          }
+          resolvedFiles.push({ file: entry.file, relativePath: entry.relativePath });
         }
       }
     } else {

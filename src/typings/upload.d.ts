@@ -197,31 +197,5 @@ declare namespace Api {
       chunkHashes?: string[];
     };
 
-    /** 冲突文件条目（批量冲突检测响应） */
-    type ConflictItem = {
-      /** 冲突的文件名 */
-      fileName: string;
-      /** 目标路径（含相对目录） */
-      targetPath: string;
-    };
-
-    /** 批量冲突检测请求参数 */
-    type CheckConflictsParams = {
-      userId: number;
-      currentDirectory: string;
-      entries: { fileName: string; relativePath: string }[];
-    };
-
-    /** 批量冲突检测响应 */
-    type CheckConflictsResponse = {
-      conflicts: ConflictItem[];
-    };
-
-    /** 预建文件夹响应 */
-    type EnsureFolderResponse = {
-      folderId: number;
-      folderPath: string;
-      created: boolean;
-    };
   }
 }

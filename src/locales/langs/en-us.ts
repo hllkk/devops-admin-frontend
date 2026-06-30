@@ -1556,6 +1556,7 @@ const local: App.I18n.Schema = {
       duplicateFile: {
         title: 'File Name Conflict',
         message: 'A file named "{fileName}" already exists. Choose an action:',
+        folderConflictMessage: 'Folder "{folderName}" already exists. Existing files will be overwritten. Continue?',
         overwrite: 'Overwrite',
         keepBoth: 'Keep Both'
       },

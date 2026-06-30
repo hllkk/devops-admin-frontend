@@ -1335,6 +1335,7 @@ declare namespace App {
           duplicateFile: {
             title: string;
             message: string;
+            folderConflictMessage: string;
             overwrite: string;
             keepBoth: string;
           };
