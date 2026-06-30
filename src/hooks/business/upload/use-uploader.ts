@@ -47,6 +47,22 @@ function resolveFileName(fileName: string, existingNames: Set<string>): string {
   return newName;
 }
 
+/** Generate a sequential folder name to avoid collision: MyFolder → MyFolder(1) */
+function resolveFolderName(folderName: string, existingItems: { fileName: string; isFolder: boolean }[]): string {
+  const existingFolderNames = new Set(existingItems.filter(item => item.isFolder).map(item => item.fileName));
+
+  if (!existingFolderNames.has(folderName)) return folderName;
+
+  let counter = 1;
+  let newName: string;
+  do {
+    newName = `${folderName}(${counter})`;
+    counter += 1;
+  } while (existingFolderNames.has(newName));
+
+  return newName;
+}
+
 /** Show a per-file duplicate dialog. Returns 'overwrite' | 'keepBoth' | 'skip' */
 function showDuplicateDialog(fileName: string): Promise<'overwrite' | 'keepBoth' | 'skip'> {
   return new Promise(resolve => {
@@ -100,6 +116,7 @@ export function useUploader() {
     parentId?: number,
     folderInfo?: { id: string; name: string }
   ) {
+    let effectiveFolderInfo = folderInfo;
     const targetParentId = parentId ?? Number(diskStore.currentParentId ?? 0);
 
     // Normalize to FileEntry array
@@ -129,29 +146,49 @@ export function useUploader() {
     // Resolve duplicates
     const resolvedFiles: { file: File; resolvedName?: string; override?: boolean; relativePath?: string }[] = [];
 
-    if (folderInfo) {
+    if (effectiveFolderInfo) {
       // === 文件夹上传：简单冲突确认 ===
       // 后端 merge 阶段会自动调用 ensureFolderRecords 懒创建文件夹结构，
       // 无需前端预建文件夹。只需检测同名文件夹并让用户一键决定。
+      const { id: folderId, name: folderName } = effectiveFolderInfo;
       const existingFolder = diskStore.currentFileList.find(
-        item => item.isFolder && item.fileName === folderInfo.name
+        item => item.isFolder && item.fileName === folderName
       );
 
       if (existingFolder) {
-        const choice = await showFolderConflictDialog(folderInfo.name);
+        const choice = await showFolderConflictDialog(folderName);
 
         if (choice === 'cancel') {
           return;
         }
 
-        const overrideAll = choice === 'overwrite';
-
-        for (const entry of entries) {
-          resolvedFiles.push({
-            file: entry.file,
-            override: overrideAll,
-            relativePath: entry.relativePath
-          });
+        if (choice === 'keepBoth') {
+          // 保留两者：重命名文件夹前缀（MyFolder → MyFolder(1)）
+          // 将所有文件的 relativePath 中第一级目录名改为新名
+          const newFolderName = resolveFolderName(folderName, diskStore.currentFileList);
+          for (const entry of entries) {
+            const relPath = entry.relativePath || entry.file.webkitRelativePath || '';
+            // relativePath 格式如 "MyFolder/sub/readme.txt"，替换第一级目录名
+            const newRelativePath = relPath
+              ? `${newFolderName}${relPath.slice(folderName.length)}`
+              : undefined;
+            resolvedFiles.push({
+              file: entry.file,
+              override: false,
+              relativePath: newRelativePath
+            });
+          }
+          // 更新 effectiveFolderInfo 的 name，以便引擎传递给后端
+          effectiveFolderInfo = { id: folderId, name: newFolderName };
+        } else {
+          // 覆盖：文件上传到已有文件夹下，override=true
+          for (const entry of entries) {
+            resolvedFiles.push({
+              file: entry.file,
+              override: true,
+              relativePath: entry.relativePath
+            });
+          }
         }
       } else {
         // 无同名文件夹：直接上传
@@ -186,7 +223,7 @@ export function useUploader() {
     }
 
     if (resolvedFiles.length > 0) {
-      engine.addFiles(resolvedFiles, targetParentId, folderInfo);
+      engine.addFiles(resolvedFiles, targetParentId, effectiveFolderInfo);
     }
   }
 

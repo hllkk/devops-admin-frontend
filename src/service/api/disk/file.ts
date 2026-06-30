@@ -137,6 +137,7 @@ export function fetchUploadChunk(data: Api.Disk.ChunkUploadParams) {
   if (data.chunkHash) formData.append('chunkHash', data.chunkHash);
   if (data.strongHash) formData.append('strongHash', data.strongHash);
   if (data.quickHash) formData.append('quickHash', data.quickHash);
+  if (data.override) formData.append('override', 'true');
 
   return request<{ pass: boolean; upload: boolean; merge: boolean }>({
     url: '/file-meta/upload',

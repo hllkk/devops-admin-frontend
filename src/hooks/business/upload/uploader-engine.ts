@@ -473,10 +473,11 @@ export class UploaderEngine {
         currentDirectory,
         relativePath: task.relativePath || task.fileName,
         isFolder: !!task.folderId,
-        folderPath: task.folderName
+        folderPath: task.folderName,
+        override: task.override ?? false
       });
 
-      // 同用户秒传命中
+      // 同用户秒传命中（override=true 时后端不会秒传，所以此处安全）
       if (data?.pass === true && data?.exist === true) return true;
       // 跨用户秒传待验证：上传首尾采样由服务端实测哈希，通过则秒传成功
       if (data?.crossUserVerify) {
@@ -505,7 +506,8 @@ export class UploaderEngine {
         relativePath: task.relativePath || task.fileName,
         isFolder: !!task.folderId,
         folderPath: task.folderName,
-        fileSize: task.fileSize
+        fileSize: task.fileSize,
+        override: task.override ?? false
       });
       return true;
     } catch {
@@ -557,7 +559,8 @@ export class UploaderEngine {
       currentDirectory,
       relativePath: task.relativePath || task.fileName,
       isFolder: !!task.folderId,
-      folderPath: task.folderName
+      folderPath: task.folderName,
+      override: task.override ?? false
     });
 
     if (error || !data) {
@@ -584,7 +587,8 @@ export class UploaderEngine {
       currentDirectory,
       relativePath: task.relativePath || task.fileName,
       isFolder: !!task.folderId,
-      folderPath: task.folderName
+      folderPath: task.folderName,
+      override: task.override ?? false
     });
 
     if (error || !data) {
@@ -625,7 +629,8 @@ export class UploaderEngine {
       isFolder: !!task.folderId,
       folderPath: task.folderName,
       strongHash: task.strongHash,
-      quickHash: task.quickHash
+      quickHash: task.quickHash,
+      override: task.override ?? false
     });
 
     if (abortController.signal.aborted) {
@@ -751,7 +756,8 @@ export class UploaderEngine {
           folderPath: task.folderName,
           chunkHash,
           strongHash: task.strongHash,
-          quickHash: task.quickHash
+          quickHash: task.quickHash,
+          override: task.override ?? false
         });
 
         if (error) {

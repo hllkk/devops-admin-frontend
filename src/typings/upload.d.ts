@@ -51,6 +51,8 @@ declare namespace Api {
       quickHash?: string;
       /** SHA-256 强指纹（与 quickHash 配合消除碰撞风险） */
       strongHash?: string;
+      /** 是否覆盖同名文件（覆盖时跳过秒传，强制重新上传） */
+      override?: boolean;
     };
 
     /** 秒传/断点检测响应 (匹配后端 CheckFileExistResponse) */
@@ -115,6 +117,8 @@ declare namespace Api {
       strongHash?: string;
       /** 快速指纹（首尾采样 MD5） */
       quickHash?: string;
+      /** 是否覆盖同名文件 */
+      override?: boolean;
     };
 
     /** 分块去重检查请求 */
