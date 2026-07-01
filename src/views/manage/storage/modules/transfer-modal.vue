@@ -25,8 +25,27 @@ const includeTrash = ref(false);
 const inheritShares = ref(true);
 const folderName = ref('');
 const submitting = ref(false);
+const loadUsersError = ref(false);
 const lastResult = ref<Api.Disk.StorageAdmin.TransferLibraryResponse | null>(null);
 const userOptions = ref<{ label: string; value: number }[]>([]);
+
+// 选中接手人的信息，用于确认对话框展示
+const selectedTargetUser = computed(() => {
+  if (!targetUserId.value) return null;
+  const opt = userOptions.value.find(u => u.value === targetUserId.value);
+  return opt?.label ?? null;
+});
+
+// 确认对话框内容
+const confirmContent = computed(() => {
+  if (!props.library) return '';
+  const lines = [
+    `确认将「${props.library.nickName}(${props.library.userName})」的资料库所有权转让给「${selectedTargetUser.value ?? '未知'}」?`,
+    `文件数: ${props.library.totalFiles} | 总大小: ${formatFileSize(props.library.totalSize)}`,
+    `此操作不可逆!转让后源用户文件将全部移入目标用户的交接文件夹。`
+  ];
+  return lines.join('\n');
+});
 
 watch(
   () => props.visible,
@@ -37,6 +56,7 @@ watch(
       inheritShares.value = true;
       folderName.value = `${props.library.nickName}的交接文件`;
       lastResult.value = null;
+      loadUsersError.value = false;
       await loadUsers();
     }
   }
@@ -51,6 +71,8 @@ async function loadUsers() {
       .map(u => ({ label: `${u.nickName}(${u.userName})`, value: Number(u.userId) }));
   } catch {
     userOptions.value = [];
+    loadUsersError.value = true;
+    window.$message?.error('加载用户列表失败，请刷新后重试');
   }
 }
 
@@ -94,7 +116,9 @@ async function handleSubmit() {
             placeholder="选择接手用户"
             filterable
             clearable
+            :loading="loadUsersError"
           />
+          <span v-if="loadUsersError" class="text-error text-12px">用户列表加载失败</span>
         </NFormItem>
         <NFormItem label="交接文件夹">
           <NInput v-model:value="folderName" placeholder="留空使用默认名" />
@@ -122,7 +146,7 @@ async function handleSubmit() {
           <template #trigger>
             <NButton type="error" :loading="submitting" :disabled="!targetUserId">确认转让</NButton>
           </template>
-          确认将资料库所有权转让给接手人?此操作不可逆。
+          <div style="white-space: pre-line; max-width: 360px;">{{ confirmContent }}</div>
         </NPopconfirm>
       </NSpace>
     </template>
