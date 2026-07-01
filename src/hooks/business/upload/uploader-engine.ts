@@ -131,6 +131,16 @@ export class UploaderEngine {
     }
   > = new Map();
 
+  /** Folder-level speed tracking (measures aggregate transferred bytes over time) */
+  private folderSpeedTrackers: Map<
+    string,
+    {
+      lastTime: number;
+      lastTransferred: number;
+      emaSpeed: number;
+    }
+  > = new Map();
+
   /** Throttle timer for per-chunk progress sync (200ms batch window) */
   private syncTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
@@ -143,8 +153,41 @@ export class UploaderEngine {
     }
   }
 
+  /** Periodic timer to refresh active folder aggregates (speed/progress sampling) */
+  private folderSyncTimer: ReturnType<typeof setInterval> | null = null;
+
   constructor(maxConcurrent = 3) {
     this.maxConcurrent = maxConcurrent;
+  }
+
+  /** Ensure periodic folder aggregate refresh is running while folder uploads are active */
+  private ensureFolderSyncTimer(): void {
+    if (this.folderSyncTimer) return;
+    this.folderSyncTimer = setInterval(() => {
+      // Collect active folderIds (folders with non-completed child tasks)
+      const activeFolderIds = new Set<string>();
+      let hasActive = false;
+      for (const task of this.taskMap.values()) {
+        if (task.folderId) {
+          activeFolderIds.add(task.folderId);
+          if (task.status !== 'completed' && task.status !== 'failed') {
+            hasActive = true;
+          }
+        }
+      }
+      if (!hasActive) {
+        // No active folder uploads — stop the timer
+        if (this.folderSyncTimer) {
+          clearInterval(this.folderSyncTimer);
+          this.folderSyncTimer = null;
+        }
+        return;
+      }
+      // Re-sync each active folder aggregate (updates speed/progress between file completions)
+      for (const folderId of activeFolderIds) {
+        this.syncFolderToStore(folderId);
+      }
+    }, 500);
   }
 
   // ---------------------------------------------------------------------------
@@ -183,6 +226,8 @@ export class UploaderEngine {
     // 文件夹上传：添加文件夹级聚合条目到 store
     if (folderInfo) {
       this.syncFolderToStore(folderInfo.id);
+      // 启动周期性聚合刷新（采样速度/进度，覆盖小文件上传间隙）
+      this.ensureFolderSyncTimer();
     }
 
     this.schedule();
@@ -1059,9 +1104,10 @@ export class UploaderEngine {
       ? Math.round((folderTransferredSize / folderTotalSize) * 100)
       : Math.round(childTasks.reduce((sum, t) => sum + t.progress, 0) / totalCount);
 
-    // Aggregate speed: sum of active transfers
-    const speed = childTasks.filter(t => t.status === 'uploading')
-      .reduce((sum, t) => sum + t.speed, 0);
+    // Folder-level speed: measure aggregate transferred bytes over time (EMA smoothing)
+    // 比累加各子任务瞬时速度更稳定——小文件上传太快，子任务 speed 常为 0
+    const hasActive = childTasks.some(t => t.status === 'uploading' || t.status === 'hashing' || t.status === 'checking');
+    const speed = this.updateFolderSpeed(folderId, folderTransferredSize, status === 'completed' || !hasActive);
 
     // Remaining time estimate
     const remainingSize = folderTotalSize - folderTransferredSize;
@@ -1098,6 +1144,39 @@ export class UploaderEngine {
     }
   }
 
+  /** Update folder-level speed using EMA smoothing on aggregate transferred bytes.
+   *  Returns smoothed speed (bytes/sec). When stopped, returns 0 and clears tracker. */
+  private updateFolderSpeed(folderId: string, currentTransferred: number, stopped: boolean): number {
+    if (stopped) {
+      this.folderSpeedTrackers.delete(folderId);
+      return 0;
+    }
+
+    const now = Date.now();
+    let tracker = this.folderSpeedTrackers.get(folderId);
+    if (!tracker) {
+      tracker = { lastTime: now, lastTransferred: currentTransferred, emaSpeed: 0 };
+      this.folderSpeedTrackers.set(folderId, tracker);
+      return 0;
+    }
+
+    const elapsed = now - tracker.lastTime;
+    // 至少 400ms 才采样一次，避免高频 syncToStore 导致速度抖动
+    if (elapsed >= 400) {
+      const delta = currentTransferred - tracker.lastTransferred;
+      if (delta > 0) {
+        const instantSpeed = (delta / elapsed) * 1000;
+        tracker.emaSpeed = tracker.emaSpeed === 0
+          ? instantSpeed
+          : 0.4 * instantSpeed + 0.6 * tracker.emaSpeed;
+      }
+      tracker.lastTime = now;
+      tracker.lastTransferred = currentTransferred;
+    }
+
+    return Math.round(tracker.emaSpeed);
+  }
+
   // ---------------------------------------------------------------------------
   // Cleanup
   // ---------------------------------------------------------------------------
@@ -1108,7 +1187,13 @@ export class UploaderEngine {
     this.clearSyncTimer(taskId);
     const flushTask = this.taskMap.get(taskId);
     if (flushTask) {
-      this.recalcChunkProgress(flushTask);
+      // 仅对进行中的任务（如暂停态）重新计算分片进度。
+      // 已完成/失败任务的进度已由上传阶段正确设置（progress=100/transferredSize=fileSize），
+      // recalcChunkProgress 基于 uploadedChunks 计算，而 uploadWholePhase（小文件整体上传）不维护
+      // uploadedChunks，会错误地把已完成文件进度重置为 0，导致文件夹聚合进度始终为 0%。
+      if (flushTask.status !== 'completed' && flushTask.status !== 'failed') {
+        this.recalcChunkProgress(flushTask);
+      }
       this.syncToStore(flushTask);
     }
     this.activePool.delete(taskId);

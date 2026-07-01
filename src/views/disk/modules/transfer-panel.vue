@@ -540,11 +540,21 @@ onMounted(() => {
               </div>
             </div>
             <!-- Folder aggregate progress bar -->
-            <div class="h-6px rd-3px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px mb-2px">
+            <!-- Indeterminate bar during hash/check (no data transferred yet) -->
+            <div v-if="group.aggregate.status === 'transferring' && group.aggregate.progress === 0" class="h-6px rd-3px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px">
+              <div class="h-full rd-2px w-30% progress-indeterminate" :style="{ background: getStatusColor(group.aggregate.status) }" />
+            </div>
+            <!-- Real progress bar -->
+            <div v-else class="h-6px rd-3px bg-gray-200 dark:bg-white/6 overflow-hidden mx-10px">
               <div
                 class="h-full rd-3px transition-width duration-300"
                 :style="{ width: `${group.aggregate.progress}%`, background: getStatusColor(group.aggregate.status) }"
               />
+            </div>
+            <!-- Folder progress info: size + speed -->
+            <div v-if="group.aggregate.status === 'transferring'" class="flex justify-between items-center text-14px dark:text-white/35 text-gray-400 my-3px tabular-nums mx-10px">
+              <span>{{ formatFileSize(group.aggregate.folderTransferredSize || 0) }} / {{ formatFileSize(group.aggregate.folderTotalSize || 0) }}</span>
+              <span v-if="group.aggregate.speed > 0">{{ formatFileSize(group.aggregate.speed) }}/s</span>
             </div>
             <!-- Expanded file list (from engine, not store) -->
             <div v-if="expandedFolders.has(folderId)" class="p-x-4px pb-4px border-t-1px border-t-solid border-t-[rgba(100,108,255,0.08)] dark:border-t-[rgba(100,108,255,0.12)]">
