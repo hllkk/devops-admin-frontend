@@ -242,7 +242,8 @@ async function loadMoreFiles() {
 const { loadingMore } = useInfiniteScroll({
   onLoadMore: loadMoreFiles,
   hasMore,
-  scrollContainerRef: scrollContainer
+  scrollContainerRef: scrollContainer,
+  isLoading: loading
 });
 
 async function runExtract(destPath: string, intoSubfolder: boolean) {
