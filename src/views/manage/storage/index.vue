@@ -14,6 +14,24 @@ defineOptions({ name: 'StorageManage' });
 const appStore = useAppStore();
 const { hasAuth } = useAuth();
 
+/** 将 "2006-01-02 15:04:05" 格式的时间转为相对时间描述 */
+function timeAgo(raw: string): string {
+  if (!raw) return '-';
+  const d = new Date(raw.replace(' ', 'T') + (raw.includes('+') || raw.includes('Z') ? '' : '+08:00'));
+  if (Number.isNaN(d.getTime())) return raw;
+  const now = Date.now();
+  const diff = now - d.getTime();
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  if (mins < 1) return '刚刚';
+  if (mins < 60) return `${mins}分钟前`;
+  if (hours < 24) return `${hours}小时前`;
+  if (days === 1) return '昨天';
+  if (days < 7) return `${days}天前`;
+  return raw.slice(0, 10); // 超过7天只显示日期
+}
+
 const searchParams = ref({
   pageNum: 1,
   pageSize: 10,
@@ -126,9 +144,14 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
         key: 'lastActiveTime' as const,
         title: '最后活跃',
         align: 'center' as const,
-        minWidth: 150,
+        minWidth: 140,
         render(row: LibRow) {
-          return row.lastActiveTime || '-';
+          if (!row.lastActiveTime) return '-';
+          return (
+            <n-tooltip trigger="hover">
+              {{ trigger: () => <span class="text-12px cursor-default">{timeAgo(row.lastActiveTime)}</span>, default: () => row.lastActiveTime }}
+            </n-tooltip>
+          );
         }
       },
       {
