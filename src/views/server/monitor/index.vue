@@ -40,6 +40,7 @@ function updateClock() {
 
 /** 错误态重试 */
 function retry() {
+  polling.stop();
   polling.start();
 }
 

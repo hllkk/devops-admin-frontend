@@ -43,7 +43,7 @@ onMounted(load);
         />
       </NTimeline>
 
-      <NEmpty v-else-if="!errored" :description="$t('common.loadError')" />
+      <NEmpty v-else-if="!errored" :description="$t('common.noData')" />
     </NSpin>
 
     <div v-if="errored" class="flex-center py-16px">
