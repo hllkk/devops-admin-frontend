@@ -63,7 +63,13 @@ const routeModuleMap: Record<string, RouteModule> = {
   'my-share': 'disk',
   'shared-with-me': 'disk',
   'group-share': 'disk',
-  trash: 'disk'
+  trash: 'disk',
+  // 服务器管理模块页面（静态模式下补齐 module，使菜单按 server 模块隔离）
+  server: 'server',
+  server_dashboard: 'server',
+  server_monitor: 'server',
+  'server_server-detail': 'server',
+  'server_server-list': 'server'
 };
 
 /**

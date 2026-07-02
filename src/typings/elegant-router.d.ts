@@ -150,7 +150,6 @@ declare module "@elegant-router/types" {
     | "my-share"
     | "recent"
     | "server_dashboard"
-    | "server"
     | "server_monitor"
     | "server_server-detail"
     | "server_server-list"

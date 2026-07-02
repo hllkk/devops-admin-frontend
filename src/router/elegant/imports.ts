@@ -45,7 +45,6 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   "my-share": () => import("@/views/my-share/index.vue"),
   recent: () => import("@/views/recent/index.vue"),
   server_dashboard: () => import("@/views/server/dashboard/index.vue"),
-  server: () => import("@/views/server/index.vue"),
   server_monitor: () => import("@/views/server/monitor/index.vue"),
   "server_server-detail": () => import("@/views/server/server-detail/index.vue"),
   "server_server-list": () => import("@/views/server/server-list/index.vue"),
