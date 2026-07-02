@@ -326,6 +326,15 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'server_dashboard',
           i18nKey: 'route.server_dashboard'
         }
+      },
+      {
+        name: 'server_monitor',
+        path: '/server/monitor',
+        component: 'view.server_monitor',
+        meta: {
+          title: 'server_monitor',
+          i18nKey: 'route.server_monitor'
+        }
       }
     ]
   },

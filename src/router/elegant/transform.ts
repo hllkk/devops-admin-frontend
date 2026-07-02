@@ -193,6 +193,7 @@ const routeMap: RouteMap = {
   "recent": "/recent",
   "server": "/server",
   "server_dashboard": "/server/dashboard",
+  "server_monitor": "/server/monitor",
   "share": "/share",
   "shared-with-me": "/shared-with-me",
   "trash": "/trash",

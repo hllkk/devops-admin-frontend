@@ -1445,7 +1445,9 @@ const local: App.I18n.Schema = {
         net: 'Network',
         realtimeAlerts: 'Live Alerts',
         alertTrend: 'Alert Trend',
-        taskTrend: 'Task Trend'
+        taskTrend: 'Task Trend',
+        live: 'Live',
+        disconnected: 'Disconnected'
       },
       serverList: {
         title: 'Servers',

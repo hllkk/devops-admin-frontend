@@ -1437,7 +1437,9 @@ const local: App.I18n.Schema = {
         net: '网络流量',
         realtimeAlerts: '实时告警',
         alertTrend: '告警趋势',
-        taskTrend: '任务趋势'
+        taskTrend: '任务趋势',
+        live: '实时',
+        disconnected: '断开'
       },
       serverList: {
         title: '服务器管理',

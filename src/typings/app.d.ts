@@ -1631,6 +1631,8 @@ declare namespace App {
             realtimeAlerts: string;
             alertTrend: string;
             taskTrend: string;
+            live: string;
+            disconnected: string;
           };
           serverList: {
             title: string;
