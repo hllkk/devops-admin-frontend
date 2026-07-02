@@ -335,6 +335,15 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'server_monitor',
           i18nKey: 'route.server_monitor'
         }
+      },
+      {
+        name: 'server_server-list',
+        path: '/server/server-list',
+        component: 'view.server_server-list',
+        meta: {
+          title: 'server_server-list',
+          i18nKey: 'route.server_server-list'
+        }
       }
     ]
   },

@@ -194,6 +194,7 @@ const routeMap: RouteMap = {
   "server": "/server",
   "server_dashboard": "/server/dashboard",
   "server_monitor": "/server/monitor",
+  "server_server-list": "/server/server-list",
   "share": "/share",
   "shared-with-me": "/shared-with-me",
   "trash": "/trash",
