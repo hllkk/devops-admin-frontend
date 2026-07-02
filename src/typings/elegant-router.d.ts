@@ -48,6 +48,7 @@ declare module "@elegant-router/types" {
     "server": "/server";
     "server_dashboard": "/server/dashboard";
     "server_monitor": "/server/monitor";
+    "server_server-detail": "/server/server-detail";
     "server_server-list": "/server/server-list";
     "share": "/share";
     "shared-with-me": "/shared-with-me";
@@ -151,6 +152,7 @@ declare module "@elegant-router/types" {
     | "server_dashboard"
     | "server"
     | "server_monitor"
+    | "server_server-detail"
     | "server_server-list"
     | "share"
     | "shared-with-me"
