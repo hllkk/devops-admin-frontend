@@ -312,11 +312,76 @@ export const generatedRoutes: GeneratedRoute[] = [
   {
     name: 'server',
     path: '/server',
-    component: 'layout.base$view.server',
+    component: 'layout.base',
     meta: {
       title: 'server',
       i18nKey: 'route.server'
-    }
+    },
+    children: [
+      {
+        name: 'server_container',
+        path: '/server/container',
+        component: 'view.server_container',
+        meta: {
+          title: 'server_container',
+          i18nKey: 'route.server_container'
+        }
+      },
+      {
+        name: 'server_dashboard',
+        path: '/server/dashboard',
+        component: 'view.server_dashboard',
+        meta: {
+          title: 'server_dashboard',
+          i18nKey: 'route.server_dashboard'
+        }
+      },
+      {
+        name: 'server_database',
+        path: '/server/database',
+        component: 'view.server_database',
+        meta: {
+          title: 'server_database',
+          i18nKey: 'route.server_database'
+        }
+      },
+      {
+        name: 'server_database-detail',
+        path: '/server/database-detail',
+        component: 'view.server_database-detail',
+        meta: {
+          title: 'server_database-detail',
+          i18nKey: 'route.server_database-detail'
+        }
+      },
+      {
+        name: 'server_monitor',
+        path: '/server/monitor',
+        component: 'view.server_monitor',
+        meta: {
+          title: 'server_monitor',
+          i18nKey: 'route.server_monitor'
+        }
+      },
+      {
+        name: 'server_server-detail',
+        path: '/server/server-detail',
+        component: 'view.server_server-detail',
+        meta: {
+          title: 'server_server-detail',
+          i18nKey: 'route.server_server-detail'
+        }
+      },
+      {
+        name: 'server_server-list',
+        path: '/server/server-list',
+        component: 'view.server_server-list',
+        meta: {
+          title: 'server_server-list',
+          i18nKey: 'route.server_server-list'
+        }
+      }
+    ]
   },
   {
     name: 'share',
