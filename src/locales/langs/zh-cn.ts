@@ -82,7 +82,9 @@ const local: App.I18n.Schema = {
     second: '秒',
     selected: '已选择',
     anyRecords: '条记录',
-    noSelectRecord: '未选中任何记录'
+    noSelectRecord: '未选中任何记录',
+    retry: '重试',
+    loadError: '加载失败'
   },
   request: {
     logout: '请求失败后登出用户',
@@ -281,6 +283,13 @@ const local: App.I18n.Schema = {
     admin: '首页',
     disk: '网盘',
     server: '服务器管理',
+    server_dashboard: '概览',
+    server_monitor: '监控大屏',
+    'server_server-list': '服务器管理',
+    'server_server-detail': '服务器详情',
+    server_container: '容器管理',
+    server_database: '数据库管理',
+    'server_database-detail': '数据库详情',
     init: '初始化',
     spread: '分享',
     about: '关于',
@@ -1407,6 +1416,68 @@ const local: App.I18n.Schema = {
       },
       prdDep: '生产依赖',
       devDep: '开发依赖'
+    },
+    server: {
+      dashboard: {
+        title: '服务器概览',
+        serverCount: '服务器',
+        containerCount: '容器',
+        databaseCount: '数据库',
+        alertCount: '告警',
+        resourceOverview: '资源总览',
+        alertTrend: '告警趋势',
+        recentAlerts: '最近告警',
+        onlineServers: '在线服务器'
+      },
+      monitor: {
+        title: '监控大屏',
+        cpu: 'CPU',
+        mem: '内存',
+        disk: '磁盘',
+        net: '网络流量',
+        realtimeAlerts: '实时告警',
+        alertTrend: '告警趋势',
+        taskTrend: '任务趋势'
+      },
+      serverList: {
+        title: '服务器管理',
+        tableView: '表格视图',
+        cardView: '卡片视图',
+        name: '名称',
+        ip: 'IP 地址',
+        status: '状态',
+        cpu: 'CPU',
+        mem: '内存',
+        disk: '磁盘',
+        operations: '操作',
+        online: '在线',
+        offline: '离线',
+        warning: '告警',
+        detail: '详情',
+        restart: '重启',
+        console: '控制台',
+        searchPlaceholder: '搜索名称 / IP'
+      },
+      serverDetail: {
+        basicInfo: '基本信息',
+        hostCredential: '主机凭证',
+        realtimeMonitor: '实时监控',
+        opLogs: '操作日志',
+        metricRange1h: '近 1 小时',
+        metricRange6h: '近 6 小时',
+        metricRange24h: '近 24 小时',
+        metricRange7d: '近 7 天',
+        viewCredential: '查看凭证',
+        copy: '复制',
+        masked: '已脱敏',
+        createdAt: '创建时间',
+        cpuModel: 'CPU 型号',
+        coreCount: '核心数',
+        hostname: '主机名',
+        os: '操作系统',
+        uptime: '在线时长',
+        location: '位置'
+      }
     },
     disk: {
       title: '文件管理',

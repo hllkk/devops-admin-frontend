@@ -19,7 +19,9 @@ export default defineConfig({
     }
   },
   shortcuts: {
-    'card-wrapper': 'rd-8px shadow-sm'
+    'card-wrapper': 'rd-8px shadow-sm',
+    'glass-card': 'backdrop-blur-xl bg-white/5 border border-white/10 rd-12px',
+    'glass-panel': 'backdrop-blur-2xl bg-white/[0.06] border-t-2 border-white/15 rd-12px shadow-[0_8px_32px_rgba(0,0,0,0.37)]'
   },
   transformers: [transformerDirectives(), transformerVariantGroup()],
   presets: [presetWind3({ dark: 'class' }), presetSoybeanAdmin()]

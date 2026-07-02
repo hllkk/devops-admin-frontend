@@ -412,6 +412,8 @@ declare namespace App {
         anyRecords: string;
         clear: string;
         noSelectRecord: string;
+        retry: string;
+        loadError: string;
       };
       request: {
         logout: string;
@@ -1607,6 +1609,68 @@ declare namespace App {
           shareExpiredTip: string;
           goHome: string;
           loginMyDisk: string;
+        };
+        server: {
+          dashboard: {
+            title: string;
+            serverCount: string;
+            containerCount: string;
+            databaseCount: string;
+            alertCount: string;
+            resourceOverview: string;
+            alertTrend: string;
+            recentAlerts: string;
+            onlineServers: string;
+          };
+          monitor: {
+            title: string;
+            cpu: string;
+            mem: string;
+            disk: string;
+            net: string;
+            realtimeAlerts: string;
+            alertTrend: string;
+            taskTrend: string;
+          };
+          serverList: {
+            title: string;
+            tableView: string;
+            cardView: string;
+            name: string;
+            ip: string;
+            status: string;
+            cpu: string;
+            mem: string;
+            disk: string;
+            operations: string;
+            online: string;
+            offline: string;
+            warning: string;
+            detail: string;
+            restart: string;
+            console: string;
+            searchPlaceholder: string;
+          };
+          serverDetail: {
+            basicInfo: string;
+            hostCredential: string;
+            realtimeMonitor: string;
+            opLogs: string;
+            metricRange1h: string;
+            metricRange6h: string;
+            metricRange24h: string;
+            metricRange7d: string;
+            viewCredential: string;
+            copy: string;
+            masked: string;
+            createdAt: string;
+            cpuModel: string;
+            coreCount: string;
+            hostname: string;
+            os: string;
+            uptime: string;
+            location: string;
+          };
         };
       };
       form: {

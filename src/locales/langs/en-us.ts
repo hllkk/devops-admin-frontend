@@ -82,7 +82,9 @@ const local: App.I18n.Schema = {
     second: 'Second',
     selected: 'selected',
     anyRecords: 'records',
-    noSelectRecord: 'No Records Selected'
+    noSelectRecord: 'No Records Selected',
+    retry: 'Retry',
+    loadError: 'Load failed'
   },
   request: {
     logout: 'Logout user after request failed',
@@ -285,6 +287,13 @@ const local: App.I18n.Schema = {
     admin: 'Admin',
     disk: 'Disk',
     server: 'Server',
+    server_dashboard: 'Overview',
+    server_monitor: 'Monitor',
+    'server_server-list': 'Servers',
+    'server_server-detail': 'Server Detail',
+    server_container: 'Containers',
+    server_database: 'Databases',
+    'server_database-detail': 'Database Detail',
     init: 'Init',
     spread: 'Share',
     about: 'About',
@@ -1415,6 +1424,68 @@ const local: App.I18n.Schema = {
       },
       prdDep: 'Production Dependency',
       devDep: 'Development Dependency'
+    },
+    server: {
+      dashboard: {
+        title: 'Server Overview',
+        serverCount: 'Servers',
+        containerCount: 'Containers',
+        databaseCount: 'Databases',
+        alertCount: 'Alerts',
+        resourceOverview: 'Resources',
+        alertTrend: 'Alert Trend',
+        recentAlerts: 'Recent Alerts',
+        onlineServers: 'Online Servers'
+      },
+      monitor: {
+        title: 'Monitor',
+        cpu: 'CPU',
+        mem: 'Memory',
+        disk: 'Disk',
+        net: 'Network',
+        realtimeAlerts: 'Live Alerts',
+        alertTrend: 'Alert Trend',
+        taskTrend: 'Task Trend'
+      },
+      serverList: {
+        title: 'Servers',
+        tableView: 'Table',
+        cardView: 'Cards',
+        name: 'Name',
+        ip: 'IP',
+        status: 'Status',
+        cpu: 'CPU',
+        mem: 'Mem',
+        disk: 'Disk',
+        operations: 'Actions',
+        online: 'Online',
+        offline: 'Offline',
+        warning: 'Warning',
+        detail: 'Detail',
+        restart: 'Restart',
+        console: 'Console',
+        searchPlaceholder: 'Search name / IP'
+      },
+      serverDetail: {
+        basicInfo: 'Basic Info',
+        hostCredential: 'Host Credential',
+        realtimeMonitor: 'Realtime Monitor',
+        opLogs: 'Operation Logs',
+        metricRange1h: 'Last 1h',
+        metricRange6h: 'Last 6h',
+        metricRange24h: 'Last 24h',
+        metricRange7d: 'Last 7d',
+        viewCredential: 'View',
+        copy: 'Copy',
+        masked: 'Masked',
+        createdAt: 'Created',
+        cpuModel: 'CPU Model',
+        coreCount: 'Cores',
+        hostname: 'Hostname',
+        os: 'OS',
+        uptime: 'Uptime',
+        location: 'Location'
+      }
     },
     disk: {
       title: 'Disk Management',
