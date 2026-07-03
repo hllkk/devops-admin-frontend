@@ -36,6 +36,7 @@ declare namespace Api {
       diskTotalGB: number;
       netInKbps?: number;
       netOutKbps?: number;
+      groupId?: CommonType.IdType;
     }
 
     /** server search params */
