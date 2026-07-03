@@ -1700,6 +1700,7 @@ declare namespace App {
             hasServers: string;
             nameRequired: string;
             nameDuplicate: string;
+            nameMaxLength: string;
             createSuccess: string;
             renameSuccess: string;
             deleteSuccess: string;

@@ -1516,6 +1516,7 @@ const local: App.I18n.Schema = {
         hasServers: 'This group still has servers. Please move or delete them first.',
         nameRequired: 'Please enter a group name',
         nameDuplicate: 'Group name already exists',
+        nameMaxLength: 'Group name cannot exceed 50 characters',
         createSuccess: 'Group created',
         renameSuccess: 'Renamed successfully',
         deleteSuccess: 'Group deleted'

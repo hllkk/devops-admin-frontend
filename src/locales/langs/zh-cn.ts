@@ -1508,6 +1508,7 @@ const local: App.I18n.Schema = {
         hasServers: '该分组下还存在主机,请先移出或删除',
         nameRequired: '请输入分组名',
         nameDuplicate: '分组名已存在',
+        nameMaxLength: '分组名长度不能超过 50 字符',
         createSuccess: '分组创建成功',
         renameSuccess: '重命名成功',
         deleteSuccess: '分组删除成功'
