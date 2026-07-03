@@ -1522,7 +1522,13 @@ const local: App.I18n.Schema = {
         cancel: '取消',
         invalidRows: '{count} 行数据不合法',
         successMessage: '导入成功 {success} 条,失败 {failed} 条',
-        defaultGroup: '默认分组'
+        defaultGroup: '默认分组',
+        validate: {
+          nameRequired: '名称必填',
+          ipRequired: 'IP 必填',
+          ipInvalid: 'IP 格式不正确',
+          osRequired: '操作系统必填'
+        }
       },
       move: {
         title: '移动服务器',

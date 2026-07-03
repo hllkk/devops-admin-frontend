@@ -1715,6 +1715,12 @@ declare namespace App {
             invalidRows: string;
             successMessage: string;
             defaultGroup: string;
+            validate: {
+              nameRequired: string;
+              ipRequired: string;
+              ipInvalid: string;
+              osRequired: string;
+            };
           };
           move: {
             title: string;

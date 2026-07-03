@@ -1530,7 +1530,13 @@ const local: App.I18n.Schema = {
         cancel: 'Cancel',
         invalidRows: '{count} invalid rows',
         successMessage: 'Imported {success} successfully, {failed} failed',
-        defaultGroup: 'Default Group'
+        defaultGroup: 'Default Group',
+        validate: {
+          nameRequired: 'Name is required',
+          ipRequired: 'IP is required',
+          ipInvalid: 'Invalid IP format',
+          osRequired: 'OS is required'
+        }
       },
       move: {
         title: 'Move Servers',
