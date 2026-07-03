@@ -46,10 +46,10 @@ declare module "@elegant-router/types" {
     "notice-user": "/notice-user";
     "recent": "/recent";
     "server": "/server";
-    "server_dashboard": "/server/dashboard";
-    "server_monitor": "/server/monitor";
-    "server_server-detail": "/server/server-detail";
-    "server_server-list": "/server/server-list";
+    "server-manage": "/server-manage";
+    "server-manage_monitor": "/server-manage/monitor";
+    "server-manage_server-detail": "/server-manage/server-detail";
+    "server-manage_server-list": "/server-manage/server-list";
     "share": "/share";
     "shared-with-me": "/shared-with-me";
     "trash": "/trash";
@@ -102,6 +102,7 @@ declare module "@elegant-router/types" {
     | "notice-user"
     | "recent"
     | "server"
+    | "server-manage"
     | "share"
     | "shared-with-me"
     | "trash"
@@ -149,10 +150,10 @@ declare module "@elegant-router/types" {
     | "manage_user"
     | "my-share"
     | "recent"
-    | "server_dashboard"
-    | "server_monitor"
-    | "server_server-detail"
-    | "server_server-list"
+    | "server-manage_monitor"
+    | "server-manage_server-detail"
+    | "server-manage_server-list"
+    | "server"
     | "share"
     | "shared-with-me"
     | "trash"

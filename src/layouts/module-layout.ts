@@ -25,7 +25,7 @@ export interface ModuleLayoutConfig {
 export const MODULE_LAYOUT: Record<RouteModule, ModuleLayoutConfig> = {
   admin: { preset: 'standard', mode: 'auto' }, // 管理中心：跟随用户全局主题
   disk: { preset: 'workbench' }, // 网盘：沉浸式工作台（固定 vertical）
-  server: { preset: 'standard', mode: 'horizontal' } // 服务器管理：顶部菜单
+  server: { preset: 'standard', mode: 'auto' } // 服务器管理
 };
 
 /** 未知模块的回退配置（resolveModuleFromRoute 返回 null 时使用） */

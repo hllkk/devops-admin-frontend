@@ -13,8 +13,7 @@ export const generatedRoutes: GeneratedRoute[] = [
     meta: {
       title: '403',
       i18nKey: 'route.403',
-      constant: true,
-      hideInMenu: true
+      constant: true
     }
   },
   {
@@ -24,8 +23,7 @@ export const generatedRoutes: GeneratedRoute[] = [
     meta: {
       title: '404',
       i18nKey: 'route.404',
-      constant: true,
-      hideInMenu: true
+      constant: true
     }
   },
   {
@@ -35,8 +33,7 @@ export const generatedRoutes: GeneratedRoute[] = [
     meta: {
       title: '500',
       i18nKey: 'route.500',
-      constant: true,
-      hideInMenu: true
+      constant: true
     }
   },
   {
@@ -45,9 +42,7 @@ export const generatedRoutes: GeneratedRoute[] = [
     component: 'layout.base$view.about',
     meta: {
       title: 'about',
-      i18nKey: 'route.about',
-      icon: 'fluent:book-information-24-regular',
-      order: 99
+      i18nKey: 'route.about'
     }
   },
   {
@@ -66,7 +61,7 @@ export const generatedRoutes: GeneratedRoute[] = [
   {
     name: 'disk',
     path: '/disk',
-    component: 'layout.disk$view.disk',
+    component: 'layout.base$view.disk',
     meta: {
       title: 'disk',
       i18nKey: 'route.disk',
@@ -100,20 +95,16 @@ export const generatedRoutes: GeneratedRoute[] = [
     props: true,
     meta: {
       title: 'iframe-page',
-      i18nKey: 'route.iframe-page',
-      constant: true,
-      hideInMenu: true
+      i18nKey: 'route.iframe-page'
     }
   },
   {
     name: 'init',
     path: '/init',
-    component: 'layout.blank$view.init',
+    component: 'layout.base$view.init',
     meta: {
       title: 'init',
-      i18nKey: 'route.init',
-      constant: true,
-      hideInMenu: true
+      i18nKey: 'route.init'
     }
   },
   {
@@ -122,9 +113,7 @@ export const generatedRoutes: GeneratedRoute[] = [
     component: 'layout.base',
     meta: {
       title: 'log',
-      i18nKey: 'route.log',
-      icon: 'carbon-cloud-logging',
-      order: 4
+      i18nKey: 'route.log'
     },
     children: [
       {
@@ -142,8 +131,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.log_login',
         meta: {
           title: 'log_login',
-          i18nKey: 'route.log_login',
-          icon: 'carbon-login'
+          i18nKey: 'route.log_login'
         }
       },
       {
@@ -152,9 +140,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.log_operation',
         meta: {
           title: 'log_operation',
-          i18nKey: 'route.log_operation',
-          icon: 'carbon-operations-record',
-          order: 2
+          i18nKey: 'route.log_operation'
         }
       }
     ]
@@ -167,8 +153,7 @@ export const generatedRoutes: GeneratedRoute[] = [
     meta: {
       title: 'login',
       i18nKey: 'route.login',
-      constant: true,
-      hideInMenu: true
+      constant: true
     }
   },
   {
@@ -178,7 +163,7 @@ export const generatedRoutes: GeneratedRoute[] = [
     meta: {
       title: 'manage',
       i18nKey: 'route.manage',
-      icon: 'carbon-cloud-service-management',
+      icon: 'mdi:cog',
       order: 3,
       module: 'admin'
     },
@@ -190,7 +175,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_dept',
           i18nKey: 'route.manage_dept',
-          icon: 'carbon-development',
+          icon: 'mdi:office-building',
           order: 4
         }
       },
@@ -201,7 +186,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_dict',
           i18nKey: 'route.manage_dict',
-          icon: 'iconoir-book',
+          icon: 'mdi:book-open-variant',
           order: 6
         }
       },
@@ -212,7 +197,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_menu',
           i18nKey: 'route.manage_menu',
-          icon: 'mingcute:list-ordered-line',
+          icon: 'mdi:menu',
           order: 3
         }
       },
@@ -222,9 +207,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.manage_notice',
         meta: {
           title: 'manage_notice',
-          i18nKey: 'route.manage_notice',
-          icon: 'carbon-notifications-paused',
-          order: 7
+          i18nKey: 'route.manage_notice'
         }
       },
       {
@@ -234,7 +217,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_post',
           i18nKey: 'route.manage_post',
-          icon: 'carbon-ibm-z-processor-capacity-reference',
+          icon: 'mdi:briefcase',
           order: 5
         }
       },
@@ -245,7 +228,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_role',
           i18nKey: 'route.manage_role',
-          icon: 'carbon-user-role',
+          icon: 'mdi:account-group',
           order: 2
         }
       },
@@ -256,7 +239,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_settings',
           i18nKey: 'route.manage_settings',
-          icon: 'carbon-settings-edit',
+          icon: 'mdi:cog-outline',
           order: 8
         }
       },
@@ -276,7 +259,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_user',
           i18nKey: 'route.manage_user',
-          icon: 'carbon-user',
+          icon: 'mdi:account',
           order: 1
         }
       }
@@ -312,46 +295,59 @@ export const generatedRoutes: GeneratedRoute[] = [
   {
     name: 'server',
     path: '/server',
-    component: 'layout.base',
+    component: 'layout.base$view.server',
     meta: {
       title: 'server',
-      i18nKey: 'route.server'
+      i18nKey: 'route.server',
+      icon: 'mdi:view-dashboard-outline',
+      order: 5,
+      fixedIndexInTab: 0,
+      module: 'server'
+    }
+  },
+  {
+    name: 'server-manage',
+    path: '/server-manage',
+    component: 'layout.base',
+    meta: {
+      title: 'server-manage',
+      i18nKey: 'route.server-manage',
+      icon: 'mdi:server-network',
+      order: 6,
+      module: 'server'
     },
     children: [
       {
-        name: 'server_dashboard',
-        path: '/server/dashboard',
-        component: 'view.server_dashboard',
+        name: 'server-manage_monitor',
+        path: '/server-manage/monitor',
+        component: 'view.server-manage_monitor',
         meta: {
-          title: 'server_dashboard',
-          i18nKey: 'route.server_dashboard'
+          title: 'server-manage_monitor',
+          i18nKey: 'route.server-manage_monitor',
+          icon: 'mdi:monitor-eye',
+          order: 1
         }
       },
       {
-        name: 'server_monitor',
-        path: '/server/monitor',
-        component: 'view.server_monitor',
+        name: 'server-manage_server-detail',
+        path: '/server-manage/server-detail',
+        component: 'view.server-manage_server-detail',
         meta: {
-          title: 'server_monitor',
-          i18nKey: 'route.server_monitor'
+          title: 'server-manage_server-detail',
+          i18nKey: 'route.server-manage_server-detail',
+          icon: 'mdi:server-outline',
+          order: 3
         }
       },
       {
-        name: 'server_server-detail',
-        path: '/server/server-detail',
-        component: 'view.server_server-detail',
+        name: 'server-manage_server-list',
+        path: '/server-manage/server-list',
+        component: 'view.server-manage_server-list',
         meta: {
-          title: 'server_server-detail',
-          i18nKey: 'route.server_server-detail'
-        }
-      },
-      {
-        name: 'server_server-list',
-        path: '/server/server-list',
-        component: 'view.server_server-list',
-        meta: {
-          title: 'server_server-list',
-          i18nKey: 'route.server_server-list'
+          title: 'server-manage_server-list',
+          i18nKey: 'route.server-manage_server-list',
+          icon: 'mdi:server',
+          order: 2
         }
       }
     ]

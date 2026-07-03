@@ -60,6 +60,30 @@ const routeMetaConfig: Record<string, Partial<RouteMeta> & { module?: RouteModul
   manage_settings: {
     icon: 'mdi:cog-outline',
     order: 8
+  },
+  // 服务器管理模块
+  server: {
+    icon: 'mdi:view-dashboard-outline',
+    order: 5,
+    fixedIndexInTab: 0,
+    module: 'server'
+  },
+  'server-manage': {
+    icon: 'mdi:server-network',
+    order: 6,
+    module: 'server'
+  },
+  'server-manage_monitor': {
+    icon: 'mdi:monitor-eye',
+    order: 1
+  },
+  'server-manage_server-list': {
+    icon: 'mdi:server',
+    order: 2
+  },
+  'server-manage_server-detail': {
+    icon: 'mdi:server-outline',
+    order: 3
   }
 };
 

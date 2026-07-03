@@ -108,7 +108,7 @@ const { columns, columnChecks, data, loading, getData, getDataByPage, mobilePagi
   });
 
 function goDetail(id: CommonType.IdType) {
-  routerPush({ name: 'server_server-detail', params: { id } });
+  routerPush({ name: 'server-manage_server-detail', params: { id } });
 }
 
 function onSearch() {

@@ -1,3 +1,116 @@
+# Plan — Server Overview 卡片化与 Tab 固定
+
+## 任务列表
+
+### Phase A: 基础设施 (无外部依赖, 先做)
+
+- [ ] **T-A1**: 路由 meta 调整 — 在 `src/router/elegant/routes.ts` 中给 `server_dashboard` 路由 meta 增加 `fixedIndexInTab: 0`，与 admin 路由范式一致
+  - 文件: `src/router/elegant/routes.ts` (line 322-329 附近)
+  - 验收: routes.ts 编译通过；`pnpm typecheck` 0 错误；打开 /server 时 Tab 第 0 位是「概览」
+  - 依赖: 无
+
+- [ ] **T-A2**: 国际化文案核对 — 检查 `src/locales/langs/zh-cn.ts` 与 `en-us.ts` 中 `page.server.dashboard.{serverCount, containerCount, databaseCount, alertCount, resourceOverview, alertTrend, recentAlerts}` 是否齐全，若 en-us.ts 缺失则补全
+  - 文件: `src/locales/langs/zh-cn.ts` (line 1420-1431 已确认完整), `src/locales/langs/en-us.ts`
+  - 验收: zh-cn.ts 已有 4 个统计标题 + 3 个区域标题；en-us.ts 对应 7 个 key 齐全；若缺失则补全
+  - 依赖: 无
+  - 注: `App.I18n.Schema` 类型在 `app.d.ts:329` 由 zh-cn 自动推导，无需手动声明类型
+
+### Phase B: 核心组件重写 (依赖 T-A1/A2)
+
+- [ ] **T-B1**: 重写 `modules/stat-card.vue` 为 admin 渐变统计卡
+  - 文件: `src/views/server/dashboard/modules/stat-card.vue`
+  - 验收:
+    - 接受 props: `key`(string, 唯一键) / `title`(string) / `value`(number) / `unit`(string, 默认 '') / `icon`(string, iconify 名) / `color`({start, end})
+    - 使用 `createReusableTemplate<{ gradientColor: string }>` 定义内部 GradientBg 模板
+    - 数字用 `<CountTo :prefix="unit" :start-value="1" :end-value="value" class="text-30px text-white dark:text-dark" />` 渲染
+    - 标题 `<h3 class="text-16px">` + 图标 `<SvgIcon :icon="icon" class="text-32px" />`
+    - 主题圆角动态读取 `useThemeStore().themeRadius`
+    - 颜色用 inline style 绑定（与原 accentColor 模式一致）
+    - 组件结构按项目规范：导入 → defineOptions({name: 'StatCard'}) → interface Props → withDefaults → GradientBg define → 模板
+  - 依赖: 无（独立组件）
+
+- [ ] **T-B2**: 重写 `dashboard/index.vue` 顶层布局，对齐 admin 风格
+  - 文件: `src/views/server/dashboard/index.vue`
+  - 验收:
+    - 删除原 `<div class="grid grid-cols-2 gap-16px lg:grid-cols-4">` + 4×StatCard 结构
+    - 改为 3 行布局:
+      - Row 1: `<NGrid cols="s:1 m:2 l:4" responsive="screen" :x-gap="16" :y-gap="16">` 包裹 4 个新 StatCard，数据来自 store.overviewStats
+      - Row 2: `<NGrid :x-gap="gap" :y-gap="16" responsive="screen" item-responsive>` + 2×`<NGi span="24 s:24 m:14/10">` 各自包 `<NCard :bordered="false" class="card-wrapper">` 装 ResourceGauge / AlertTrendChart
+      - Row 3: `<NCard :bordered="false" class="card-wrapper">` 包 RecentAlertList
+    - 引入 `useAppStore` 算 `gap = computed(() => appStore.isMobile ? 0 : 16)`
+    - 颜色映射：服务器 start=#ec4786/end=#b955a4 / 容器 start=#56cdf3/end=#719de3 / 数据库 start=#865ec0/end=#5144b4 / 告警 start=#fcbc25/end=#f68057（参考 admin card-data 配色，告警用警告色系）
+    - 错误态保留：store.errorMsg 非空时 4 统计卡区域显示 NEmpty + 重试按钮
+    - `<NSpin :show="store.loading && !stats">` 保留
+    - 整个文件不再使用 `glass-card` class，删除原 line 68 / 76 / 97 / 104 的 `glass-card` 引用
+  - 依赖: T-B1
+
+- [ ] **T-B3**: 静态扫描验证
+  - 文件: 无新增
+  - 验收:
+    - `grep -rn "glass-card" src/views/server/dashboard/` 输出 0 行
+    - `grep -rn "StatCard" src/views/server/dashboard/index.vue` 输出 0 行（已被新统计卡替代）
+  - 依赖: T-B2
+
+### Phase C: 自动化验证
+
+- [ ] **T-C1**: pnpm typecheck + pnpm lint 双 0 错误
+  - 文件: 无新增
+  - 验收: `pnpm typecheck` 退出码 0；`pnpm lint` 退出码 0；如遇错误则修复
+  - 依赖: T-B3, T-A1, T-A2
+
+- [ ] **T-C2**: 手工视觉验证（按 design.md 验收清单）
+  - 文件: 无新增
+  - 验收清单（用户/Claude 各 4 项）:
+    1. 打开 /server，Tab 列表第 0 位是「概览」
+    2. 4 个统计卡与 admin 首页 card-data 视觉一致（渐变色 + CountTo + 图标）
+    3. 切换 /server/server-list 再切回 /server/dashboard，dashboard 仍在 Tab 0
+    4. 亮色 / 暗色模式下 4 区域都正常显示
+    5. 移动端宽度（< 768px）：4 个统计卡 1 列；中部双列区域堆叠
+    6. 制造 1 个 mock 失败，顶部 4 卡显示重试按钮
+  - 依赖: T-C1
+
+## 任务拓扑
+
+```
+T-A1 (路由 meta)        T-A2 (i18n 核对)
+        │                       │
+        └───────┬───────────────┘
+                │
+              T-B1 (stat-card.vue 重写)
+                │
+              T-B2 (index.vue 重写)
+                │
+              T-B3 (静态扫描)
+                │
+              T-C1 (typecheck + lint)
+                │
+              T-C2 (手工验证)
+```
+
+可并行:
+- T-A1 与 T-A2 互相独立, 可并行
+- T-B1 完成后 T-B2 强依赖
+
+## 总计: 7 个任务 (T-A1, T-A2, T-B1, T-B2, T-B3, T-C1, T-C2)
+
+## 风险与缓解
+
+| 风险 | 缓解 |
+|---|---|
+| CountTo 数字动画在 4 个统计卡同时刷新有性能问题 | 4 个 DOM 节点远低于阈值, 与 admin 一致 |
+| 删除 glass-card 后某些暗色场景视觉突兀 | card-wrapper 依赖 NCard 主题自动适配, 实测 admin 暗色正常 |
+| 国际化 key 缺失导致 typecheck 失败 | T-A2 先核对 en-us.ts, 缺失则补全; zh-cn 已确认完整 |
+| route meta 修改后多 TAB 排序异常 | 仅加 fixedIndexInTab: 0, 不动其他子路由 meta, 风险可控 |
+
+## 不在本次范围
+
+- 后端 Server 模块 (独立任务)
+- /server/monitor 监控大屏 (暗色风格合理, 保持)
+- /server/server-list 列表页 / /server/server-detail 详情页
+- 单元测试 (admin/card-data.vue 也没有单测, 跟随)
+
+---
+
 # Plan — 网盘模块组件复用优化
 
 ## 任务列表

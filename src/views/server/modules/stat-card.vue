@@ -1,47 +1,66 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { createReusableTemplate } from '@vueuse/core';
+import { useThemeStore } from '@/store/modules/theme';
 
 defineOptions({ name: 'StatCard' });
 
-interface Props {
-  label: string;
-  value: number | string;
-  icon: string;
-  trend?: string;
-  accent?: 'primary' | 'success' | 'warning' | 'error';
+interface CardColor {
+  start: string;
+  end: string;
 }
 
-const props = withDefaults(defineProps<Props>(), { accent: 'primary', trend: '' });
+interface Props {
+  /** 卡片标题（已 i18n） */
+  title: string;
+  /** 数值 */
+  value: number;
+  /** 数值前缀（如 $、%） */
+  unit?: string;
+  /** iconify 图标名 */
+  icon: string;
+  /** 渐变色 */
+  color: CardColor;
+}
 
-/**
- * accent 颜色映射
- *
- * 使用 inline style 绑定以避免 UnoCSS 任意值颜色在 lint/typecheck 阶段的潜在风险，
- * 同时保证暗/亮主题一致。颜色取自 Naive UI 调色板。
- */
-const accentColor = computed(() => {
-  const map: Record<NonNullable<Props['accent']>, string> = {
-    primary: '#2080f0',
-    success: '#18a058',
-    warning: '#f0a020',
-    error: '#d03050'
-  };
-  return map[props.accent];
-});
+const props = withDefaults(defineProps<Props>(), { unit: '' });
+
+interface GradientBgProps {
+  gradientColor: string;
+}
+
+const [DefineGradientBg, GradientBg] = createReusableTemplate<GradientBgProps>();
+
+const themeStore = useThemeStore();
+
+function gradientOf(color: CardColor): string {
+  return `linear-gradient(to bottom right, ${color.start}, ${color.end})`;
+}
 </script>
 
 <template>
-  <div class="glass-card flex items-center gap-16px p-20px">
+  <!-- define component start: GradientBg -->
+  <DefineGradientBg v-slot="{ $slots, gradientColor }">
     <div
-      class="flex-center size-48px rd-10px bg-white/10"
-      :style="{ color: accentColor }"
+      class="px-16px pb-4px pt-8px text-white"
+      :style="{ backgroundImage: gradientColor, borderRadius: themeStore.themeRadius + 'px' }"
     >
-      <SvgIcon :icon="icon" class="size-24px" />
+      <component :is="$slots.default" />
     </div>
-    <div class="min-w-0 flex-1">
-      <div class="truncate text-13px opacity-70">{{ label }}</div>
-      <div class="text-26px font-600 tabular-nums">{{ value }}</div>
+  </DefineGradientBg>
+  <!-- define component end: GradientBg -->
+
+  <GradientBg :gradient-color="gradientOf(props.color)" class="flex-1">
+    <h3 class="text-16px">{{ title }}</h3>
+    <div class="flex justify-between pt-12px">
+      <SvgIcon :icon="icon" class="text-32px" />
+      <CountTo
+        :prefix="unit"
+        :start-value="1"
+        :end-value="value"
+        class="text-30px text-white dark:text-dark"
+      />
     </div>
-    <div v-if="trend" class="shrink-0 text-12px opacity-60">{{ trend }}</div>
-  </div>
+  </GradientBg>
 </template>
+
+<style scoped></style>
