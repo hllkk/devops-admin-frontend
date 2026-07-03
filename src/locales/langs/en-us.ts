@@ -294,6 +294,7 @@ const local: App.I18n.Schema = {
     server_container: 'Containers',
     server_database: 'Databases',
     'server_database-detail': 'Database Detail',
+    monitor: 'Monitor',
     init: 'Init',
     spread: 'Share',
     about: 'About',

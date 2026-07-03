@@ -42,12 +42,12 @@ declare module "@elegant-router/types" {
     "manage_settings": "/manage/settings";
     "manage_storage": "/manage/storage";
     "manage_user": "/manage/user";
+    "monitor": "/monitor";
     "my-share": "/my-share";
     "notice-user": "/notice-user";
     "recent": "/recent";
     "server": "/server";
     "server-manage": "/server-manage";
-    "server-manage_monitor": "/server-manage/monitor";
     "server-manage_server-detail": "/server-manage/server-detail";
     "server-manage_server-list": "/server-manage/server-list";
     "share": "/share";
@@ -98,6 +98,7 @@ declare module "@elegant-router/types" {
     | "log"
     | "login"
     | "manage"
+    | "monitor"
     | "my-share"
     | "notice-user"
     | "recent"
@@ -148,9 +149,9 @@ declare module "@elegant-router/types" {
     | "manage_settings"
     | "manage_storage"
     | "manage_user"
+    | "monitor"
     | "my-share"
     | "recent"
-    | "server-manage_monitor"
     | "server-manage_server-detail"
     | "server-manage_server-list"
     | "server"

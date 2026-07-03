@@ -290,6 +290,7 @@ const local: App.I18n.Schema = {
     server_container: '容器管理',
     server_database: '数据库管理',
     'server_database-detail': '数据库详情',
+    monitor: '监控大屏',
     init: '初始化',
     spread: '分享',
     about: '关于',

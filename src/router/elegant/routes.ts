@@ -266,6 +266,15 @@ export const generatedRoutes: GeneratedRoute[] = [
     ]
   },
   {
+    name: 'monitor',
+    path: '/monitor',
+    component: 'layout.base$view.monitor',
+    meta: {
+      title: 'monitor',
+      i18nKey: 'route.monitor'
+    }
+  },
+  {
     name: 'my-share',
     path: '/my-share',
     component: 'layout.base$view.my-share',
@@ -317,17 +326,6 @@ export const generatedRoutes: GeneratedRoute[] = [
       module: 'server'
     },
     children: [
-      {
-        name: 'server-manage_monitor',
-        path: '/server-manage/monitor',
-        component: 'view.server-manage_monitor',
-        meta: {
-          title: 'server-manage_monitor',
-          i18nKey: 'route.server-manage_monitor',
-          icon: 'mdi:monitor-eye',
-          order: 1
-        }
-      },
       {
         name: 'server-manage_server-detail',
         path: '/server-manage/server-detail',
