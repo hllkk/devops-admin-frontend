@@ -56,6 +56,19 @@ async function refreshGroupOptions() {
   }
 }
 
+/** 根据 OS 名称返回 iconify 图标名(科技感 logo 风格) */
+function getOsIcon(os: string): string {
+  const lower = os.toLowerCase();
+  if (lower.includes('windows')) return 'logos:microsoft-windows-icon';
+  if (lower.includes('ubuntu')) return 'logos:ubuntu';
+  if (lower.includes('debian')) return 'logos:debian';
+  if (lower.includes('centos')) return 'logos:centos-icon';
+  if (lower.includes('rocky') || lower.includes('redhat') || lower.includes('rhel') || lower.includes('fedora')) {
+    return 'mdi:linux';
+  }
+  return 'carbon:bare-metal-server';
+}
+
 const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagination, scrollX } =
   useNaivePaginatedTable({
     api: () => fetchGetServerList(searchParams.value),
@@ -73,8 +86,16 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
       {
         key: 'name',
         title: $t('page.server.serverList.name'),
-        minWidth: 160,
-        ellipsis: { tooltip: true }
+        minWidth: 180,
+        render: row => {
+          const osIcon = getOsIcon(row.os);
+          return (
+            <NSpace size={8} align="center" wrap={false}>
+              <SvgIcon icon={osIcon} class="text-18px text-primary" />
+              <span class="truncate">{row.name}</span>
+            </NSpace>
+          );
+        }
       },
       {
         key: 'ip',
