@@ -70,7 +70,6 @@ function createInitialState(): MockState {
 }
 
 // 使用 globalThis 避免 HMR 重复创建
-const STATE_KEY = '__devopsAdminServerMockState__';
 declare global {
   // eslint-disable-next-line no-var
   var __devopsAdminServerMockState__: MockState | undefined;
@@ -89,6 +88,10 @@ function setState(next: MockState): void {
 
 export function getMockState(): MockState {
   return getState();
+}
+
+export function setMockState(next: MockState): void {
+  setState(next);
 }
 
 // ============ 分组 API ============
@@ -205,7 +208,7 @@ export function getServerList(params: Api.Server.ServerSearchParams) {
     const state = getState();
     let rows = state.servers.slice();
     if (params.groupId != null && params.groupId !== 0) {
-      const groupId = params.groupId as CommonType.IdType;
+      const groupId = params.groupId ?? 0;
       const ids = new Set(collectAllChildIds(state.groups, groupId));
       ids.add(groupId);
       rows = rows.filter(s => ids.has(s.groupId ?? 0));
@@ -330,13 +333,14 @@ export function batchImportServers(params: {
     let nextId = state.nextServerId;
     const success: number[] = [];
     const errors: { row: number; message: string }[] = [];
+    const newServers: Api.Server.Server[] = [];
     params.items.forEach((item, idx) => {
       if (!item.valid) {
         errors.push({ row: idx + 2, message: item.errorMessage ?? 'invalid' });
         return;
       }
       success.push(nextId);
-      state.servers.push({
+      newServers.push({
         id: nextId,
         name: item.name,
         ip: item.ip,
@@ -356,7 +360,7 @@ export function batchImportServers(params: {
       });
       nextId += 1;
     });
-    setState({ ...state, nextServerId: nextId });
+    setState({ ...state, servers: [...state.servers, ...newServers], nextServerId: nextId });
     return { success: success.length, failed: errors.length, errors };
   });
 }
