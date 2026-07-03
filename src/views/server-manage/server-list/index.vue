@@ -62,11 +62,14 @@ function getOsIcon(os: string): string {
   if (lower.includes('windows')) return 'logos:microsoft-windows-icon';
   if (lower.includes('ubuntu')) return 'logos:ubuntu';
   if (lower.includes('debian')) return 'logos:debian';
-  if (lower.includes('centos')) return 'logos:centos-icon';
-  if (lower.includes('rocky') || lower.includes('redhat') || lower.includes('rhel') || lower.includes('fedora')) {
+  if (lower.includes('centos')) return 'devicon-centos';
+  if (lower.includes('rocky')) return 'logos-rocky-linux-icon';
+  if (lower.includes('redhat')) return 'devicon-redhat';
+  if (lower.includes('fedora')) return 'devicon-fedora';
+  if (lower.includes('rhel')) {
     return 'mdi:linux';
   }
-  return 'carbon:bare-metal-server';
+  return 'streamline-color-database-server-2';
 }
 
 const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagination, scrollX } =
