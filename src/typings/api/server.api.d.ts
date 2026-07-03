@@ -40,7 +40,10 @@ declare namespace Api {
 
     /** server search params */
     type ServerSearchParams = CommonType.RecordNullable<
-      Pick<Server, 'name' | 'ip' | 'status'> & Api.Common.CommonSearchParams
+      Pick<Server, 'name' | 'ip' | 'status'> & {
+        groupId?: CommonType.IdType | null;
+        os?: string | null;
+      } & Api.Common.CommonSearchParams
     >;
 
     /** server list */
@@ -129,6 +132,49 @@ declare namespace Api {
       action: string;
       operator: string;
       result: 'success' | 'failed';
+    }
+
+    /** 服务器分组(多级树) */
+    interface ServerGroup {
+      id: CommonType.IdType;
+      parentId: CommonType.IdType;
+      name: string;
+      orderNum?: number;
+      children?: ServerGroup[];
+      serverCount?: number;
+    }
+
+    /** 分组树形数据 */
+    type ServerGroupTree = ServerGroup[];
+
+    /** 服务器操作系统(下拉选项) */
+    type ServerOs = 'Ubuntu 22.04' | 'CentOS 7' | 'Debian 12' | 'Rocky 9' | 'Windows Server 2022' | string;
+
+    /** 主机新增/编辑参数 */
+    type ServerOperateParams = CommonType.RecordNullable<
+      Pick<Server, 'name' | 'ip' | 'os' | 'hostname' | 'location' | 'uptimeSeconds'> & {
+        groupId: CommonType.IdType;
+        username: string;
+        password?: string;
+      }
+    >;
+
+    /** 导入单行(从 xlsx 解析) */
+    interface ServerImportItem {
+      name: string;
+      ip: string;
+      os: string;
+      hostname?: string;
+      location?: string;
+      valid?: boolean;
+      errorMessage?: string;
+    }
+
+    /** 导入响应 */
+    interface ServerImportResponse {
+      success: number;
+      failed: number;
+      errors: { row: number; message: string }[];
     }
   }
 }
