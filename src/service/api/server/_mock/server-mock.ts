@@ -72,18 +72,18 @@ function createInitialState(): MockState {
 // 使用 globalThis 避免 HMR 重复创建
 declare global {
   // eslint-disable-next-line no-var
-  var __devopsAdminServerMockState__: MockState | undefined;
+  var devopsAdminServerMockState: MockState | undefined;
 }
 
 function getState(): MockState {
-  if (!globalThis.__devopsAdminServerMockState__) {
-    globalThis.__devopsAdminServerMockState__ = createInitialState();
+  if (!globalThis.devopsAdminServerMockState) {
+    globalThis.devopsAdminServerMockState = createInitialState();
   }
-  return globalThis.__devopsAdminServerMockState__;
+  return globalThis.devopsAdminServerMockState;
 }
 
 function setState(next: MockState): void {
-  globalThis.__devopsAdminServerMockState__ = next;
+  globalThis.devopsAdminServerMockState = next;
 }
 
 export function getMockState(): MockState {
