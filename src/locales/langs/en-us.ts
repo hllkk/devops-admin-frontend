@@ -1456,18 +1456,31 @@ const local: App.I18n.Schema = {
         cardView: 'Cards',
         name: 'Name',
         ip: 'IP',
+        os: 'OS',
         status: 'Status',
+        location: 'Location',
         cpu: 'CPU',
         mem: 'Mem',
         disk: 'Disk',
+        heartbeat: 'Last Heartbeat',
         operations: 'Actions',
+        detail: 'Detail',
+        edit: 'Edit',
+        delete: 'Delete',
+        move: 'Move',
         online: 'Online',
         offline: 'Offline',
         warning: 'Warning',
-        detail: 'Detail',
         restart: 'Restart',
         console: 'Console',
-        searchPlaceholder: 'Search name / IP'
+        searchPlaceholder: 'Search name / IP',
+        addSuccess: 'Added successfully',
+        updateSuccess: 'Updated successfully',
+        deleteSuccess: 'Deleted successfully',
+        moveSuccess: 'Moved successfully',
+        importSuccess: 'Import successful',
+        confirmDelete: 'Are you sure to delete the selected servers?',
+        exportFileName: 'servers'
       },
       serverDetail: {
         basicInfo: 'Basic Info',
@@ -1488,6 +1501,67 @@ const local: App.I18n.Schema = {
         os: 'OS',
         uptime: 'Uptime',
         location: 'Location'
+      },
+      group: {
+        title: 'Server Groups',
+        all: 'All Servers',
+        create: 'New Subgroup',
+        rename: 'Rename',
+        delete: 'Delete Group',
+        addServer: 'Add Server to This Group',
+        moveServers: 'Move Selected Servers to This Group',
+        batchDelete: 'Delete Selected Servers',
+        confirmDelete: 'Are you sure to delete group "{name}"?',
+        hasChildren: 'This group has subgroups. Please delete subgroups first.',
+        hasServers: 'This group still has servers. Please move or delete them first.',
+        nameRequired: 'Please enter a group name',
+        nameDuplicate: 'Group name already exists',
+        createSuccess: 'Group created',
+        renameSuccess: 'Renamed successfully',
+        deleteSuccess: 'Group deleted'
+      },
+      import: {
+        title: 'Import Servers',
+        upload: 'Choose .xlsx file',
+        uploadTip: 'Supported: .xlsx; first row is header',
+        preview: 'Preview',
+        confirm: 'Confirm Import',
+        cancel: 'Cancel',
+        invalidRows: '{count} invalid rows',
+        successMessage: 'Imported {success} successfully, {failed} failed',
+        defaultGroup: 'Default Group'
+      },
+      move: {
+        title: 'Move Servers',
+        target: 'Target Group',
+        confirm: 'Confirm Move',
+        cancel: 'Cancel',
+        description: 'Will move {count} server(s) to the target group',
+        excludeCurrent: 'Target group cannot be the current group',
+        success: 'Moved successfully'
+      },
+      form: {
+        name: {
+          required: 'Please enter a name',
+          duplicate: 'Name already exists',
+          maxLength: 'Name must be 50 characters or less'
+        },
+        ip: {
+          required: 'Please enter an IP',
+          invalid: 'Invalid IP format'
+        },
+        os: {
+          required: 'Please select an OS'
+        },
+        groupId: {
+          required: 'Please select a group'
+        },
+        username: {
+          required: 'Please enter a username'
+        },
+        password: {
+          required: 'Please enter a password'
+        }
       }
     },
     disk: {

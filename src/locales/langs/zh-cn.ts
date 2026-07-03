@@ -1448,18 +1448,31 @@ const local: App.I18n.Schema = {
         cardView: '卡片视图',
         name: '名称',
         ip: 'IP 地址',
+        os: '操作系统',
         status: '状态',
+        location: '位置',
         cpu: 'CPU',
         mem: '内存',
         disk: '磁盘',
+        heartbeat: '上次心跳',
         operations: '操作',
+        detail: '详情',
+        edit: '编辑',
+        delete: '删除',
+        move: '移动',
         online: '在线',
         offline: '离线',
         warning: '告警',
-        detail: '详情',
         restart: '重启',
         console: '控制台',
-        searchPlaceholder: '搜索名称 / IP'
+        searchPlaceholder: '搜索名称 / IP',
+        addSuccess: '添加成功',
+        updateSuccess: '更新成功',
+        deleteSuccess: '删除成功',
+        moveSuccess: '移动成功',
+        importSuccess: '导入成功',
+        confirmDelete: '确定要删除选中主机吗?',
+        exportFileName: '服务器'
       },
       serverDetail: {
         basicInfo: '基本信息',
@@ -1480,6 +1493,67 @@ const local: App.I18n.Schema = {
         os: '操作系统',
         uptime: '在线时长',
         location: '位置'
+      },
+      group: {
+        title: '服务器分组',
+        all: '全部主机',
+        create: '新建子分组',
+        rename: '重命名',
+        delete: '删除分组',
+        addServer: '添加主机到此分组',
+        moveServers: '将已选主机移动到此分组',
+        batchDelete: '批量删除已选主机',
+        confirmDelete: '确定要删除分组 "{name}" 吗?',
+        hasChildren: '该分组下存在子分组,请先删除子分组',
+        hasServers: '该分组下还存在主机,请先移出或删除',
+        nameRequired: '请输入分组名',
+        nameDuplicate: '分组名已存在',
+        createSuccess: '分组创建成功',
+        renameSuccess: '重命名成功',
+        deleteSuccess: '分组删除成功'
+      },
+      import: {
+        title: '导入服务器',
+        upload: '选择 .xlsx 文件',
+        uploadTip: '支持格式: .xlsx;首行为表头',
+        preview: '预览',
+        confirm: '确认导入',
+        cancel: '取消',
+        invalidRows: '{count} 行数据不合法',
+        successMessage: '导入成功 {success} 条,失败 {failed} 条',
+        defaultGroup: '默认分组'
+      },
+      move: {
+        title: '移动服务器',
+        target: '目标分组',
+        confirm: '确定移动',
+        cancel: '取消',
+        description: '将移动 {count} 台主机到目标分组',
+        excludeCurrent: '目标分组不能是当前分组',
+        success: '移动成功'
+      },
+      form: {
+        name: {
+          required: '请输入名称',
+          duplicate: '名称已存在',
+          maxLength: '名称长度不能超过 50'
+        },
+        ip: {
+          required: '请输入 IP',
+          invalid: 'IP 格式不正确'
+        },
+        os: {
+          required: '请选择操作系统'
+        },
+        groupId: {
+          required: '请选择分组'
+        },
+        username: {
+          required: '请输入用户名'
+        },
+        password: {
+          required: '请输入密码'
+        }
       }
     },
     disk: {

@@ -1640,18 +1640,31 @@ declare namespace App {
             cardView: string;
             name: string;
             ip: string;
+            os: string;
             status: string;
+            location: string;
             cpu: string;
             mem: string;
             disk: string;
+            heartbeat: string;
             operations: string;
+            detail: string;
+            edit: string;
+            delete: string;
+            move: string;
             online: string;
             offline: string;
             warning: string;
-            detail: string;
             restart: string;
             console: string;
             searchPlaceholder: string;
+            addSuccess: string;
+            updateSuccess: string;
+            deleteSuccess: string;
+            moveSuccess: string;
+            importSuccess: string;
+            confirmDelete: string;
+            exportFileName: string;
           };
           serverDetail: {
             basicInfo: string;
@@ -1672,6 +1685,67 @@ declare namespace App {
             os: string;
             uptime: string;
             location: string;
+          };
+          group: {
+            title: string;
+            all: string;
+            create: string;
+            rename: string;
+            delete: string;
+            addServer: string;
+            moveServers: string;
+            batchDelete: string;
+            confirmDelete: string;
+            hasChildren: string;
+            hasServers: string;
+            nameRequired: string;
+            nameDuplicate: string;
+            createSuccess: string;
+            renameSuccess: string;
+            deleteSuccess: string;
+          };
+          import: {
+            title: string;
+            upload: string;
+            uploadTip: string;
+            preview: string;
+            confirm: string;
+            cancel: string;
+            invalidRows: string;
+            successMessage: string;
+            defaultGroup: string;
+          };
+          move: {
+            title: string;
+            target: string;
+            confirm: string;
+            cancel: string;
+            description: string;
+            excludeCurrent: string;
+            success: string;
+          };
+          form: {
+            name: {
+              required: string;
+              duplicate: string;
+              maxLength: string;
+            };
+            ip: {
+              required: string;
+              invalid: string;
+            };
+            os: {
+              required: string;
+            };
+            groupId: {
+              required: string;
+            };
+            username: {
+              required: string;
+            };
+            password: {
+              required: string;
+            };
           };
         };
       };
