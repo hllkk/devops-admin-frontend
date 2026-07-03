@@ -43,11 +43,16 @@ async function getGroupTree() {
   const { data, error } = await fetchGetGroupTree();
   endLoading();
   if (!error && data) {
-    treeData.value = data;
-    // 默认选中"全部主机"(虚拟根 id=0)
-    if (selectedKey.value === 0) {
-      // 保持 0
-    }
+    // 在顶部插入"全部主机"虚拟根节点(id=0,parentId=-1),让用户能右击它
+    const totalCount = (data ?? []).reduce((sum, n) => sum + (n.serverCount ?? 0), 0);
+    const allRoot: Api.Server.ServerGroup = {
+      id: 0,
+      parentId: -1,
+      name: $t('page.server.group.all'),
+      orderNum: 0,
+      serverCount: totalCount
+    };
+    treeData.value = [allRoot, ...(data ?? [])];
   }
 }
 
@@ -176,6 +181,16 @@ defineExpose({ refresh: getGroupTree });
         </template>
       </NTree>
     </NSpin>
+    <div class="flex items-center gap-4px text-11px opacity-60">
+      <icon-mdi-dots-horizontal class="text-12px" />
+      <span>{{ $t('page.server.group.rightClickHint') }}</span>
+    </div>
+    <NButton size="tiny" block ghost @click="emit('create', 0)">
+      <template #icon>
+        <icon-ic-round-add class="text-icon" />
+      </template>
+      {{ $t('page.server.group.createRoot') }}
+    </NButton>
     <NDropdown
       :show="contextMenu.visible"
       :options="contextMenuOptions"
