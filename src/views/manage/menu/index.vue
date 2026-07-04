@@ -62,6 +62,11 @@ const btnData = ref<Api.System.ButtonList>([]);
 const appList = ref<Api.System.AppList>([]);
 const activeModule = ref<string>('');
 
+// 模块下拉选项（纯国际化：label 走 modules.<appCode> 翻译；缺翻译时回显 key 原文）
+const moduleOptions = computed(() =>
+  appList.value.map(app => ({ label: $t(`modules.${app.appCode}`), value: app.appCode }))
+);
+
 // 按钮编辑状态
 const editingButtonData = ref<Api.System.Button | null>(null);
 const buttonOperateType = ref<NaiveUI.TableOperateType>('add');
@@ -426,10 +431,16 @@ const renderIframeQuery = (queryParam: string) => {
       />
     </template>
     <template #sider>
-      <!-- 模块Tab -->
-      <NTabs v-if="appList.length > 0" v-model:value="activeModule" type="line" size="small" class="module-tabs mb-8px">
-        <NTabPane v-for="app in appList" :key="app.appCode" :name="app.appCode" :tab="$t(`modules.${app.appCode}`)" />
-      </NTabs>
+      <!-- 模块下拉选择 -->
+      <NSelect
+        v-if="appList.length > 0"
+        v-model:value="activeModule"
+        :options="moduleOptions"
+        :placeholder="$t('page.system.menu.selectModule')"
+        :consistent-menu-width="false"
+        size="small"
+        class="mb-8px"
+      />
       <div class="flex gap-6px">
         <NInput v-model:value="name" size="small" :placeholder="$t('page.system.menu.form.menuName.required')" />
       </div>
@@ -639,16 +650,6 @@ const renderIframeQuery = (queryParam: string) => {
     font-size: 16px !important;
     height: 16px !important;
     width: 16px !important;
-  }
-}
-
-.module-tabs {
-  :deep(.n-tabs-nav) {
-    justify-content: space-around !important;
-  }
-  :deep(.n-tabs-tab) {
-    flex: 1 !important;
-    justify-content: center !important;
   }
 }
 </style>

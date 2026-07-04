@@ -431,8 +431,10 @@ const local: App.I18n.Schema = {
     }
   },
   modules: {
+    // add <appCode>: '<module name>' here when a new app module is added (matches sys_app.app_code)
     admin: 'System Module',
-    disk: 'Disk Module'
+    disk: 'Disk Module',
+    server: 'Server Module'
   },
   page: {
     login: {

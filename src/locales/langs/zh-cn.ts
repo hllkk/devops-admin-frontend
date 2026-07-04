@@ -427,8 +427,10 @@ const local: App.I18n.Schema = {
     }
   },
   modules: {
+    // 新增应用模块时，需在此补充 <appCode>: '<模块名>'，对应后端 sys_app.app_code
     admin: '系统模块',
-    disk: '网盘模块'
+    disk: '网盘模块',
+    server: '服务器模块'
   },
   page: {
     login: {
