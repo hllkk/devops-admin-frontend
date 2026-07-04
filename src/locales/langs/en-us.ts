@@ -1506,8 +1506,6 @@ const local: App.I18n.Schema = {
         title: 'Server Groups',
         all: 'All Servers',
         create: 'New Subgroup',
-        createRoot: 'New Root Group',
-        rightClickHint: 'Right-click nodes for more actions',
         rename: 'Rename',
         delete: 'Delete Group',
         addServer: 'Add Server to This Group',

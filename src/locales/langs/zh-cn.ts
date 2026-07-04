@@ -1498,8 +1498,6 @@ const local: App.I18n.Schema = {
         title: '服务器分组',
         all: '全部主机',
         create: '新建子分组',
-        createRoot: '新建根分组',
-        rightClickHint: '右击节点查看更多操作',
         rename: '重命名',
         delete: '删除分组',
         addServer: '添加主机到此分组',

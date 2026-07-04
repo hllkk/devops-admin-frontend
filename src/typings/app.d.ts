@@ -1690,8 +1690,6 @@ declare namespace App {
             title: string;
             all: string;
             create: string;
-            createRoot: string;
-            rightClickHint: string;
             rename: string;
             delete: string;
             addServer: string;

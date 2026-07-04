@@ -43,16 +43,11 @@ async function getGroupTree() {
   const { data, error } = await fetchGetGroupTree();
   endLoading();
   if (!error && data) {
-    // 在顶部插入"全部主机"虚拟根节点(id=0,parentId=-1),让用户能右击它
-    const totalCount = (data ?? []).reduce((sum, n) => sum + (n.serverCount ?? 0), 0);
-    const allRoot: Api.Server.ServerGroup = {
-      id: 0,
-      parentId: -1,
-      name: $t('page.server.group.all'),
-      orderNum: 0,
-      serverCount: totalCount
-    };
-    treeData.value = [allRoot, ...(data ?? [])];
+    treeData.value = data;
+    // 默认选中"全部主机"(虚拟根 id=0)
+    if (selectedKey.value === 0) {
+      // 保持 0
+    }
   }
 }
 
@@ -114,6 +109,19 @@ function handleRightClick({ node, event }: { node: TreeOption; event: MouseEvent
   };
 }
 
+/**
+ * NTree 不提供 right-click 事件, 需通过 node-props 为每个节点注入原生 contextmenu 处理
+ * 参考: https://www.naiveui.com/zh-CN/os-theme/components/tree#node-props-Prop
+ */
+function nodeProps({ option }: { option: TreeOption }) {
+  return {
+    onContextmenu(e: MouseEvent) {
+      e.preventDefault();
+      handleRightClick({ node: option, event: e });
+    }
+  };
+}
+
 function closeContextMenu() {
   contextMenu.value.visible = false;
 }
@@ -172,25 +180,15 @@ defineExpose({ refresh: getGroupTree });
         :selected-keys="[selectedKey]"
         :expanded-keys="expandedKeys"
         :render-label="renderLabel"
+        :node-props="nodeProps"
         @update:selected-keys="handleUpdateSelectedKeys"
         @update:expanded-keys="(keys: number[]) => (expandedKeys = keys)"
-        @right-click="handleRightClick"
       >
         <template #empty>
           <div class="py-12px text-center text-12px opacity-50">{{ $t('common.noData') }}</div>
         </template>
       </NTree>
     </NSpin>
-    <div class="flex items-center gap-4px text-11px opacity-60">
-      <icon-mdi-dots-horizontal class="text-12px" />
-      <span>{{ $t('page.server.group.rightClickHint') }}</span>
-    </div>
-    <NButton size="tiny" block ghost @click="emit('create', 0)">
-      <template #icon>
-        <icon-ic-round-add class="text-icon" />
-      </template>
-      {{ $t('page.server.group.createRoot') }}
-    </NButton>
     <NDropdown
       :show="contextMenu.visible"
       :options="contextMenuOptions"
