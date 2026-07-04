@@ -104,7 +104,8 @@ export const generatedRoutes: GeneratedRoute[] = [
     component: 'layout.base$view.init',
     meta: {
       title: 'init',
-      i18nKey: 'route.init'
+      i18nKey: 'route.init',
+      constant: true
     }
   },
   {

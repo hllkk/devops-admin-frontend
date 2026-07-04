@@ -2,6 +2,7 @@
 import { ref, computed, reactive, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useLoading } from '@sa/hooks';
+import { useDebounceFn } from '@vueuse/core';
 import { $t } from '@/locales';
 import { useDiskStore } from '@/store/modules/disk';
 import { useAppStore } from '@/store/modules/app';
@@ -757,14 +758,18 @@ watch(() => diskStore.sortSettings, () => {
 }, { deep: true });
 
 // Watch upload completions to auto-refresh file list
+// 防抖：多文件快速完成时合并为一次刷新，避免公网慢速场景下多次请求导致超时
 let prevCompletedCount = 0;
+const debouncedRefreshAfterUpload = useDebounceFn(() => {
+  getFileList();
+  loadQuotaInfo();
+}, 800);
 watch(
   () => diskStore.transferList.filter(item => item.transferType === 'upload' && item.status === 'completed').length,
   completedCount => {
     if (completedCount > prevCompletedCount) {
       prevCompletedCount = completedCount;
-      getFileList();
-      loadQuotaInfo();
+      debouncedRefreshAfterUpload();
     }
   }
 );
