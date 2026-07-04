@@ -1704,6 +1704,11 @@ declare namespace App {
             createSuccess: string;
             renameSuccess: string;
             deleteSuccess: string;
+            createRoot: string;
+            moveHosts: string;
+            deleteHosts: string;
+            deleteHostsConfirm: string;
+            noHosts: string;
           };
           import: {
             title: string;
@@ -1730,6 +1735,12 @@ declare namespace App {
             description: string;
             excludeCurrent: string;
             success: string;
+            step1Title: string;
+            step2Title: string;
+            moveTo: string;
+            back: string;
+            selectGroup: string;
+            selected: string;
           };
           form: {
             name: {

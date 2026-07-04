@@ -1519,7 +1519,12 @@ const local: App.I18n.Schema = {
         nameMaxLength: 'Group name cannot exceed 50 characters',
         createSuccess: 'Group created',
         renameSuccess: 'Renamed successfully',
-        deleteSuccess: 'Group deleted'
+        deleteSuccess: 'Group deleted',
+        createRoot: 'New Root Group',
+        moveHosts: 'Move Servers',
+        deleteHosts: 'Delete Servers',
+        deleteHostsConfirm: 'Delete {count} server(s) in group "{group}"?',
+        noHosts: 'No servers in this group'
       },
       import: {
         title: 'Import Servers',
@@ -1545,7 +1550,13 @@ const local: App.I18n.Schema = {
         cancel: 'Cancel',
         description: 'Will move {count} server(s) to the target group',
         excludeCurrent: 'Target group cannot be the current group',
-        success: 'Moved successfully'
+        success: 'Moved successfully',
+        step1Title: 'Step 1 · Select servers to move',
+        step2Title: 'Step 2 · Select target group',
+        moveTo: 'Move to',
+        back: 'Back',
+        selectGroup: 'Select a group on the left',
+        selected: '{count} server(s) selected'
       },
       form: {
         name: {

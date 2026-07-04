@@ -44,6 +44,8 @@ declare namespace Api {
       Pick<Server, 'name' | 'ip' | 'status'> & {
         groupId?: CommonType.IdType | null;
         os?: string | null;
+        /** 是否包含子分组主机，默认 true（含子分组）；false=仅直属 */
+        includeSubGroups?: boolean;
       } & Api.Common.CommonSearchParams
     >;
 

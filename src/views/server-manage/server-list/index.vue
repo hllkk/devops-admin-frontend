@@ -16,10 +16,10 @@ import ServerSearch from './modules/server-search.vue';
 import ServerCardItem from './modules/server-card-item.vue';
 import MetricBar from './modules/metric-bar.vue';
 import ServerGroupTree from './modules/server-group-tree.vue';
-import ServerGroupOperateModal from './modules/server-group-operate-modal.vue';
 import ServerOperateDrawer from './modules/server-operate-drawer.vue';
 import ServerImportModal from './modules/server-import-modal.vue';
 import ServerMoveModal from './modules/server-move-modal.vue';
+import ServerMoveWorkbenchModal from './modules/server-move-workbench-modal.vue';
 
 defineOptions({ name: 'ServerList' });
 
@@ -29,9 +29,8 @@ const route = useRoute();
 
 const { bool: importVisible, setTrue: openImport } = useBoolean();
 const { bool: moveVisible, setTrue: openMove, setFalse: closeMove } = useBoolean();
-const { bool: groupModalVisible, setTrue: openGroupModal } = useBoolean();
-const groupModalType = ref<'create' | 'rename'>('create');
-const groupModalRow = ref<Api.Server.ServerGroup | null>(null);
+const { bool: workbenchVisible, setTrue: openWorkbench } = useBoolean();
+const workbenchDefaultGroupId = ref<CommonType.IdType>(0);
 
 const selectedGroupId = ref<CommonType.IdType>(0);
 const viewMode = ref<'table' | 'card'>('table');
@@ -257,41 +256,64 @@ async function onGroupRefresh() {
   await Promise.all([refreshGroupOptions(), getDataByPage()]);
 }
 
-function onGroupCreate(parentId: CommonType.IdType) {
-  groupModalType.value = 'create';
-  groupModalRow.value = { id: parentId, parentId, name: '' } as Api.Server.ServerGroup;
-  openGroupModal();
-}
-
-function onGroupRename(group: Api.Server.ServerGroup) {
-  groupModalType.value = 'rename';
-  groupModalRow.value = group;
-  openGroupModal();
-}
-
 function onGroupAddServer(groupId: CommonType.IdType) {
   selectedGroupId.value = groupId;
   handleAdd();
 }
 
-function onGroupMoveServers(_targetGroupId: CommonType.IdType) {
-  if (checkedRowKeys.value.length === 0) return;
-  openMove();
+function onGroupMoveHosts(groupId: CommonType.IdType) {
+  workbenchDefaultGroupId.value = groupId;
+  openWorkbench();
 }
 
-async function onGroupBatchDelete() {
-  if (checkedRowKeys.value.length === 0) return;
-  await handleBatchDelete();
+function onGroupDeleteHosts(group: Api.Server.ServerGroup) {
+  if ((group.serverCount ?? 0) === 0) {
+    window.$message?.warning($t('page.server.group.noHosts'));
+    return;
+  }
+  window.$dialog?.warning({
+    title: $t('common.tip'),
+    content: $t('page.server.group.deleteHostsConfirm', { group: group.name, count: group.serverCount ?? 0 }),
+    positiveText: $t('common.confirm'),
+    negativeText: $t('common.cancel'),
+    onPositiveClick: async () => {
+      const { data: serverPage, error } = await fetchGetServerList({
+        groupId: group.id,
+        includeSubGroups: false,
+        pageNum: 1,
+        pageSize: 9999,
+        name: null,
+        ip: null,
+        status: null,
+        os: null,
+        params: {}
+      });
+      if (error) {
+        window.$message?.error(error.message);
+        return;
+      }
+      const ids = (serverPage?.rows ?? []).map(s => s.id);
+      if (ids.length === 0) return;
+      const { error: delError } = await fetchBatchDeleteServer(ids);
+      if (delError) {
+        window.$message?.error(delError.message);
+        return;
+      }
+      window.$message?.success($t('common.deleteSuccess'));
+      await onGroupRefresh();
+    }
+  });
+}
+
+async function onWorkbenchSubmitted() {
+  workbenchVisible.value = false;
+  await getDataByPage(1);
+  await refreshGroupOptions();
 }
 
 async function handleMoveSubmitted() {
   closeMove();
   await getDataByPage(1);
-}
-
-async function handleGroupSubmitted() {
-  await refreshGroupOptions();
-  await getDataByPage();
 }
 
 onMounted(async () => {
@@ -321,13 +343,10 @@ const flatGroupsForDrawer = computed(() => flatGroupOptions.value);
     <template #sider>
       <ServerGroupTree
         v-model="selectedGroupId"
-        v-model:checked-server-count="checkedRowKeys.length"
         @refresh-server="onGroupRefresh"
-        @create="onGroupCreate"
-        @rename="onGroupRename"
         @add-server="onGroupAddServer"
-        @move-servers="onGroupMoveServers"
-        @batch-delete="onGroupBatchDelete"
+        @move-hosts="onGroupMoveHosts"
+        @delete-hosts="onGroupDeleteHosts"
       />
     </template>
     <div class="h-full flex-col-stretch gap-12px overflow-hidden lt-sm:overflow-auto">
@@ -433,11 +452,10 @@ const flatGroupsForDrawer = computed(() => flatGroupOptions.value);
           :group-options="flatGroupsForDrawer"
           @submitted="handleMoveSubmitted"
         />
-        <ServerGroupOperateModal
-          v-model:visible="groupModalVisible"
-          :operate-type="groupModalType"
-          :row-data="groupModalRow"
-          @submitted="handleGroupSubmitted"
+        <ServerMoveWorkbenchModal
+          v-model:visible="workbenchVisible"
+          :default-group-id="workbenchDefaultGroupId"
+          @submitted="onWorkbenchSubmitted"
         />
       </NCard>
     </div>

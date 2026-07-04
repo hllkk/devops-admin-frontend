@@ -1,24 +1,29 @@
 <script setup lang="ts">
-import { computed, h, onMounted, ref, watch } from 'vue';
-import { NDropdown, NInput, NSpin, NTree } from 'naive-ui';
+import { computed, h, onMounted, ref, watch, type VNode } from 'vue';
+import { NButton, NDropdown, NInput, NSpin, NTree } from 'naive-ui';
 import type { DropdownOption, TreeOption } from 'naive-ui';
 import { useBoolean } from '@sa/hooks';
-import { fetchGetGroupTree, fetchDeleteGroup } from '@/service/api/server/server';
+import { useSvgIcon } from '@/hooks/common/icon';
+import {
+  fetchCreateGroup,
+  fetchRenameGroup,
+  fetchGetGroupTree,
+  fetchDeleteGroup
+} from '@/service/api/server/server';
 import { $t } from '@/locales';
 
 defineOptions({ name: 'ServerGroupTree' });
 
 interface Emits {
   (e: 'refreshServer'): void;
-  (e: 'create', parentId: CommonType.IdType): void;
-  (e: 'rename', group: Api.Server.ServerGroup): void;
   (e: 'addServer', groupId: CommonType.IdType): void;
-  (e: 'moveServers', targetGroupId: CommonType.IdType): void;
-  (e: 'batchDelete'): void;
-  (e: 'delete', group: Api.Server.ServerGroup): void;
+  (e: 'moveHosts', groupId: CommonType.IdType): void;
+  (e: 'deleteHosts', group: Api.Server.ServerGroup): void;
 }
 
 const emit = defineEmits<Emits>();
+
+const { SvgIconVNode } = useSvgIcon();
 
 const selectedKey = defineModel<CommonType.IdType>({ required: true });
 
@@ -26,8 +31,6 @@ const { bool: loading, setTrue: startLoading, setFalse: endLoading } = useBoolea
 const treeData = ref<Api.Server.ServerGroup[]>([]);
 const expandedKeys = ref<CommonType.IdType[]>([1, 2]);
 const pattern = ref('');
-
-const checkedServerCount = defineModel<number>('checkedServerCount', { default: 0 });
 
 interface ContextMenuState {
   visible: boolean;
@@ -38,16 +41,103 @@ interface ContextMenuState {
 
 const contextMenu = ref<ContextMenuState>({ visible: false, x: 0, y: 0, node: null });
 
+// ============ 内联编辑（新建根分组 / 新建子分组 / 重命名） ============
+const TEMP_ID = 'new' as unknown as CommonType.IdType;
+
+interface EditState {
+  mode: 'create' | 'rename';
+  nodeId: CommonType.IdType;
+  parentId: CommonType.IdType;
+  value: string;
+}
+const editing = ref<EditState | null>(null);
+
+function addChildToTree(
+  nodes: Api.Server.ServerGroup[],
+  parentId: CommonType.IdType,
+  child: Api.Server.ServerGroup
+): Api.Server.ServerGroup[] {
+  return nodes.map(n => {
+    if (n.id === parentId) {
+      return { ...n, children: [...(n.children ?? []), child] };
+    }
+    if (n.children) return { ...n, children: addChildToTree(n.children, parentId, child) };
+    return n;
+  });
+}
+
+function removeTempNode(nodes: Api.Server.ServerGroup[]): Api.Server.ServerGroup[] {
+  return nodes
+    .filter(n => n.id !== TEMP_ID)
+    .map(n => (n.children ? { ...n, children: removeTempNode(n.children) } : n));
+}
+
+function startCreateRoot() {
+  treeData.value = [{ id: TEMP_ID, parentId: 0, name: '' }, ...treeData.value];
+  editing.value = { mode: 'create', nodeId: TEMP_ID, parentId: 0, value: '' };
+}
+
+function startCreateChild(node: Api.Server.ServerGroup) {
+  treeData.value = addChildToTree(treeData.value, node.id, {
+    id: TEMP_ID,
+    parentId: node.id,
+    name: ''
+  });
+  if (!expandedKeys.value.includes(node.id)) {
+    expandedKeys.value = [...expandedKeys.value, node.id];
+  }
+  editing.value = { mode: 'create', nodeId: TEMP_ID, parentId: node.id, value: '' };
+}
+
+function startRename(node: Api.Server.ServerGroup) {
+  editing.value = { mode: 'rename', nodeId: node.id, parentId: node.parentId, value: node.name };
+}
+
+async function confirmEdit() {
+  const ed = editing.value;
+  if (!ed) return;
+  const name = ed.value.trim();
+  if (!name) {
+    window.$message?.warning($t('page.server.group.nameRequired'));
+    return;
+  }
+  if (ed.mode === 'create') {
+    const { error } = await fetchCreateGroup({ parentId: ed.parentId, name });
+    if (error) {
+      window.$message?.error(error.message);
+      return;
+    }
+    window.$message?.success($t('page.server.group.createSuccess'));
+  } else {
+    const { error } = await fetchRenameGroup({ id: ed.nodeId, name });
+    if (error) {
+      window.$message?.error(error.message);
+      return;
+    }
+    window.$message?.success($t('page.server.group.renameSuccess'));
+  }
+  editing.value = null;
+  await getGroupTree();
+  emit('refreshServer');
+}
+
+function cancelEdit() {
+  if (!editing.value) return;
+  const wasCreate = editing.value.mode === 'create';
+  editing.value = null;
+  if (wasCreate) {
+    treeData.value = removeTempNode(treeData.value);
+  }
+}
+
+// ============ 数据加载 ============
+
 async function getGroupTree() {
   startLoading();
   const { data, error } = await fetchGetGroupTree();
   endLoading();
   if (!error && data) {
     treeData.value = data;
-    // 默认选中"全部主机"(虚拟根 id=0)
-    if (selectedKey.value === 0) {
-      // 保持 0
-    }
   }
 }
 
@@ -58,12 +148,14 @@ onMounted(() => {
 watch(
   () => selectedKey.value,
   () => {
+    if (editing.value) return; // 编辑态不刷新树,避免打断输入
     // 父级更新分组时,刷新树以更新 serverCount
     getGroupTree();
   }
 );
 
 function handleUpdateSelectedKeys(keys: CommonType.IdType[]) {
+  if (editing.value) return; // 编辑态不切换选中,避免刷新打断输入
   const key = keys[0] ?? 0;
   selectedKey.value = key;
   closeContextMenu();
@@ -71,31 +163,106 @@ function handleUpdateSelectedKeys(keys: CommonType.IdType[]) {
 
 function renderLabel({ option }: { option: TreeOption }) {
   const node = option as unknown as Api.Server.ServerGroup;
+
+  // 编辑态：原位输入框 + 确认按钮
+  if (editing.value && node.id === editing.value.nodeId) {
+    return h('div', { class: 'flex items-center gap-4px flex-1 min-w-0' }, [
+      h(NInput, {
+        value: editing.value.value,
+        size: 'small',
+        placeholder: $t('page.server.group.nameRequired'),
+        onUpdateValue: (v: string) => {
+          if (editing.value) editing.value.value = v;
+        },
+        onKeydown: (e: KeyboardEvent) => {
+          e.stopPropagation();
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            confirmEdit();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            cancelEdit();
+          }
+        },
+        onClick: (e: MouseEvent) => e.stopPropagation(),
+        onMousedown: (e: MouseEvent) => e.stopPropagation(),
+        onBlur: () => cancelEdit(),
+        onVnodeMounted: (vnode: VNode) => {
+          const el = vnode.el as HTMLElement | null;
+          el?.querySelector('input')?.focus();
+        }
+      }),
+      h(
+        NButton,
+        {
+          size: 'tiny',
+          quaternary: true,
+          type: 'primary',
+          onMousedown: (e: MouseEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          },
+          onClick: (e: MouseEvent) => {
+            e.stopPropagation();
+            confirmEdit();
+          }
+        },
+        () => [SvgIconVNode({ icon: 'ph:check', fontSize: 16 })?.()]
+      )
+    ]);
+  }
+
   return h('div', { class: 'flex items-center justify-between gap-8px' }, [
     h('span', { class: 'truncate' }, node.name),
     h('span', { class: 'text-11px opacity-60' }, `(${node.serverCount ?? 0})`)
   ]);
 }
 
-const contextMenuOptions = computed<DropdownOption[]>(() => {
+// ============ 右键菜单 ============
+
+type MenuOption = DropdownOption & { iconName?: string; danger?: boolean };
+
+function renderDropdownLabel(option: MenuOption) {
+  const iconVNode = option.iconName ? SvgIconVNode({ icon: option.iconName, fontSize: 18 })?.() : null;
+  return h(
+    'div',
+    { class: `flex items-center gap-6px ${option.danger ? 'text-red-500 dark:text-red-400' : ''}` },
+    [iconVNode, h('span', null, option.label as string)].filter(Boolean)
+  );
+}
+
+const contextMenuOptions = computed<MenuOption[]>(() => {
   const node = contextMenu.value.node;
   if (!node) return [];
   const isRoot = node.id === 0;
-  const hasChecked = checkedServerCount.value > 0;
-  const opts: DropdownOption[] = [{ key: 'create', label: $t('page.server.group.create') }];
-  if (!isRoot) {
+  const noDirectHosts = (node.serverCount ?? 0) === 0;
+  const busy = editing.value !== null; // 编辑态时禁止再新建/重命名
+  const opts: MenuOption[] = [];
+
+  if (isRoot) {
     opts.push(
-      { key: 'rename', label: $t('page.server.group.rename') },
-      { key: 'addServer', label: $t('page.server.group.addServer') }
+      { key: 'createRoot', label: $t('page.server.group.createRoot'), iconName: 'ph:folder-plus', disabled: busy },
+      { key: 'moveHosts', label: $t('page.server.group.moveHosts'), iconName: 'ph:arrows-left-right' }
     );
-    if (hasChecked) {
-      opts.push(
-        { key: 'moveServers', label: $t('page.server.group.moveServers') },
-        { key: 'batchDelete', label: $t('page.server.group.batchDelete') }
-      );
-    }
-    opts.push({ type: 'divider', key: 'd1' }, { key: 'delete', label: $t('page.server.group.delete') });
+    return opts;
   }
+
+  opts.push(
+    { key: 'createRoot', label: $t('page.server.group.createRoot'), iconName: 'ph:folder-plus', disabled: busy },
+    { key: 'createChild', label: $t('page.server.group.create'), iconName: 'ph:folder-notch-plus', disabled: busy },
+    { key: 'rename', label: $t('page.server.group.rename'), iconName: 'ph:pencil-simple-line', disabled: busy },
+    { key: 'addServer', label: $t('page.server.group.addServer'), iconName: 'ph:desktop-tower' },
+    { key: 'moveHosts', label: $t('page.server.group.moveHosts'), iconName: 'ph:arrows-left-right' },
+    {
+      key: 'deleteHosts',
+      label: $t('page.server.group.deleteHosts'),
+      iconName: 'ph:trash',
+      danger: true,
+      disabled: noDirectHosts
+    },
+    { type: 'divider', key: 'd1' },
+    { key: 'delete', label: $t('page.server.group.delete'), iconName: 'ph:folder-minus', danger: true }
+  );
   return opts;
 });
 
@@ -126,38 +293,46 @@ function closeContextMenu() {
   contextMenu.value.visible = false;
 }
 
-async function handleContextMenuSelect(key: string) {
+function handleContextMenuSelect(key: string) {
   const node = contextMenu.value.node;
   if (!node) return;
   closeContextMenu();
   switch (key) {
-    case 'create':
-      emit('create', node.id);
+    case 'createRoot':
+      startCreateRoot();
+      break;
+    case 'createChild':
+      startCreateChild(node);
       break;
     case 'rename':
-      emit('rename', node);
+      startRename(node);
       break;
     case 'addServer':
       emit('addServer', node.id);
       break;
-    case 'moveServers':
-      emit('moveServers', node.id);
+    case 'moveHosts':
+      emit('moveHosts', node.id);
       break;
-    case 'batchDelete':
-      emit('batchDelete');
+    case 'deleteHosts':
+      emit('deleteHosts', node);
       break;
     case 'delete':
-      // 直接二次确认(实际可改为独立 modal,但简单起见)
-      const confirmed = window.confirm($t('page.server.group.confirmDelete', { name: node.name }));
-      if (!confirmed) return;
-      const { error } = await fetchDeleteGroup(node.id);
-      if (error) {
-        window.$message?.error(error.message);
-        return;
-      }
-      window.$message?.success($t('page.server.group.deleteSuccess'));
-      if (selectedKey.value === node.id) selectedKey.value = 0;
-      emit('refreshServer');
+      window.$dialog?.warning({
+        title: $t('common.tip'),
+        content: $t('page.server.group.confirmDelete', { name: node.name }),
+        positiveText: $t('common.confirm'),
+        negativeText: $t('common.cancel'),
+        onPositiveClick: async () => {
+          const { error } = await fetchDeleteGroup(node.id);
+          if (error) {
+            window.$message?.error(error.message);
+            return;
+          }
+          window.$message?.success($t('page.server.group.deleteSuccess'));
+          if (selectedKey.value === node.id) selectedKey.value = 0;
+          emit('refreshServer');
+        }
+      });
       break;
   }
 }
@@ -196,6 +371,7 @@ defineExpose({ refresh: getGroupTree });
       :y="contextMenu.y"
       placement="bottom-start"
       trigger="manual"
+      :render-label="renderDropdownLabel"
       @clickoutside="closeContextMenu"
       @select="handleContextMenuSelect"
     />

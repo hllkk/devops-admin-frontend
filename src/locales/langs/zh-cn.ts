@@ -1511,7 +1511,12 @@ const local: App.I18n.Schema = {
         nameMaxLength: '分组名长度不能超过 50 字符',
         createSuccess: '分组创建成功',
         renameSuccess: '重命名成功',
-        deleteSuccess: '分组删除成功'
+        deleteSuccess: '分组删除成功',
+        createRoot: '新建根分组',
+        moveHosts: '移动主机',
+        deleteHosts: '删除主机',
+        deleteHostsConfirm: '批量删除「{group}」分组内的 {count} 个主机?',
+        noHosts: '该分组下没有主机'
       },
       import: {
         title: '导入服务器',
@@ -1537,7 +1542,13 @@ const local: App.I18n.Schema = {
         cancel: '取消',
         description: '将移动 {count} 台主机到目标分组',
         excludeCurrent: '目标分组不能是当前分组',
-        success: '移动成功'
+        success: '移动成功',
+        step1Title: '步骤 1 · 选择要移动的主机',
+        step2Title: '步骤 2 · 选择目标分组',
+        moveTo: '移动至',
+        back: '返回',
+        selectGroup: '请在左侧选择分组',
+        selected: '已选 {count} 台主机'
       },
       form: {
         name: {

@@ -208,10 +208,16 @@ export function getServerList(params: Api.Server.ServerSearchParams) {
     const state = getState();
     let rows = state.servers.slice();
     if (params.groupId != null && params.groupId !== 0) {
-      const groupId = params.groupId ?? 0;
-      const ids = new Set(collectAllChildIds(state.groups, groupId));
-      ids.add(groupId);
-      rows = rows.filter(s => ids.has(s.groupId ?? 0));
+      if (params.includeSubGroups === false) {
+        // 仅直属主机
+        rows = rows.filter(s => (s.groupId ?? 0) === params.groupId);
+      } else {
+        // 含子分组（保持现状）
+        const groupId = params.groupId ?? 0;
+        const ids = new Set(collectAllChildIds(state.groups, groupId));
+        ids.add(groupId);
+        rows = rows.filter(s => ids.has(s.groupId ?? 0));
+      }
     }
     if (params.name) rows = rows.filter(s => s.name.toLowerCase().includes(params.name!.toLowerCase()));
     if (params.ip) rows = rows.filter(s => s.ip.includes(params.ip!));
