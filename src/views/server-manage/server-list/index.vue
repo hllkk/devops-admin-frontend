@@ -11,7 +11,7 @@ import {
   fetchBatchDeleteServer,
   fetchGetGroupTree
 } from '@/service/api/server/server';
-import { flattenGroups } from '@/service/api/server/_mock/group-mock';
+import { flattenGroups } from '@/service/api/server/group';
 import ServerSearch from './modules/server-search.vue';
 import ServerCardItem from './modules/server-card-item.vue';
 import MetricBar from './modules/metric-bar.vue';
