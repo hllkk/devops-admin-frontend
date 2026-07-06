@@ -54,55 +54,66 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
   /** Is login */
   const isLogin = computed(() => Boolean(token.value));
 
+  /** Guard against concurrent resetStore calls (prevents double-fetchLogout race) */
+  let isResetting = false;
+
   /** Reset auth store */
   async function resetStore(reason?: 'session_expired' | 'auth_failure') {
-    recordUserId();
-
-    // Disconnect SSE
-    import('@/hooks/common/sse').then(({ disconnectSSE }) => disconnectSSE());
-
-    clearProactiveRefreshTimer();
-    localStg.remove('tokenExpiresAt');
+    // 防止并发退出：请求拦截器和业务层可能同时触发 resetStore
+    if (isResetting) return;
+    isResetting = true;
 
     try {
-      await fetchLogout();
-    } catch {
-      // Ignore errors - tokens may already be expired
-    }
+      recordUserId();
 
-    clearAuthStorage();
+      // Disconnect SSE
+      import('@/hooks/common/sse').then(({ disconnectSSE }) => disconnectSSE());
 
-    // Reset state manually (Pinia setup style)
-    token.value = "";
-    Object.assign(userInfo, {
-      userId: 0,
-      userName: "",
-      nickName: "",
-      userAvatar: "",
-      userEmail: "",
-      userPhone: "",
-      userGender: 0,
-      roleId: 0,
-      lastLogin: "",
-      status: "",
-      role: "",
-      roles: [],
-      buttons: []
-    });
+      clearProactiveRefreshTimer();
+      localStg.remove('tokenExpiresAt');
 
-    if (reason === 'session_expired') {
-      window.$notification?.warning({
-        title: $t('page.login.common.sessionExpiredTitle'),
-        content: $t('page.login.common.sessionExpiredContent'),
-        duration: 5000
+      try {
+        await fetchLogout();
+      } catch {
+        // Ignore errors - tokens may already be expired
+      }
+
+      clearAuthStorage();
+
+      // Reset state manually (Pinia setup style)
+      token.value = "";
+      Object.assign(userInfo, {
+        userId: 0,
+        userName: "",
+        nickName: "",
+        userAvatar: "",
+        userEmail: "",
+        userPhone: "",
+        userGender: 0,
+        roleId: 0,
+        lastLogin: "",
+        status: "",
+        role: "",
+        roles: [],
+        buttons: []
       });
+
+      if (reason === 'session_expired') {
+        window.$notification?.warning({
+          title: $t('page.login.common.sessionExpiredTitle'),
+          content: $t('page.login.common.sessionExpiredContent'),
+          duration: 5000
+        });
+      }
+
+      // Always redirect to login on logout (clear redirect to avoid returning to an auth-only page)
+      await toLogin(undefined, '/');
+
+      tabStore.cacheTabs();
+      routeStore.resetStore();
+    } finally {
+      isResetting = false;
     }
-
-    // Always redirect to login on logout (clear redirect to avoid returning to an auth-only page)
-    await toLogin(undefined, '/');
-
-    tabStore.cacheTabs();
-    routeStore.resetStore();
   }
 
   /** Record the user ID of the previous login session Used to compare with the current user ID on next login */

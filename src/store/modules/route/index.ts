@@ -260,7 +260,8 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
       setIsInitAuthRoute(true);
     } else {
       // if fetch user routes failed, reset store
-      authStore.resetStore();
+      // NOTE: onBackendFail 拦截器可能已触发过 resetStore，resetStore 内部有防重入锁保护
+      await authStore.resetStore();
     }
   }
 
