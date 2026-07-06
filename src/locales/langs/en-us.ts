@@ -339,8 +339,11 @@ const local: App.I18n.Schema = {
     'my-share': 'My Shares',
     'shared-with-me': 'Shared with Me',
     'group-share': 'Group Share',
-    gateway: 'AI Gateway',
-    'gateway-providers': 'Provider'
+    gateway: 'Home',
+    'gateway-identity-dir': 'AI Identity',
+    'gateway-providers': 'Provider',
+    'gateway-projects': 'Project',
+    'gateway-ai-keys': 'AI Identity Key'
   },
   menu: {
     root: 'Root',

@@ -89,6 +89,24 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
+    name: 'gateway-ai-keys',
+    path: '/gateway-ai-keys',
+    component: 'layout.base$view.gateway-ai-keys',
+    meta: {
+      title: 'gateway-ai-keys',
+      i18nKey: 'route.gateway-ai-keys'
+    }
+  },
+  {
+    name: 'gateway-projects',
+    path: '/gateway-projects',
+    component: 'layout.base$view.gateway-projects',
+    meta: {
+      title: 'gateway-projects',
+      i18nKey: 'route.gateway-projects'
+    }
+  },
+  {
     name: 'gateway-providers',
     path: '/gateway-providers',
     component: 'layout.base$view.gateway-providers',

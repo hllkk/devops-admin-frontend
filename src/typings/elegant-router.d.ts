@@ -25,6 +25,8 @@ declare module "@elegant-router/types" {
     "disk": "/disk";
     "favorite": "/favorite";
     "gateway": "/gateway";
+    "gateway-ai-keys": "/gateway-ai-keys";
+    "gateway-projects": "/gateway-projects";
     "gateway-providers": "/gateway-providers";
     "group-share": "/group-share";
     "iframe-page": "/iframe-page/:url";
@@ -95,6 +97,8 @@ declare module "@elegant-router/types" {
     | "disk"
     | "favorite"
     | "gateway"
+    | "gateway-ai-keys"
+    | "gateway-projects"
     | "gateway-providers"
     | "group-share"
     | "iframe-page"
@@ -140,6 +144,8 @@ declare module "@elegant-router/types" {
     | "admin"
     | "disk"
     | "favorite"
+    | "gateway-ai-keys"
+    | "gateway-projects"
     | "gateway-providers"
     | "gateway"
     | "group-share"

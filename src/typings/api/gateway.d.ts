@@ -131,5 +131,112 @@ declare namespace Api {
       recentActivities: RecentActivity[];
       serviceStatus: ServiceStatusItem[];
     }
+
+    /** 项目(与后端 ProjectResponse 一一对应) */
+    interface Project {
+      id: number;
+      name: string;
+      description: string;
+      isActive: boolean;
+      litellmTeamId: string;
+      memberCount: number;
+      createTime: string;
+      updateTime: string;
+    }
+
+    interface ProjectList {
+      rows: Project[];
+      total: number;
+      pageNum: number;
+      pageSize: number;
+    }
+
+    /** 项目搜索参数 */
+    interface ProjectSearchParams {
+      pageNum: number;
+      pageSize: number;
+      keyword?: string;
+    }
+
+    /** 项目操作参数 */
+    interface ProjectOperateParams {
+      id?: number;
+      name: string;
+      description: string;
+    }
+
+    /** 项目成员(与后端 ProjectMemberResponse 一一对应) */
+    interface ProjectMember {
+      id: number;
+      username: string;
+      displayName: string;
+      position: string;
+      joinedAt: string;
+    }
+
+    /** AI Key 身份列表项(与后端 AiKeyIdentityItem 一一对应) */
+    interface AiKeyIdentityItem {
+      user: AiKeyIdentityUser;
+      mainKey: AiKey | null;
+      sceneKeys: AiKey[];
+    }
+
+    interface AiKeyIdentityUser {
+      id: number;
+      username: string;
+      displayName: string;
+      departmentName: string;
+    }
+
+    /** AI Key(与后端 AiKeyResponse 一一对应) */
+    interface AiKey {
+      id: number;
+      name: string;
+      description: string;
+      keyType: string;
+      ownerType: string;
+      ownerId: number;
+      litellmKeyId: string;
+      models: string[];
+      budgetLimit: string;
+      budgetUsed: string;
+      tpmLimit: number | null;
+      rpmLimit: number | null;
+      isActive: boolean;
+      expiresAt: string;
+      lastUsedAt: string;
+      createTime: string;
+      updateTime: string;
+    }
+
+    /** AI 身份列表(分页) */
+    interface AiKeyIdentityList {
+      rows: AiKeyIdentityItem[];
+      total: number;
+      pageNum: number;
+      pageSize: number;
+    }
+
+    /** AI Key 操作参数 */
+    interface AiKeyOperateParams {
+      id?: number;
+      name: string;
+      ownerType: string;
+      ownerId: number;
+      keyType?: string;
+      description: string;
+      models: string[];
+      budgetLimit?: string | null;
+      tpmLimit?: number | null;
+      rpmLimit?: number | null;
+    }
+
+    /** AI 身份搜索参数 */
+    interface AiKeySearchParams {
+      tab: string;
+      keyword?: string;
+      pageNum: number;
+      pageSize: number;
+    }
   }
 }

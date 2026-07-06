@@ -171,6 +171,8 @@ const routeMap: RouteMap = {
   "disk": "/disk",
   "favorite": "/favorite",
   "gateway": "/gateway",
+  "gateway-ai-keys": "/gateway-ai-keys",
+  "gateway-projects": "/gateway-projects",
   "gateway-providers": "/gateway-providers",
   "group-share": "/group-share",
   "iframe-page": "/iframe-page/:url",

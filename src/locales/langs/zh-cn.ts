@@ -335,8 +335,11 @@ const local: App.I18n.Schema = {
     'my-share': '我的分享',
     'shared-with-me': '共享给我',
     'group-share': '群组共享',
-    gateway: 'AI 网关',
-    'gateway-providers': '供应商'
+    gateway: '首页',
+    'gateway-identity-dir': 'AI 身份',
+    'gateway-providers': '供应商',
+    'gateway-projects': '项目管理',
+    'gateway-ai-keys': 'AI身份管理'
   },
   menu: {
     root: '根目录',
