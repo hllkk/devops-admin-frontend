@@ -338,7 +338,9 @@ const local: App.I18n.Schema = {
     manage_notice: 'Notice Management',
     'my-share': 'My Shares',
     'shared-with-me': 'Shared with Me',
-    'group-share': 'Group Share'
+    'group-share': 'Group Share',
+    gateway: 'AI Gateway',
+    'gateway-providers': 'Provider'
   },
   menu: {
     root: 'Root',

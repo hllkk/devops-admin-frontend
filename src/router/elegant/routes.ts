@@ -80,6 +80,24 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
+    name: 'gateway',
+    path: '/gateway',
+    component: 'layout.base$view.gateway',
+    meta: {
+      title: 'gateway',
+      i18nKey: 'route.gateway'
+    }
+  },
+  {
+    name: 'gateway-providers',
+    path: '/gateway-providers',
+    component: 'layout.base$view.gateway-providers',
+    meta: {
+      title: 'gateway-providers',
+      i18nKey: 'route.gateway-providers'
+    }
+  },
+  {
     name: 'group-share',
     path: '/group-share',
     component: 'layout.base$view.group-share',

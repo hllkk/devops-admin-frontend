@@ -334,7 +334,9 @@ const local: App.I18n.Schema = {
     manage_notice: '通知公告',
     'my-share': '我的分享',
     'shared-with-me': '共享给我',
-    'group-share': '群组共享'
+    'group-share': '群组共享',
+    gateway: 'AI 网关',
+    'gateway-providers': '供应商'
   },
   menu: {
     root: '根目录',

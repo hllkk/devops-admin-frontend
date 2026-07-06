@@ -413,7 +413,8 @@ export function filterMenusByModule(menus: App.Global.Menu[], _module: RouteModu
 export const MODULE_HOME_MAP: Record<RouteModule, RouteKey> = {
   admin: 'admin',
   disk: 'disk',
-  server: 'server'
+  server: 'server',
+  gateway: 'gateway'
 };
 
 /**
@@ -436,6 +437,7 @@ export function resolveModuleFromRoute(route: ModuleResolvableRoute): RouteModul
   const path = route.path ?? '';
   if (path.startsWith('/disk')) return 'disk';
   if (path.startsWith('/server')) return 'server';
+  if (path.startsWith('/gateway')) return 'gateway';
   if (path.startsWith('/admin') || path.startsWith('/manage')) return 'admin';
   return null;
 }

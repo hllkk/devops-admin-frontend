@@ -170,6 +170,8 @@ const routeMap: RouteMap = {
   "admin": "/admin",
   "disk": "/disk",
   "favorite": "/favorite",
+  "gateway": "/gateway",
+  "gateway-providers": "/gateway-providers",
   "group-share": "/group-share",
   "iframe-page": "/iframe-page/:url",
   "init": "/init",

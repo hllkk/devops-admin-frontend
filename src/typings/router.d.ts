@@ -86,7 +86,7 @@ declare module 'vue-router' {
 }
 
 /** Route module type */
-type RouteModule = 'admin' | 'disk' | 'server';
+type RouteModule = 'admin' | 'disk' | 'server' | 'gateway';
 
 /** Layout preset type — controls layout shell appearance, orthogonal to module isolation */
 type LayoutPreset = 'standard' | 'workbench';
