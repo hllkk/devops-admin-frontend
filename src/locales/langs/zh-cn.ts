@@ -335,11 +335,11 @@ const local: App.I18n.Schema = {
     'my-share': '我的分享',
     'shared-with-me': '共享给我',
     'group-share': '群组共享',
-    gateway: '首页',
-    'gateway-identity-dir': 'AI 身份',
-    'gateway-providers': '供应商',
-    'gateway-projects': '项目管理',
-    'gateway-ai-keys': 'AI身份管理'
+    gateway: 'AI网关',
+    gateway_dashboard: '概览',
+    gateway_provider: '供应商管理',
+    'gateway_ai-key': 'AI Key管理',
+    gateway_project: '项目管理'
   },
   menu: {
     root: '根目录',
@@ -435,7 +435,8 @@ const local: App.I18n.Schema = {
     // 新增应用模块时，需在此补充 <appCode>: '<模块名>'，对应后端 sys_app.app_code
     admin: '系统模块',
     disk: '网盘模块',
-    server: '服务器模块'
+    server: '服务器模块',
+    gateway: 'AI网关模块'
   },
   page: {
     login: {
@@ -1424,6 +1425,94 @@ const local: App.I18n.Schema = {
       },
       prdDep: '生产依赖',
       devDep: '开发依赖'
+    },
+    gateway: {
+      provider: {
+        title: '供应商管理',
+        name: '供应商名称',
+        type: '供应商类型',
+        billingType: '计费类型',
+        monthlyBudget: '月度预算',
+        monthlyUsed: '月度已用',
+        credentialCount: '凭证数',
+        status: '状态',
+        isActive: '是否启用',
+        description: '描述',
+        config: '配置',
+        createTime: '创建时间',
+        billingTypeOptions: {
+          token: '按 Token',
+          per_call: '按次计费',
+          monthly_quota: '月度配额'
+        },
+        isActiveOptions: {
+          enabled: '启用',
+          disabled: '禁用'
+        },
+        addProvider: '新增供应商',
+        editProvider: '编辑供应商',
+        form: {
+          name: {
+            required: '请输入供应商名称',
+            invalid: '供应商名称不能为空',
+            placeholder: '请输入供应商名称'
+          },
+          type: {
+            required: '请输入供应商类型',
+            invalid: '供应商类型不能为空',
+            placeholder: '如 openai/claude/deepseek/azure/gemini'
+          },
+          billingType: {
+            placeholder: '请选择计费类型'
+          },
+          monthlyBudget: {
+            placeholder: '请输入月度预算(如 1000.00)'
+          },
+          description: {
+            placeholder: '请输入描述'
+          },
+          config: {
+            placeholder: '如 {"region": "us-east-1"}'
+          }
+        }
+      },
+      project: {
+        title: '项目管理',
+        name: '项目名称',
+        description: '项目描述',
+        status: '状态',
+        litellmTeamId: 'LiteLLM团队ID',
+        memberCount: '成员数',
+        createTime: '创建时间',
+        addProject: '新增项目',
+        editProject: '编辑项目'
+      },
+      aiKey: {
+        title: 'AI Key管理',
+        name: 'Key名称',
+        keyType: 'Key类型',
+        ownerType: '所有者类型',
+        ownerId: '所有者ID',
+        models: '模型列表',
+        budgetLimit: '预算上限',
+        budgetUsed: '已用预算',
+        tpmLimit: 'TPM限制',
+        rpmLimit: 'RPM限制',
+        isActive: '是否启用',
+        expiresAt: '过期时间',
+        lastUsedAt: '最后使用时间',
+        createTime: '创建时间'
+      },
+      dashboard: {
+        title: '概览',
+        activeUsers: '活跃用户',
+        todayRequests: '今日请求',
+        totalRequests: '总请求',
+        todayCost: '今日成本',
+        pendingCount: '待处理',
+        lastUpdated: '最后更新',
+        refresh: '刷新数据'
+      }
     },
     server: {
       dashboard: {

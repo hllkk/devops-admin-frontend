@@ -1,5 +1,5 @@
 import { request } from '@/service/request';
-import type { Editor } from '@/types/editor';
+import type { Editor } from '@/typings/editor';
 
 /** 获取文件树（懒加载） */
 export function fetchFileTree(path?: string) {

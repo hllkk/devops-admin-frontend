@@ -1766,6 +1766,78 @@ declare namespace App {
             };
           };
         };
+        gateway: {
+          provider: {
+            title: string;
+            name: string;
+            type: string;
+            billingType: string;
+            monthlyBudget: string;
+            monthlyUsed: string;
+            credentialCount: string;
+            status: string;
+            isActive: string;
+            description: string;
+            config: string;
+            createTime: string;
+            billingTypeOptions: {
+              token: string;
+              per_call: string;
+              monthly_quota: string;
+            };
+            isActiveOptions: {
+              enabled: string;
+              disabled: string;
+            };
+            addProvider: string;
+            editProvider: string;
+            form: {
+              name: FormMsg & { placeholder: string };
+              type: FormMsg & { placeholder: string };
+              billingType: { placeholder: string };
+              monthlyBudget: { placeholder: string };
+              description: { placeholder: string };
+              config: { placeholder: string };
+            };
+          };
+          project: {
+            title: string;
+            name: string;
+            description: string;
+            status: string;
+            litellmTeamId: string;
+            memberCount: string;
+            createTime: string;
+            addProject: string;
+            editProject: string;
+          };
+          aiKey: {
+            title: string;
+            name: string;
+            keyType: string;
+            ownerType: string;
+            ownerId: string;
+            models: string;
+            budgetLimit: string;
+            budgetUsed: string;
+            tpmLimit: string;
+            rpmLimit: string;
+            isActive: string;
+            expiresAt: string;
+            lastUsedAt: string;
+            createTime: string;
+          };
+          dashboard: {
+            title: string;
+            activeUsers: string;
+            todayRequests: string;
+            totalRequests: string;
+            todayCost: string;
+            pendingCount: string;
+            lastUpdated: string;
+            refresh: string;
+          };
+        };
       };
       form: {
         required: string;

@@ -84,6 +84,28 @@ const routeMetaConfig: Record<string, Partial<RouteMeta> & { module?: RouteModul
   'server-manage_server-detail': {
     icon: 'mdi:server-outline',
     order: 3
+  },
+  // 网关模块
+  gateway: {
+    icon: 'mdi:router-network',
+    order: 4,
+    module: 'gateway'
+  },
+  gateway_dashboard: {
+    icon: 'mdi:view-dashboard',
+    order: 1
+  },
+  gateway_provider: {
+    icon: 'mdi:domain',
+    order: 2
+  },
+  'gateway_ai-key': {
+    icon: 'mdi:key-variant',
+    order: 3
+  },
+  gateway_project: {
+    icon: 'mdi:folder-network',
+    order: 4
   }
 };
 

@@ -339,11 +339,11 @@ const local: App.I18n.Schema = {
     'my-share': 'My Shares',
     'shared-with-me': 'Shared with Me',
     'group-share': 'Group Share',
-    gateway: 'Home',
-    'gateway-identity-dir': 'AI Identity',
-    'gateway-providers': 'Provider',
-    'gateway-projects': 'Project',
-    'gateway-ai-keys': 'AI Identity Key'
+    gateway: 'AI Gateway',
+    gateway_dashboard: 'Dashboard',
+    gateway_provider: 'Provider',
+    'gateway_ai-key': 'AI Key',
+    gateway_project: 'Project'
   },
   menu: {
     root: 'Root',
@@ -1587,6 +1587,78 @@ const local: App.I18n.Schema = {
         password: {
           required: 'Please enter a password'
         }
+      }
+    },
+    gateway: {
+      provider: {
+        title: 'Provider Management',
+        name: 'Provider Name',
+        type: 'Provider Type',
+        billingType: 'Billing Type',
+        monthlyBudget: 'Monthly Budget',
+        monthlyUsed: 'Monthly Used',
+        credentialCount: 'Credentials',
+        status: 'Status',
+        isActive: 'Active',
+        description: 'Description',
+        config: 'Config',
+        createTime: 'Created At',
+        billingTypeOptions: {
+          token: 'Per Token',
+          per_call: 'Per Call',
+          monthly_quota: 'Monthly Quota'
+        },
+        isActiveOptions: {
+          enabled: 'Enabled',
+          disabled: 'Disabled'
+        },
+        addProvider: 'Add Provider',
+        editProvider: 'Edit Provider',
+        form: {
+          name: { required: 'Please enter provider name', invalid: 'Provider name is required', placeholder: 'Enter provider name' },
+          type: { required: 'Please enter provider type', invalid: 'Provider type is required', placeholder: 'e.g. openai/claude/deepseek/azure/gemini' },
+          billingType: { placeholder: 'Select billing type' },
+          monthlyBudget: { placeholder: 'Enter monthly budget (e.g. 1000.00)' },
+          description: { placeholder: 'Enter description' },
+          config: { placeholder: 'e.g. {"region": "us-east-1"}' }
+        }
+      },
+      project: {
+        title: 'Project Management',
+        name: 'Project Name',
+        description: 'Description',
+        status: 'Status',
+        litellmTeamId: 'LiteLLM Team ID',
+        memberCount: 'Members',
+        createTime: 'Created At',
+        addProject: 'Add Project',
+        editProject: 'Edit Project'
+      },
+      aiKey: {
+        title: 'AI Key Management',
+        name: 'Key Name',
+        keyType: 'Key Type',
+        ownerType: 'Owner Type',
+        ownerId: 'Owner ID',
+        models: 'Models',
+        budgetLimit: 'Budget Limit',
+        budgetUsed: 'Budget Used',
+        tpmLimit: 'TPM Limit',
+        rpmLimit: 'RPM Limit',
+        isActive: 'Active',
+        expiresAt: 'Expires At',
+        lastUsedAt: 'Last Used',
+        createTime: 'Created At'
+      },
+      dashboard: {
+        title: 'Overview',
+        activeUsers: 'Active Users',
+        todayRequests: 'Today Requests',
+        totalRequests: 'Total Requests',
+        todayCost: 'Today Cost',
+        pendingCount: 'Pending',
+        lastUpdated: 'Last Updated',
+        refresh: 'Refresh'
       }
     },
     disk: {

@@ -36,7 +36,7 @@ const statCards = computed(() => {
       sub: s ? `较上周期 ${s.activeUsersChange >= 0 ? '+' : ''}${s.activeUsersChange}` : '',
       icon: 'mdi:account-group',
       color: '#2080f0',
-      link: '/gateway/efficiency'
+      link: '/gateway/dashboard'
     },
     {
       key: 'totalRequests',
@@ -46,7 +46,7 @@ const statCards = computed(() => {
       sub: s ? `LLM ${s.llmRequests} / MCP ${s.mcpRequests}` : '',
       icon: 'mdi:chart-line',
       color: '#5318ab',
-      link: '/gateway/efficiency'
+      link: '/gateway/dashboard'
     },
     {
       key: 'internalCost',
@@ -56,17 +56,17 @@ const statCards = computed(() => {
       sub: s ? `外部 ${s.externalCost} / 差额 ${s.costDiff}` : '',
       icon: 'mdi:currency-cny',
       color: '#f0a020',
-      link: '/gateway/efficiency'
+      link: '/gateway/dashboard'
     },
     {
       key: 'pendingCount',
       title: '待审批',
       value: s?.pendingCount ?? 0,
       unit: '件',
-      sub: '点击进入资源审批',
+      sub: '点击查看资源详情',
       icon: 'mdi:clipboard-clock',
       color: '#d03050',
-      link: '/gateway/security'
+      link: '/gateway/dashboard'
     }
   ];
 });
@@ -74,7 +74,7 @@ const statCards = computed(() => {
 // 快捷操作(指向 gateway 模块内页面 + 已有后台页面)
 const quickActions = [
   { label: '供应商管理', desc: '上游供应商纳管', icon: 'mdi:domain', path: '/gateway/provider' },
-  { label: '模型管理', desc: '模型与部署维护', icon: 'mdi:brain', path: '/gateway/model' },
+  { label: '项目管理', desc: '项目与成员维护', icon: 'mdi:folder-network', path: '/gateway/project' },
   { label: 'AI Key 管理', desc: '额度、归属、范围', icon: 'mdi:key', path: '/gateway/ai-key' },
   { label: '操作日志', desc: '管理员操作记录', icon: 'mdi:shield-check', path: '/log/operation' },
   { label: '用户管理', desc: '平台用户', icon: 'mdi:account', path: '/manage/user' },

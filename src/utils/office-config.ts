@@ -3,7 +3,7 @@
  * 用于生成 OnlyOffice 编辑器所需的各类 URL 和配置
  */
 
-import type { DocumentType } from '@/types/office';
+import type { DocumentType } from '@/typings/office';
 
 /** 默认文档服务器地址 */
 const DEFAULT_DOCUMENT_SERVER = '/office';

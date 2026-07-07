@@ -47,57 +47,57 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
     },
     {
       key: 'name',
-      title: '供应商名称',
+      title: $t('page.gateway.provider.name'),
       align: 'center',
       minWidth: 140,
       ellipsis: { tooltip: true }
     },
     {
       key: 'providerType',
-      title: '供应商类型',
+      title: $t('page.gateway.provider.type'),
       align: 'center',
       minWidth: 120
     },
     {
       key: 'billingType',
-      title: '计费类型',
+      title: $t('page.gateway.provider.billingType'),
       align: 'center',
       minWidth: 120,
       render: row => billingTypeText(row.billingType)
     },
     {
       key: 'monthlyBudget',
-      title: '月度预算',
+      title: $t('page.gateway.provider.monthlyBudget'),
       align: 'center',
       minWidth: 110,
       render: row => (row.monthlyBudget ? row.monthlyBudget : '-')
     },
     {
       key: 'monthlyUsed',
-      title: '月度已用',
+      title: $t('page.gateway.provider.monthlyUsed'),
       align: 'center',
       minWidth: 110
     },
     {
       key: 'credentialCount',
-      title: '凭证数',
+      title: $t('page.gateway.provider.credentialCount'),
       align: 'center',
       minWidth: 90
     },
     {
       key: 'isActive',
-      title: '状态',
+      title: $t('page.gateway.provider.status'),
       align: 'center',
       minWidth: 90,
       render: row => (
         <NTag size="small" type={row.isActive ? 'success' : 'default'}>
-          {row.isActive ? '启用' : '禁用'}
+          {row.isActive ? $t('page.gateway.provider.isActiveOptions.enabled') : $t('page.gateway.provider.isActiveOptions.disabled')}
         </NTag>
       )
     },
     {
       key: 'createTime',
-      title: '创建时间',
+      title: $t('page.gateway.provider.createTime'),
       align: 'center',
       minWidth: 160,
       ellipsis: { tooltip: true }
@@ -163,9 +163,9 @@ const { drawerVisible, operateType, editingData, handleAdd, handleEdit, checkedR
   useTableOperate(data, 'id', getData);
 
 const billingTypeOptions = [
-  { label: '按 Token', value: 'token' },
-  { label: '按次计费', value: 'per_call' },
-  { label: '月度配额', value: 'monthly_quota' }
+  { label: $t('page.gateway.provider.billingTypeOptions.token'), value: 'token' },
+  { label: $t('page.gateway.provider.billingTypeOptions.per_call'), value: 'per_call' },
+  { label: $t('page.gateway.provider.billingTypeOptions.monthly_quota'), value: 'monthly_quota' }
 ];
 
 function billingTypeText(value: string) {
@@ -199,7 +199,7 @@ async function handleResetSearch() {
 <template>
   <div class="h-full flex-col-stretch gap-12px overflow-hidden lt-sm:overflow-auto">
     <ProviderSearch v-model:model="searchParams" @reset="handleResetSearch" @search="getDataByPage" />
-    <NCard title="供应商列表" :bordered="false" size="small" class="card-wrapper sm:flex-1-hidden">
+    <NCard :title="$t('page.gateway.provider.title')" :bordered="false" size="small" class="card-wrapper sm:flex-1-hidden">
       <template #header-extra>
         <TableHeaderOperation
           v-model:columns="columnChecks"

@@ -3,7 +3,7 @@
  */
 
 import { request } from '@/service/request';
-import type { ServerConfig, EditorConfig, HistoryVersion, HealthCheckResult } from '@/types/office';
+import type { ServerConfig, EditorConfig, HistoryVersion, HealthCheckResult } from '@/typings/office';
 
 /**
  * 获取 Office 服务器配置

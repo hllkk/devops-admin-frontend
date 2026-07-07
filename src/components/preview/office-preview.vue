@@ -22,7 +22,7 @@ import {
   getOfficeHistoryPreviewUrl
 } from '@/utils/office-config';
 import HistoryVersionPopover from './history-version-popover.vue';
-import type { EditorConfig, DocEditorInstance } from '@/types/office';
+import type { EditorConfig, DocEditorInstance } from '@/typings/office';
 
 defineOptions({ name: 'OfficePreview' });
 

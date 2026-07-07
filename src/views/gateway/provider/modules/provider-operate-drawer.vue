@@ -33,16 +33,16 @@ const { createRequiredRule } = useFormRules();
 
 const title = computed(() => {
   const titles: Record<NaiveUI.TableOperateType, string> = {
-    add: '新增供应商',
-    edit: '编辑供应商'
+    add: $t('page.gateway.provider.addProvider'),
+    edit: $t('page.gateway.provider.editProvider')
   };
   return titles[props.operateType];
 });
 
 const billingTypeOptions = [
-  { label: '按 Token', value: 'token' },
-  { label: '按次计费', value: 'per_call' },
-  { label: '月度配额', value: 'monthly_quota' }
+  { label: $t('page.gateway.provider.billingTypeOptions.token'), value: 'token' },
+  { label: $t('page.gateway.provider.billingTypeOptions.per_call'), value: 'per_call' },
+  { label: $t('page.gateway.provider.billingTypeOptions.monthly_quota'), value: 'monthly_quota' }
 ];
 
 type Model = Api.Gateway.ProviderOperateParams;
@@ -67,8 +67,8 @@ function createDefaultModel(): Model {
 type RuleKey = Extract<keyof Model, 'name' | 'providerType'>;
 
 const rules: Record<RuleKey, App.Global.FormRule> = {
-  name: createRequiredRule('供应商名称不能为空'),
-  providerType: createRequiredRule('供应商类型不能为空')
+  name: createRequiredRule($t('page.gateway.provider.form.name.required')),
+  providerType: createRequiredRule($t('page.gateway.provider.form.type.required'))
 };
 
 function handleUpdateModelWhenEdit() {
@@ -149,26 +149,26 @@ watch(visible, () => {
   <NDrawer v-model:show="visible" :title="title" display-directive="show" :width="800" class="max-w-90%">
     <NDrawerContent :title="title" :native-scrollbar="false" closable>
       <NForm ref="formRef" :model="model" :rules="rules" label-placement="left" :label-width="90">
-        <NFormItem label="供应商名称" path="name">
-          <NInput v-model:value="model.name" placeholder="请输入供应商名称" />
+        <NFormItem :label="$t('page.gateway.provider.name')" path="name">
+          <NInput v-model:value="model.name" :placeholder="$t('page.gateway.provider.form.name.placeholder')" />
         </NFormItem>
-        <NFormItem label="供应商类型" path="providerType">
-          <NInput v-model:value="model.providerType" placeholder="如 openai/claude/deepseek/azure/gemini" />
+        <NFormItem :label="$t('page.gateway.provider.type')" path="providerType">
+          <NInput v-model:value="model.providerType" :placeholder="$t('page.gateway.provider.form.type.placeholder')" />
         </NFormItem>
-        <NFormItem label="计费类型" path="billingType">
-          <NSelect v-model:value="model.billingType" :options="billingTypeOptions" placeholder="请选择计费类型" />
+        <NFormItem :label="$t('page.gateway.provider.billingType')" path="billingType">
+          <NSelect v-model:value="model.billingType" :options="billingTypeOptions" :placeholder="$t('page.gateway.provider.form.billingType.placeholder')" />
         </NFormItem>
-        <NFormItem label="月度预算" path="monthlyBudget">
-          <NInput v-model:value="model.monthlyBudget" placeholder="请输入月度预算(如 1000.00)" />
+        <NFormItem :label="$t('page.gateway.provider.monthlyBudget')" path="monthlyBudget">
+          <NInput v-model:value="model.monthlyBudget" :placeholder="$t('page.gateway.provider.form.monthlyBudget.placeholder')" />
         </NFormItem>
-        <NFormItem label="是否启用" path="isActive">
+        <NFormItem :label="$t('page.gateway.provider.isActive')" path="isActive">
           <NSwitch v-model:value="model.isActive" />
         </NFormItem>
-        <NFormItem label="描述" path="description">
-          <NInput v-model:value="model.description" type="textarea" :rows="2" placeholder="请输入描述" />
+        <NFormItem :label="$t('page.gateway.provider.description')" path="description">
+          <NInput v-model:value="model.description" type="textarea" :rows="2" :placeholder="$t('page.gateway.provider.form.description.placeholder')" />
         </NFormItem>
-        <NFormItem label="配置(JSON)" path="config">
-          <NInput v-model:value="configText" type="textarea" :rows="4" placeholder="如 {&quot;region&quot;: &quot;us-east-1&quot;}" />
+        <NFormItem :label="$t('page.gateway.provider.config')" path="config">
+          <NInput v-model:value="configText" type="textarea" :rows="4" :placeholder="$t('page.gateway.provider.form.config.placeholder')" />
         </NFormItem>
       </NForm>
       <template #footer>

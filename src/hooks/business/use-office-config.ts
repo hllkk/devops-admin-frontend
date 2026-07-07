@@ -5,7 +5,7 @@
 import { ref, computed } from 'vue';
 import { fetchGetOfficeConfig, fetchGetPublicOfficeConfig, fetchCheckOfficeHealth } from '@/service/api/disk/office';
 import { getOfficeApiUrl } from '@/utils/office-config';
-import type { ServerConfig } from '@/types/office';
+import type { ServerConfig } from '@/typings/office';
 
 /**
  * Office 配置 Hook
