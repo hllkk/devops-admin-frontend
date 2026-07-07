@@ -1,6 +1,7 @@
 import type { RouteLocationNormalizedLoaded, RouteRecordRaw, _RouteRecordBase } from 'vue-router';
 import type { RouteModule } from '@/typings/router.d.ts';
 import type { ElegantConstRoute, LastLevelRouteKey, RouteKey, RouteMap } from '@elegant-router/types';
+import { MODULE_HOME_MAP } from '@/router/routes/shared-pages';
 import { useSvgIcon } from '@/hooks/common/icon';
 import { $t } from '@/locales';
 
@@ -409,14 +410,6 @@ export function filterMenusByModule(menus: App.Global.Menu[], _module: RouteModu
   });
 }
 
-/** Module home route mapping — each module maps to its home route key. */
-export const MODULE_HOME_MAP: Record<RouteModule, RouteKey> = {
-  admin: 'admin',
-  disk: 'disk',
-  server: 'server',
-  gateway: 'gateway'
-};
-
 /**
  * Resolve the module a route belongs to.
  *
@@ -449,5 +442,5 @@ export function resolveModuleFromRoute(route: ModuleResolvableRoute): RouteModul
  * so callers can apply their own fallback chain.
  */
 export function getModuleHomeKey(module?: RouteModule | null): RouteKey | undefined {
-  return module ? MODULE_HOME_MAP[module] : undefined;
+  return module ? (MODULE_HOME_MAP[module] as RouteKey) : undefined;
 }

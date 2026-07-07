@@ -395,6 +395,10 @@ declare namespace App {
         noChange: string;
         userCenter: string;
         switchRole: string;
+        myDisk: string;
+        adminCenter: string;
+        serverManage: string;
+        aiGateway: string;
         detail: string;
         clear: string;
         copySuccess: string;

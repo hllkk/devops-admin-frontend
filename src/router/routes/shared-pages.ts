@@ -10,12 +10,12 @@ export const MODULE_LAYOUT_MAP: Record<RouteModule, string> = {
 };
 
 /** Map from module name to the home route key for tab initialization */
-export const MODULE_HOME_MAP: Record<RouteModule, string> = {
+export const MODULE_HOME_MAP = {
   admin: 'admin',
   disk: 'disk',
   server: 'server',
   gateway: 'gateway'
-};
+} as const satisfies Record<RouteModule, string>;
 
 /** All available modules — add new modules here */
 export const ALL_MODULES: RouteModule[] = ['admin', 'disk', 'server', 'gateway'];

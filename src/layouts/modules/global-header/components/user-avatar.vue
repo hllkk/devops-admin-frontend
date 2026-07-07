@@ -3,12 +3,14 @@ import { computed, h } from 'vue';
 import { useRouter } from 'vue-router';
 import type { VNode } from 'vue';
 import { useBoolean } from '@sa/hooks';
+import type { RouteModule } from '@/typings/router';
 import { useAuthStore } from '@/store/modules/auth';
 import { useRouteStore } from '@/store/modules/route';
 import { useAppStore } from '@/store/modules/app';
 import { useDiskStore } from '@/store/modules/disk';
 import { useRouterPush, useSharedPageNav } from '@/hooks/common/router';
 import { useSvgIcon } from '@/hooks/common/icon';
+import { MODULE_NAV } from '@/layouts/module-layout';
 import defaultAvatar from '@/assets/imgs/soybean.jpg';
 import { $t } from '@/locales';
 
@@ -58,7 +60,7 @@ function handleAvatarError() {
   setError();
 }
 
-type DropdownKey = 'userCenter' | 'switchRole' | 'toAdmin' | 'toDisk' | 'logout' | 'storage-info';
+type DropdownKey = 'userCenter' | 'switchRole' | 'logout' | `nav-${string}`;
 
 type DropdownOption =
   | {
@@ -79,24 +81,23 @@ type DropdownOption =
       render: () => VNode;
     };
 
-// 判断当前模块
-const isDiskPage = computed(() => currentModule.value === 'disk');
-const isAdminPage = computed(() => currentModule.value === 'admin');
-
-// 判断用户是否有 admin 模块的路由（排除共享页面 user-center/notice-user）
-const hasAdminPermission = computed(() => {
+/** 判断用户是否有指定模块的路由权限（排除 hideInMenu 的共享页面） */
+function hasModulePermission(module: RouteModule): boolean {
   const routes = routeStore.authRoutes;
   if (!routes || routes.length === 0) return false;
   return routes.some(route => {
     const meta = route.meta as Record<string, unknown> | undefined;
-    if (!meta) return false;
-    // 共享页面属于所有模块但 hideInMenu=true，不应作为 admin 权限依据
-    if (meta.hideInMenu) return false;
+    if (!meta || meta.hideInMenu) return false;
     const mod = meta.module as string | undefined;
     const mods = meta.modules as string[] | undefined;
-    return mod === 'admin' || (mods && mods.includes('admin'));
+    return mod === module || (mods && mods.includes(module));
   });
-});
+}
+
+/** 基于 MODULE_NAV 动态生成模块切换菜单项 */
+function navKey(routeName: string): DropdownKey {
+  return `nav-${routeName}`;
+}
 
 const options = computed(() => {
   const opts: DropdownOption[] = [];
@@ -124,23 +125,18 @@ const options = computed(() => {
     opts.push({ type: 'divider', key: 'divider-storage' });
   }
 
-  // 不在 disk 页面时，显示"我的网盘"
-  if (!isDiskPage.value) {
-    opts.push({
-      label: '我的网盘',
-      key: 'toDisk',
-      icon: SvgIconVNode({ icon: 'mdi:harddisk', fontSize: 18 })
-    });
-  }
+  // 动态生成模块切换入口（不在当前模块且用户有权限时显示）
+  const moduleNavItems = MODULE_NAV.filter(
+    item => currentModule.value !== item.permissionModule && hasModulePermission(item.permissionModule)
+  );
 
-  // 不在 admin/manage 页面，且有权限时，显示"管理中心"
-  if (!isAdminPage.value && hasAdminPermission.value) {
+  moduleNavItems.forEach(item => {
     opts.push({
-      label: '管理中心',
-      key: 'toAdmin',
-      icon: SvgIconVNode({ icon: 'mdi:monitor-dashboard', fontSize: 18 })
+      label: $t(item.labelKey),
+      key: navKey(item.routeName),
+      icon: SvgIconVNode({ icon: item.icon, fontSize: 18 })
     });
-  }
+  });
 
   // 如果有导航项，添加分隔线
   if (opts.length > 0) {
@@ -194,14 +190,6 @@ function handleSwitchRole() {
   window.$message?.warning($t('common.switchRole') + ' - 功能开发中');
 }
 
-function goToAdmin() {
-  router.push({ name: 'admin' });
-}
-
-function goToDisk() {
-  router.push({ name: 'disk' });
-}
-
 function handleDropdown(key: DropdownKey) {
   switch (key) {
     case 'logout':
@@ -213,11 +201,11 @@ function handleDropdown(key: DropdownKey) {
     case 'switchRole':
       handleSwitchRole();
       break;
-    case 'toAdmin':
-      goToAdmin();
-      break;
-    case 'toDisk':
-      goToDisk();
+    default:
+      // Dynamic module navigation: key format is "nav-<routeName>"
+      if (key.startsWith('nav-')) {
+        router.push({ name: key.slice(4) });
+      }
       break;
   }
 }

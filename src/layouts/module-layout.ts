@@ -31,3 +31,28 @@ export const MODULE_LAYOUT: Record<RouteModule, ModuleLayoutConfig> = {
 
 /** 未知模块的回退配置（resolveModuleFromRoute 返回 null 时使用） */
 export const DEFAULT_MODULE_LAYOUT: ModuleLayoutConfig = { preset: 'standard', mode: 'auto' };
+
+/** 模块导航项配置 */
+export interface ModuleNavItem {
+  /** 路由名称（用于 router.push({ name })） */
+  routeName: string;
+  /** 图标（iconify） */
+  icon: string;
+  /** i18n label key */
+  labelKey: App.I18n.I18nKey;
+  /** 权限检查：值为模块名时，检查用户是否有该模块的路由权限 */
+  permissionModule: RouteModule;
+}
+
+/**
+ * 模块导航配置表 ——「用户头像下拉菜单」的数据源。
+ *
+ * 仅在当前页面不属于该模块时才显示入口。
+ * 新增模块时在此加一行 + 对应 i18n key 即可。
+ */
+export const MODULE_NAV: ModuleNavItem[] = [
+  { routeName: 'disk', icon: 'mdi:harddisk', labelKey: 'common.myDisk', permissionModule: 'disk' },
+  { routeName: 'admin', icon: 'mdi:monitor-dashboard', labelKey: 'common.adminCenter', permissionModule: 'admin' },
+  { routeName: 'server', icon: 'mdi:server', labelKey: 'common.serverManage', permissionModule: 'server' },
+  { routeName: 'gateway', icon: 'mdi:robot', labelKey: 'common.aiGateway', permissionModule: 'gateway' },
+];
