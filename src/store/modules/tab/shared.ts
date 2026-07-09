@@ -88,15 +88,12 @@ export function getTabByRoute(route: App.Global.TabRoute) {
 
 /**
  * Determine a route's module from its meta.
- * - meta.module (static mode) → direct
- * - meta.modules (dynamic mode, single-element array) → that element
- * - meta.modules (multi-element) or no module info → undefined (global route)
+ * - meta.module → that module
+ * - no module info → undefined (global route)
  */
 function getRouteModule(route: App.Global.TabRoute): RouteModule | undefined {
-  const { module, modules } = route.meta ?? {};
-  if (module) return module;
-  if (modules?.length === 1) return modules[0] as RouteModule;
-  return undefined;
+  const { module } = route.meta ?? {};
+  return module;
 }
 
 /**

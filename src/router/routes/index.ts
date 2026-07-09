@@ -55,7 +55,7 @@ const routeModuleMap: Record<string, RouteModule> = {
   manage_log_login: 'admin',
   manage_storage: 'admin',
   manage_settings: 'admin',
-  // 网盘模块页面（静态模式下补齐 module，与动态模式后端下发的 meta.modules 一致，
+  // 网盘模块页面（静态模式下补齐 module，与动态模式后端下发的 meta.module 一致，
   // 使菜单隔离与 workbench 预设在两种模式下表现统一）
   disk: 'disk',
   recent: 'disk',

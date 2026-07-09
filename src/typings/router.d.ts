@@ -74,10 +74,8 @@ declare module 'vue-router' {
     multiTab?: boolean | null;
     /** If set, the route will be fixed in tabs, and the value is the order of fixed tabs */
     fixedIndexInTab?: number | null;
-    /** Route module, used for route isolation (static mode) */
+    /** Route module, used for route isolation. Undefined for global routes (404/login/user-center etc.). */
     module?: RouteModule;
-    /** Route modules from backend API (dynamic mode), e.g. ["admin", "disk"] */
-    modules?: string[];
     /** Layout preset, controls the layout shell (tabs/footer/header). Defaults to 'standard'. Orthogonal to module. */
     layoutPreset?: LayoutPreset;
     /** if set query parameters, it will be automatically carried when entering the route */

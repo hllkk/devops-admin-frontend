@@ -88,9 +88,7 @@ function hasModulePermission(module: RouteModule): boolean {
   return routes.some(route => {
     const meta = route.meta as Record<string, unknown> | undefined;
     if (!meta || meta.hideInMenu) return false;
-    const mod = meta.module as string | undefined;
-    const mods = meta.modules as string[] | undefined;
-    return mod === module || (mods && mods.includes(module));
+    return meta.module === module;
   });
 }
 

@@ -132,9 +132,8 @@ function isRouteAuthorized(to: RouteLocationNormalized, routeStore: ReturnType<t
 function getAccessibleModules(routes: ElegantConstRoute[]): Set<RouteModule> {
   const modules = new Set<RouteModule>();
   routes.forEach(route => {
-    const { module: routeModule, modules: routeModules } = route.meta ?? {};
+    const { module: routeModule } = route.meta ?? {};
     if (routeModule) modules.add(routeModule as RouteModule);
-    if (routeModules) routeModules.forEach(m => modules.add(m as RouteModule));
     if (route.children?.length) {
       getAccessibleModules(route.children).forEach(m => modules.add(m));
     }
@@ -153,26 +152,15 @@ function isRouteModuleAccessible(to: RouteLocationNormalized, routeStore: Return
     return true;
   }
 
-  const { module: routeModule, modules: routeModules } = to.meta;
+  const { module: routeModule } = to.meta;
 
-  // Global routes (no module info) are always accessible
-  if (!routeModule && !(routeModules && routeModules.length > 0)) {
+  // Global routes (no module) are always accessible
+  if (!routeModule) {
     return true;
   }
 
   const accessibleModules = getAccessibleModules(routeStore.authRoutes);
-
-  // Check single module
-  if (routeModule && accessibleModules.has(routeModule as RouteModule)) {
-    return true;
-  }
-
-  // Check modules array
-  if (routeModules && routeModules.some(m => accessibleModules.has(m as RouteModule))) {
-    return true;
-  }
-
-  return false;
+  return accessibleModules.has(routeModule as RouteModule);
 }
 
 /**

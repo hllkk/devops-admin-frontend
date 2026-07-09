@@ -360,27 +360,18 @@ export function filterRoutesByModule(routes: ElegantConstRoute[], module: RouteM
 /**
  * Filter route by module
  *
- * Supports two formats:
- * - Static mode: meta.module (string, e.g. 'admin')
- * - Dynamic mode: meta.modules (array, e.g. ['admin', 'disk'])
+ * - meta.module === current module ⇒ keep
+ * - no meta.module ⇒ global route (404/login/user-center etc.), visible in all modules
  *
  * @param route Route
  * @param module Current module
  */
 function filterRouteByModule(route: ElegantConstRoute, module: RouteModule): ElegantConstRoute[] {
-  const { module: routeModule, modules: routeModules } = route.meta ?? {};
+  const { module: routeModule } = route.meta ?? {};
 
-  // Static mode: meta.module is a single string
-  const hasModuleMatch = routeModule === module;
-
-  // Dynamic mode: meta.modules is an array from backend API
-  const hasModulesMatch = routeModules?.includes(module) ?? false;
-
-  // If neither module nor modules is specified, it's a global route (login, 404, etc.)
-  const isGlobalRoute = !routeModule && !(routeModules && routeModules.length > 0);
-
-  // Check if route belongs to current module via either format
-  const isCurrentModule = hasModuleMatch || hasModulesMatch;
+  // No module ⇒ global route (visible in all modules)
+  const isGlobalRoute = !routeModule;
+  const isCurrentModule = routeModule === module;
 
   const filterRoute = { ...route };
 
@@ -413,20 +404,18 @@ export function filterMenusByModule(menus: App.Global.Menu[], _module: RouteModu
 /**
  * Resolve the module a route belongs to.
  *
- * Supports three signals (same rules as filterRouteByModule):
- * - Static: meta.module (single string)
- * - Dynamic: meta.modules (array from backend, takes first)
- * - Path prefix fallback: /disk → 'disk', /admin|/manage → 'admin'
+ * - meta.module (single string) — the sole source of truth after signal unification
+ * - Path prefix fallback (defensive): /disk → 'disk', /admin|/manage → 'admin'.
+ *   Normally every route carries meta.module; this only triggers if one is missing it.
  */
 export interface ModuleResolvableRoute {
-  meta?: { module?: RouteModule; modules?: string[] };
+  meta?: { module?: RouteModule };
   path?: string;
 }
 
 export function resolveModuleFromRoute(route: ModuleResolvableRoute): RouteModule | null {
-  const { module, modules } = route.meta ?? {};
+  const { module } = route.meta ?? {};
   if (module) return module as RouteModule;
-  if (modules?.length) return modules[0] as RouteModule;
   const path = route.path ?? '';
   if (path.startsWith('/disk')) return 'disk';
   if (path.startsWith('/server')) return 'server';
