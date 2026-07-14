@@ -17,6 +17,7 @@ export const layouts: Record<RouteLayout, RouteComponent | (() => Promise<RouteC
 };
 
 export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<RouteComponent>)> = {
+  gateway: () => import("@/views/_ai/gateway/index.vue"),
   403: () => import("@/views/_builtin/403/index.vue"),
   404: () => import("@/views/_builtin/404/index.vue"),
   500: () => import("@/views/_builtin/500/index.vue"),
@@ -29,10 +30,6 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   admin: () => import("@/views/admin/index.vue"),
   disk: () => import("@/views/disk/index.vue"),
   favorite: () => import("@/views/favorite/index.vue"),
-  "gateway_ai-key": () => import("@/views/gateway/ai-key/index.vue"),
-  gateway_dashboard: () => import("@/views/gateway/dashboard/index.vue"),
-  gateway_project: () => import("@/views/gateway/project/index.vue"),
-  gateway_provider: () => import("@/views/gateway/provider/index.vue"),
   "group-share": () => import("@/views/group-share/index.vue"),
   log_file: () => import("@/views/log/file/index.vue"),
   log_login: () => import("@/views/log/login/index.vue"),

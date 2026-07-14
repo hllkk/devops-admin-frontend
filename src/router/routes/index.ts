@@ -71,11 +71,7 @@ const routeModuleMap: Record<string, RouteModule> = {
   'server-manage_server-list': 'server',
   'server-manage_server-detail': 'server',
   // 网关模块
-  gateway: 'gateway',
-  gateway_dashboard: 'gateway',
-  gateway_provider: 'gateway',
-  'gateway_ai-key': 'gateway',
-  gateway_project: 'gateway'
+  gateway: 'gateway'
 };
 
 /**

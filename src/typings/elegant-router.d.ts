@@ -25,10 +25,6 @@ declare module "@elegant-router/types" {
     "disk": "/disk";
     "favorite": "/favorite";
     "gateway": "/gateway";
-    "gateway_ai-key": "/gateway/ai-key";
-    "gateway_dashboard": "/gateway/dashboard";
-    "gateway_project": "/gateway/project";
-    "gateway_provider": "/gateway/provider";
     "group-share": "/group-share";
     "iframe-page": "/iframe-page/:url";
     "init": "/init";
@@ -130,6 +126,7 @@ declare module "@elegant-router/types" {
    */
   export type LastLevelRouteKey = Extract<
     RouteKey,
+    | "gateway"
     | "403"
     | "404"
     | "500"
@@ -142,10 +139,6 @@ declare module "@elegant-router/types" {
     | "admin"
     | "disk"
     | "favorite"
-    | "gateway_ai-key"
-    | "gateway_dashboard"
-    | "gateway_project"
-    | "gateway_provider"
     | "group-share"
     | "log_file"
     | "log_login"

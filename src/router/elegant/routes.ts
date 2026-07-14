@@ -82,60 +82,14 @@ export const generatedRoutes: GeneratedRoute[] = [
   {
     name: 'gateway',
     path: '/gateway',
-    component: 'layout.base',
+    component: 'layout.base$view.gateway',
     meta: {
       title: 'gateway',
       i18nKey: 'route.gateway',
       icon: 'mdi:router-network',
       order: 4,
       module: 'gateway'
-    },
-    children: [
-      {
-        name: 'gateway_ai-key',
-        path: '/gateway/ai-key',
-        component: 'view.gateway_ai-key',
-        meta: {
-          title: 'gateway_ai-key',
-          i18nKey: 'route.gateway_ai-key',
-          icon: 'mdi:key-variant',
-          order: 3
-        }
-      },
-      {
-        name: 'gateway_dashboard',
-        path: '/gateway/dashboard',
-        component: 'view.gateway_dashboard',
-        meta: {
-          title: 'gateway_dashboard',
-          i18nKey: 'route.gateway_dashboard',
-          icon: 'mdi:view-dashboard',
-          order: 1
-        }
-      },
-      {
-        name: 'gateway_project',
-        path: '/gateway/project',
-        component: 'view.gateway_project',
-        meta: {
-          title: 'gateway_project',
-          i18nKey: 'route.gateway_project',
-          icon: 'mdi:folder-network',
-          order: 4
-        }
-      },
-      {
-        name: 'gateway_provider',
-        path: '/gateway/provider',
-        component: 'view.gateway_provider',
-        meta: {
-          title: 'gateway_provider',
-          i18nKey: 'route.gateway_provider',
-          icon: 'mdi:domain',
-          order: 2
-        }
-      }
-    ]
+    }
   },
   {
     name: 'group-share',
