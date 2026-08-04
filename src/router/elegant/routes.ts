@@ -66,7 +66,7 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: 'disk',
       i18nKey: 'route.disk',
       icon: 'mdi:harddisk',
-      order: 2,
+      order: 20,
       module: 'disk'
     }
   },
@@ -378,7 +378,8 @@ export const generatedRoutes: GeneratedRoute[] = [
     component: 'layout.base$view.shared-with-me',
     meta: {
       title: 'shared-with-me',
-      i18nKey: 'route.shared-with-me'
+      i18nKey: 'route.shared-with-me',
+      order: 21
     }
   },
   {
